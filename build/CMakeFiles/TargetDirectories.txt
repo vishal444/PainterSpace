@@ -1,0 +1,5 @@
+/Users/vishaljose/PainterSpace/build/CMakeFiles/PainterSpace.dir
+/Users/vishaljose/PainterSpace/build/CMakeFiles/edit_cache.dir
+/Users/vishaljose/PainterSpace/build/CMakeFiles/rebuild_cache.dir
+/Users/vishaljose/PainterSpace/build/CMakeFiles/PainterSpace_autogen_timestamp_deps.dir
+/Users/vishaljose/PainterSpace/build/CMakeFiles/PainterSpace_autogen.dir

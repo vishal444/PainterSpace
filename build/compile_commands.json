@@ -1,0 +1,26 @@
+[
+{
+  "directory": "/Users/vishaljose/PainterSpace/build",
+  "command": "/usr/bin/clang++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGLWIDGETS_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -I/Users/vishaljose/PainterSpace/build/PainterSpace_autogen/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtWidgets.framework/Headers -iframework /Users/vishaljose/Qt/6.11.1/macos/lib -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtCore.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/mkspecs/macx-clang -isystem /Users/vishaljose/Qt/6.11.1/macos/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtGui.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGL.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGLWidgets.framework/Headers -g -std=gnu++17 -o CMakeFiles/PainterSpace.dir/PainterSpace_autogen/mocs_compilation.cpp.o -c /Users/vishaljose/PainterSpace/build/PainterSpace_autogen/mocs_compilation.cpp",
+  "file": "/Users/vishaljose/PainterSpace/build/PainterSpace_autogen/mocs_compilation.cpp",
+  "output": "CMakeFiles/PainterSpace.dir/PainterSpace_autogen/mocs_compilation.cpp.o"
+},
+{
+  "directory": "/Users/vishaljose/PainterSpace/build",
+  "command": "/usr/bin/clang++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGLWIDGETS_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -I/Users/vishaljose/PainterSpace/build/PainterSpace_autogen/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtWidgets.framework/Headers -iframework /Users/vishaljose/Qt/6.11.1/macos/lib -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtCore.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/mkspecs/macx-clang -isystem /Users/vishaljose/Qt/6.11.1/macos/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtGui.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGL.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGLWidgets.framework/Headers -g -std=gnu++17 -o CMakeFiles/PainterSpace.dir/src/main.cpp.o -c /Users/vishaljose/PainterSpace/src/main.cpp",
+  "file": "/Users/vishaljose/PainterSpace/src/main.cpp",
+  "output": "CMakeFiles/PainterSpace.dir/src/main.cpp.o"
+},
+{
+  "directory": "/Users/vishaljose/PainterSpace/build",
+  "command": "/usr/bin/clang++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGLWIDGETS_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -I/Users/vishaljose/PainterSpace/build/PainterSpace_autogen/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtWidgets.framework/Headers -iframework /Users/vishaljose/Qt/6.11.1/macos/lib -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtCore.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/mkspecs/macx-clang -isystem /Users/vishaljose/Qt/6.11.1/macos/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtGui.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGL.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGLWidgets.framework/Headers -g -std=gnu++17 -o CMakeFiles/PainterSpace.dir/src/MainWindow.cpp.o -c /Users/vishaljose/PainterSpace/src/MainWindow.cpp",
+  "file": "/Users/vishaljose/PainterSpace/src/MainWindow.cpp",
+  "output": "CMakeFiles/PainterSpace.dir/src/MainWindow.cpp.o"
+},
+{
+  "directory": "/Users/vishaljose/PainterSpace/build",
+  "command": "/usr/bin/clang++ -DQT_CORE_LIB -DQT_GUI_LIB -DQT_OPENGLWIDGETS_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -I/Users/vishaljose/PainterSpace/build/PainterSpace_autogen/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtWidgets.framework/Headers -iframework /Users/vishaljose/Qt/6.11.1/macos/lib -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtCore.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/mkspecs/macx-clang -isystem /Users/vishaljose/Qt/6.11.1/macos/include -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtGui.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGL.framework/Headers -isystem /Users/vishaljose/Qt/6.11.1/macos/lib/QtOpenGLWidgets.framework/Headers -g -std=gnu++17 -o CMakeFiles/PainterSpace.dir/src/PaintingCanvas.cpp.o -c /Users/vishaljose/PainterSpace/src/PaintingCanvas.cpp",
+  "file": "/Users/vishaljose/PainterSpace/src/PaintingCanvas.cpp",
+  "output": "CMakeFiles/PainterSpace.dir/src/PaintingCanvas.cpp.o"
+}
+]
