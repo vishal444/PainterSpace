@@ -1,0 +1,194 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    def Xform "OakTreeLush" (
+        active = false
+        customData = {
+            string asset_id = "trees.oak_tree_lush"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/oak_tree_lush.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (-6.098620891571045, 0, 12.09278678894043)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "BirchTree" (
+        active = false
+        customData = {
+            string asset_id = "trees.birch_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/birch_tree.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, -2, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "PineTree" (
+        active = false
+        customData = {
+            string asset_id = "trees.pine_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/pine_tree.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (7.462622165679932, 0, 13.260246276855469)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    over "Bridge"
+    {
+        double3 xformOp:translate = (0.8989071846008301, 0, -0.3586463928222656)
+    }
+
+    over "Car" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+    }
+
+    def Xform "BirchTree_2" (
+        active = false
+        customData = {
+            string asset_id = "trees.birch_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/birch_tree.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (-105, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "PineTree_2" (
+        active = false
+        customData = {
+            string asset_id = "trees.pine_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/pine_tree.usdc@
+    )
+    {
+        token visibility = "invisible"
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+    }
+
+    def Xform "PineTreeLush" (
+        active = false
+        customData = {
+            string asset_id = "trees.pine_tree_lush"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/pine_tree_lush.usdc@
+    )
+    {
+        token visibility = "invisible"
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+    }
+
+    def Xform "OakTreeLush_2" (
+        active = false
+        customData = {
+            string asset_id = "trees.oak_tree_lush"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/oak_tree_lush.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    over "ShotCam"
+    {
+        token visibility = "invisible"
+    }
+
+    def Xform "BirchTree_3" (
+        active = false
+        customData = {
+            string asset_id = "trees.birch_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/birch_tree.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "BirchTreeVertical" (
+        customData = {
+            string asset_id = "trees.birch_tree_vertical"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/birch_tree_vertical.usdc@
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+    }
+
+    def Xform "BirchTreeLush" (
+        active = false
+        customData = {
+            string asset_id = "trees.birch_tree_lush"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/birch_tree_lush.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "OakTreeLush_3" (
+        customData = {
+            string asset_id = "trees.oak_tree_lush"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/oak_tree_lush.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+

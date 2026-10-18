@@ -1,0 +1,485 @@
+{
+  "schema_version": "1.0",
+  "units": "meters",
+  "up_axis": "Y",
+  "forward_axis": "-Z",
+  "clips": {
+    "run": {
+      "file": "assets/usdc_assets/humans/run.usdc",
+      "loop": true,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 4.2
+    },
+    "walk": {
+      "file": "assets/usdc_assets/humans/walk.usdc",
+      "loop": true,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 1.4
+    },
+    "jump": {
+      "file": "assets/usdc_assets/humans/jump.usdc",
+      "loop": false,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 2.4
+    },
+    "opening_door_inwards": {
+      "file": "assets/usdc_assets/humans/opening_door_inwards.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "reaction": {
+      "file": "assets/usdc_assets/humans/reaction.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "soccer_tripping_down": {
+      "file": "assets/usdc_assets/humans/soccer_tripping_down.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "start_walking": {
+      "file": "assets/usdc_assets/humans/start_walking.usdc",
+      "loop": false,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 1.2
+    },
+    "spooked": {
+      "file": "assets/usdc_assets/humans/spooked.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "acknowledging": {
+      "file": "assets/usdc_assets/humans/acknowledging.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "arm_stretching": {
+      "file": "assets/usdc_assets/humans/arm_stretching.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "breakdance_freeze_var_3": {
+      "file": "assets/usdc_assets/humans/breakdance_freeze_var_3.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "brutal_assassination": {
+      "file": "assets/usdc_assets/humans/brutal_assassination.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "chapa_giratoria": {
+      "file": "assets/usdc_assets/humans/chapa_giratoria.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "cheering": {
+      "file": "assets/usdc_assets/humans/cheering.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "clapping": {
+      "file": "assets/usdc_assets/humans/clapping.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "climbing": {
+      "file": "assets/usdc_assets/humans/climbing.usdc",
+      "loop": false,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 0.6
+    },
+    "crawling": {
+      "file": "assets/usdc_assets/humans/crawling.usdc",
+      "loop": true,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 0.8
+    },
+    "crouch_to_stand": {
+      "file": "assets/usdc_assets/humans/crouch_to_stand.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "defeat_expression": {
+      "file": "assets/usdc_assets/humans/defeat_expression.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "dodging_right": {
+      "file": "assets/usdc_assets/humans/dodging_right.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "elbow_punch": {
+      "file": "assets/usdc_assets/humans/elbow_punch.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "falling": {
+      "file": "assets/usdc_assets/humans/falling.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "floating": {
+      "file": "assets/usdc_assets/humans/floating.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "head_hit_during_fight": {
+      "file": "assets/usdc_assets/humans/head_hit_during_fight.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "jogging_with_box": {
+      "file": "assets/usdc_assets/humans/jogging_with_box.usdc",
+      "loop": true,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 2.2
+    },
+    "jumping_down": {
+      "file": "assets/usdc_assets/humans/jumping_down.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "kick_to_the_groin": {
+      "file": "assets/usdc_assets/humans/kick_to_the_groin.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "kiss": {
+      "file": "assets/usdc_assets/humans/kiss.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "kneeling_down": {
+      "file": "assets/usdc_assets/humans/kneeling_down.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "left_hook": {
+      "file": "assets/usdc_assets/humans/left_hook.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "macaco_side": {
+      "file": "assets/usdc_assets/humans/macaco_side.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "martelo_2": {
+      "file": "assets/usdc_assets/humans/martelo_2.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "nervously_look_around": {
+      "file": "assets/usdc_assets/humans/nervously_look_around.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "playing_drums": {
+      "file": "assets/usdc_assets/humans/playing_drums.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "pointing_forward": {
+      "file": "assets/usdc_assets/humans/pointing_forward.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "praying": {
+      "file": "assets/usdc_assets/humans/praying.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "pulling_lever": {
+      "file": "assets/usdc_assets/humans/pulling_lever.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    },
+    "sad_walk_arc_right": {
+      "file": "assets/usdc_assets/humans/sad_walk_arc_right.usdc",
+      "loop": false,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 1.2
+    },
+    "silly_dancing": {
+      "file": "assets/usdc_assets/humans/silly_dancing.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "singing": {
+      "file": "assets/usdc_assets/humans/singing.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "sitting_clap": {
+      "file": "assets/usdc_assets/humans/sitting_clap.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "sitting": {
+      "file": "assets/usdc_assets/humans/sitting.usdc",
+      "loop": true,
+      "stride_speed_mps": 0.0
+    },
+    "slow_jog_backwards": {
+      "file": "assets/usdc_assets/humans/slow_jog_backwards.usdc",
+      "loop": true,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 1.8
+    },
+    "swimming": {
+      "file": "assets/usdc_assets/humans/swimming.usdc",
+      "loop": true,
+      "strip_root_motion": true,
+      "strip_root_axes": [
+        0,
+        2
+      ],
+      "stride_speed_mps": 1.0
+    },
+    "boxing_block": {
+      "file": "assets/usdc_assets/humans/boxing_block.usdc",
+      "loop": false,
+      "stride_speed_mps": 0.0
+    }
+  },
+  "assets": [
+    {
+      "id": "environment.downtown_tower",
+      "path": "assets/usdc_assets/environments/downtown_art_deco_tower.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "environment",
+        "building",
+        "city"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": [
+        76.0,
+        206.38,
+        70.0
+      ],
+      "pivot": "Street base center at origin (y=0)",
+      "variants": {}
+    },
+    {
+      "id": "environment.residential_neighborhood",
+      "path": "assets/usdc_assets/environments/residential_neighborhood.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "environment",
+        "building",
+        "neighborhood",
+        "street"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": [
+        82.0,
+        54.4,
+        60.0
+      ],
+      "pivot": "Street base center at origin (y=0)",
+      "variants": {}
+    },
+    {
+      "id": "environment.residential_intersection",
+      "path": "assets/usdc_assets/environments/residential_intersection.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "environment",
+        "building",
+        "intersection",
+        "street"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": [
+        180.0,
+        40.0,
+        180.0
+      ],
+      "pivot": "Intersection center at origin (y=0)",
+      "variants": {}
+    },
+    {
+      "id": "environment.residential_avenue",
+      "path": "assets/usdc_assets/environments/residential_avenue.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "environment",
+        "building",
+        "avenue",
+        "street"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": [
+        310.0,
+        48.7,
+        89.03
+      ],
+      "pivot": "Avenue center at origin (y=0)",
+      "variants": {}
+    },
+    {
+      "id": "environment.ocean_horizon",
+      "path": "assets/usdc_assets/environments/ocean_horizon.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "environment",
+        "ocean",
+        "water"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": [
+        300.0,
+        1.51,
+        300.0
+      ],
+      "pivot": "Water surface center at origin (y=0)",
+      "variants": {}
+    },
+    {
+      "id": "environment.grand_harbour",
+      "path": "assets/usdc_assets/environments/grand_harbour.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "environment",
+        "harbour",
+        "waterfront"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": [
+        300.0,
+        54.7,
+        250.0
+      ],
+      "pivot": "Harbour center at origin (y=0)",
+      "variants": {}
+    },
+    {
+      "id": "character.poseable_mannequin",
+      "path": "Untitled_poseable.glb",
+      "source_format": "GLB",
+      "usd_reference_ready": false,
+      "tags": [
+        "character",
+        "mannequin",
+        "poseable"
+      ],
+      "units": "meters",
+      "up_axis": "Y",
+      "forward_axis": "-Z",
+      "bounds_m": null,
+      "pivot": "unknown; inspect source asset",
+      "variants": {}
+    },
+    {
+      "id": "character.human.run_pose",
+      "path": "assets/usdc_assets/humans/running_fast.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "character",
+        "human",
+        "running",
+        "static_pose",
+        "rigged"
+      ],
+      "units": "meters",
+      "up_axis": "Z",
+      "forward_axis": "unknown",
+      "bounds_m": [
+        0.57,
+        1.68,
+        0.58
+      ],
+      "pivot": "Armature root at origin; override /root/Armature xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) } in Y-up stages",
+      "variants": {},
+      "animation_clips": [
+        "mixamo_com"
+      ],
+      "notes": "Rigged character with embedded SkelAnimation mixamo_com; sampled frames 1\u201318."
+    },
+    {
+      "id": "character.human.walk_pose",
+      "path": "assets/usdc_assets/humans/walking.usdc",
+      "source_format": "USDC",
+      "usd_reference_ready": true,
+      "tags": [
+        "character",
+        "human",
+        "walking",
+        "static_pose",
+        "rigged"
+      ],
+      "units": "meters",
+      "up_axis": "Z",
+      "forward_axis": "unknown",
+      "bounds_m": [
+        0.56,
+        1.69,
+        0.61
+      ],
+      "pivot": "Armature root at origin; override /root/Armature xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) } in Y-up stages",
+      "variants": {},
+      "animation_clips": [
+        "mixamo_com"
+      ],
+      "notes": "Rigged character with embedded SkelAnimation mixamo_com; sampled frames 1\u201325."
+    }
+  ]
+}

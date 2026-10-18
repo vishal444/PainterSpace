@@ -1,0 +1,49 @@
+{
+  "shot_id": "SC01_SH001",
+  "format_version": "1.0",
+  "title": "Bridge Escape",
+  "description": "A terrified hero runs through the rain toward his car, struggles with the door, and looks back as the bridge shakes.",
+  "duration": 6.0,
+  "fps": 24,
+  "scene_context": {
+    "project": "Bridge Escape",
+    "goal": "The hero must reach the car before the bridge collapses.",
+    "location": "Mountain highway bridge",
+    "environment": "Heavy rain, wind, late afternoon"
+  },
+  "assets": [
+    { "id": "hero", "asset": "character.hero", "transform": { "position": [-2.0, 0.0, -4.5] } },
+    { "id": "car", "asset": "vehicle.sedan", "transform": { "position": [1.0, 0.0, 1.2] } },
+    { "id": "keys", "asset": "prop.car_keys", "transform": { "position": [1.1, 0.8, 1.55] } },
+    { "id": "bridge", "asset": "environment.bridge", "transform": { "position": [0.0, 0.0, 5.0] } }
+  ],
+  "characters": [
+    {
+      "id": "hero",
+      "intent": "get_inside_car_as_fast_as_possible",
+      "locomotion": { "style": "run", "start_time": 0.0, "end_time": 2.5, "target": "car" },
+      "performance": { "emotion": "fear", "intensity": 0.9, "urgency": 0.95 },
+      "gaze": { "target": "bridge", "priority": "high" },
+      "actions": [
+        { "name": "run", "start_time": 0.0, "end_time": 2.5, "target": "car" },
+        { "name": "struggle", "start_time": 2.5, "end_time": 3.6, "target": "car" },
+        { "name": "enter_vehicle", "start_time": 3.6, "end_time": 4.4, "target": "car" },
+        { "name": "search", "start_time": 4.4, "end_time": 5.7, "target": "keys" }
+      ]
+    }
+  ],
+  "camera": {
+    "shot_size": "medium",
+    "lens_mm": 50,
+    "target": "hero",
+    "focus_target": "hero.face",
+    "movement": "tracking_push_in"
+  },
+  "effects": { "rain": true, "bridge_shaking": true },
+  "events": [
+    { "time": 0.0, "action": "hero.begin_action" },
+    { "time": 4.4, "action": "hero.search_glove_box" },
+    { "time": 4.8, "action": "bridge.begin_shaking" }
+  ],
+  "render": { "mode": "realtime_preview", "resolution": [1280, 720], "motion_blur": true }
+}

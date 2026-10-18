@@ -7,26 +7,30 @@ set(CMAKE_AUTOMOC ON)
 
 set(CMAKE_PREFIX_PATH /Users/vishaljose/Qt/6.11.1/macos)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGL OpenGLWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGL Network)
+
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/third_party/openusd/include/pxr/pxr.h")
+    execute_process(
+        COMMAND /bin/bash "${CMAKE_SOURCE_DIR}/scripts/setup_openusd_sdk.sh"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+endif()
+
+if(CMAKE_OSX_SYSROOT AND EXISTS "${CMAKE_OSX_SYSROOT}/usr/lib/usd/libusd_ms.tbd")
+    set(OPENUSD_SYSTEM_LIB "${CMAKE_OSX_SYSROOT}/usr/lib/usd/libusd_ms.tbd")
+else()
+    set(OPENUSD_SYSTEM_LIB "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/usd/libusd_ms.tbd")
+endif()
+
 add_executable(PainterSpace
     src/main.cpp
     src/MainWindow.cpp
     src/MainWindow.h
-    src/PaintingCanvas.cpp
-    src/PaintingCanvas.h
-    assets/Untitled_poseable.glb
-    assets/downtown_art_deco_tower.obj
-    assets/downtown_art_deco_tower.mtl
-    assets/residential_neighborhood.obj
-    assets/residential_neighborhood.mtl
-    assets/residential_intersection.obj
-    assets/residential_intersection.mtl
-    assets/residential_avenue.obj
-    assets/residential_avenue.mtl
-    assets/ocean_horizon.obj
-    assets/ocean_horizon.mtl
-    assets/grand_harbour.obj
-    assets/grand_harbour.mtl
+    src/AssetTypes.h
+    src/UsdViewportWidget.cpp
+    src/UsdViewportWidget.h
+    src/ShotEngine.cpp
+    src/ShotEngine.h
     assets/facial_expressions/README.md
     assets/facial_expressions/happy.obj
     assets/facial_expressions/happy.mtl
@@ -47,19 +51,6 @@ add_executable(PainterSpace
 )
 
 set_source_files_properties(
-    assets/Untitled_poseable.glb
-    assets/downtown_art_deco_tower.obj
-    assets/downtown_art_deco_tower.mtl
-    assets/residential_neighborhood.obj
-    assets/residential_neighborhood.mtl
-    assets/residential_intersection.obj
-    assets/residential_intersection.mtl
-    assets/residential_avenue.obj
-    assets/residential_avenue.mtl
-    assets/ocean_horizon.obj
-    assets/ocean_horizon.mtl
-    assets/grand_harbour.obj
-    assets/grand_harbour.mtl
     assets/facial_expressions/README.md
     assets/facial_expressions/happy.obj
     assets/facial_expressions/happy.mtl
@@ -80,8 +71,18 @@ set_source_files_properties(
     PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
+target_include_directories(PainterSpace PRIVATE
+    "${CMAKE_SOURCE_DIR}/third_party/openusd/include"
+    "/opt/homebrew/include"
+)
+
+target_compile_options(PainterSpace PRIVATE
+    -Wno-deprecated-declarations
+)
+
 target_link_libraries(PainterSpace PRIVATE
     Qt6::Widgets
     Qt6::OpenGL
-    Qt6::OpenGLWidgets
+    Qt6::Network
+    "${OPENUSD_SYSTEM_LIB}"
 )

@@ -1,0 +1,22 @@
+{
+    "camera_prim": "/World/ShotCam",
+    "duration": 4.5,
+    "end_frame": 108,
+    "fps": 24,
+    "frame_range": [
+        0,
+        108
+    ],
+    "llm_model": "gemini-coding-agent",
+    "prompt": "the human charachter walks towards the car and jumps on top of it.",
+    "prompt_version": "2.0",
+    "revisions": [
+        "the human charachter walks towards the car and jumps on top of it."
+    ],
+    "scene_id": "scene_01",
+    "scene_order": 3,
+    "shot_id": "shot_003",
+    "stage": "shot.usda",
+    "start_frame": 0,
+    "validation_passed": true
+}

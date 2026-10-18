@@ -1,0 +1,67 @@
+{
+  "shot_id": "SC01_SH005",
+  "format_version": "1.0",
+  "title": "The Lost Signal",
+  "description": "A detective discovers a ringing phone in a deserted train carriage just as it begins to move.",
+  "duration": 7.0,
+  "fps": 24,
+  "scene_context": {
+    "project": "Untitled Film",
+    "goal": "Reveal an unsettling message before the detective can leave.",
+    "location": "abandoned underground subway platform",
+    "environment": "rainy night, cold and tense"
+  },
+  "assets": [
+    {
+      "id": "detective",
+      "asset": "character.hero",
+      "transform": { "position": [0.0, 0.0, -1.2] }
+    },
+    {
+      "id": "subway_car",
+      "asset": "vehicle.car",
+      "transform": { "position": [1.7, 0.0, 1.2] }
+    },
+    {
+      "id": "phone",
+      "asset": "prop.old_mobile_phone",
+      "transform": { "position": [0.65, 0.8, 0.25] }
+    }
+  ],
+  "actors": [
+    {
+      "id": "detective",
+      "animation": {
+        "clip": "walk_cautiously_then_reach",
+        "start_time": 0.0,
+        "end_time": 5.2
+      }
+    }
+  ],
+  "camera": {
+    "shot_size": "medium",
+    "lens_mm": 35,
+    "target": "detective",
+    "focus_target": "detective.face",
+    "movement": "slow_tracking_push_in"
+  },
+  "effects": {
+    "rain": true,
+    "light_flicker": true,
+    "train_motion_blur": true
+  },
+  "events": [
+    { "time": 0.0, "action": "phone.start_ringing" },
+    { "time": 1.5, "action": "detective.turn_toward_phone" },
+    { "time": 3.0, "action": "detective.enter_subway_car" },
+    { "time": 5.2, "action": "detective.reach_for_phone" },
+    { "time": 5.5, "action": "subway_car.begin_moving" },
+    { "time": 6.2, "action": "camera.rack_focus", "parameters": { "from": "detective.face", "to": "phone" } }
+  ],
+  "render": {
+    "mode": "realtime_preview",
+    "resolution": [1280, 720],
+    "depth_of_field": true,
+    "motion_blur": true
+  }
+}

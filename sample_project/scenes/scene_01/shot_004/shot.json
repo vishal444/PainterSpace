@@ -1,0 +1,42 @@
+{
+  "shot_id": "shot_004",
+  "scene_id": "scene_01",
+  "scene_order": 4,
+  "stage": "shot.usda",
+  "prompt": "The hero walks steadily along the damaged bridge deck, leaps cleanly across a collapsed fissure, and lands in full stride sprinting forward toward safety.",
+  "revisions": [],
+  "fps": 24,
+  "frame_range": [
+    0,
+    156
+  ],
+  "start_frame": 0,
+  "end_frame": 156,
+  "duration": 6.5,
+  "camera_prim": "/World/ShotCam",
+  "llm_model": "gemini-3.8-flash",
+  "prompt_version": "2.0",
+  "validation_passed": true,
+  "multi_action": {
+    "character": "/World/Hero",
+    "actions": [
+      {
+        "clip": "walk",
+        "start_s": 0.0,
+        "end_s": 2.2
+      },
+      {
+        "clip": "jump",
+        "start_s": 2.2,
+        "end_s": 4.2,
+        "blend_s": 0.35
+      },
+      {
+        "clip": "run",
+        "start_s": 4.2,
+        "end_s": 6.5,
+        "blend_s": 0.35
+      }
+    ]
+  }
+}

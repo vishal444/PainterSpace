@@ -1,0 +1,21 @@
+{
+    "camera_prim": "/World/ShotCam",
+    "duration": 2,
+    "end_frame": 48,
+    "fps": 24,
+    "frame_range": [
+        0,
+        48
+    ],
+    "llm_model": "gemini-coding-agent",
+    "prompt": "Human charachter walks towards the center of the street and climbs on a car",
+    "prompt_version": "2.0",
+    "revisions": [
+    ],
+    "scene_id": "..",
+    "scene_order": 6,
+    "shot_id": "shot_006",
+    "stage": "shot.usda",
+    "start_frame": 0,
+    "validation_passed": false
+}

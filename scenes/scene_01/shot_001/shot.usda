@@ -1,0 +1,107 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1
+    startTimeCode = 0
+    endTimeCode = 120
+    timeCodesPerSecond = 24
+    subLayers = [ @../scene.usda@ ]
+)
+
+over "World"
+{
+    def Xform "Hero" (
+        customData = {
+            string asset_id = "character.human.run_pose"
+            string forward_axis = "+Z"
+        }
+        references = @../../../assets/usdc_assets/humans/running_fast.usdc@</root>
+    )
+    {
+        double3 xformOp:translate.timeSamples = {
+            0: (-1.4, 0.0, -7.8),
+            82: (-0.8, 0.0, -3.3),
+            120: (-0.8, 0.0, -3.3)
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        over SkelRoot "Armature"
+        {
+            float3 xformOp:rotateXYZ.timeSamples = {
+                1: (0, 0, 0)
+            }
+        }
+        over Xform "Camera"
+        {
+            token visibility = "invisible"
+        }
+        over Xform "Cube"
+        {
+            token visibility = "invisible"
+        }
+        over Xform "Light"
+        {
+            token visibility = "invisible"
+        }
+        over DomeLight "env_light" (
+            active = false
+        )
+        {
+        }
+    }
+
+    def Xform "Pedestrian" (
+        customData = {
+            string asset_id = "character.human.walk_pose"
+            string forward_axis = "+Z"
+        }
+        references = @../../../assets/usdc_assets/humans/walking.usdc@</root>
+    )
+    {
+        double3 xformOp:translate.timeSamples = {
+            0: (-2.55, 0.0, -2.2),
+            120: (-2.55, 0.0, -5.8)
+        }
+        float xformOp:rotateY = 180
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+
+        over SkelRoot "Armature"
+        {
+            float3 xformOp:rotateXYZ.timeSamples = {
+                1: (0, 0, 0)
+            }
+        }
+        over Xform "Camera"
+        {
+            token visibility = "invisible"
+        }
+        over Xform "Cube"
+        {
+            token visibility = "invisible"
+        }
+        over Xform "Light"
+        {
+            token visibility = "invisible"
+        }
+        over DomeLight "env_light" (
+            active = false
+        )
+        {
+        }
+    }
+
+    def Camera "ShotCam"
+    {
+        float focalLength = 28
+        float horizontalAperture = 36
+        float verticalAperture = 20.25
+        float2 clippingRange = (0.1, 1000)
+        double3 xformOp:translate.timeSamples = {
+            0: (0.0, 2.5, 9.8),
+            120: (0.0, 2.1, 6.2)
+        }
+        float3 xformOp:rotateXYZ = (-6, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}

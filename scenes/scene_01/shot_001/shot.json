@@ -1,0 +1,20 @@
+{
+  "shot_id": "shot_001",
+  "scene_id": "scene_01",
+  "scene_order": 1,
+  "stage": "shot.usda",
+  "prompt": "The hero sprints down the city avenue past brownstone buildings and a walking pedestrian toward his car, with the downtown Art Deco tower rising in the background.",
+  "revisions": [],
+  "fps": 24,
+  "frame_range": [
+    0,
+    120
+  ],
+  "start_frame": 0,
+  "end_frame": 120,
+  "duration": 5.0,
+  "camera_prim": "/World/ShotCam",
+  "llm_model": "gpt-4.1-mini",
+  "prompt_version": "2.0",
+  "validation_passed": true
+}

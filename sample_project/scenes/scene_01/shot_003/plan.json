@@ -1,0 +1,28 @@
+{
+  "characters": [
+    {
+      "id": "Hero",
+      "character_path": "/World/Hero",
+      "character_file": "assets/usdc_assets/humans/human.usdc",
+      "actions": [
+        {
+          "clip": "walk",
+          "start_s": 0.0,
+          "end_s": 1.5
+        },
+        {
+          "clip": "jump",
+          "start_s": 1.5,
+          "end_s": 3.2,
+          "blend_s": 0.2
+        },
+        {
+          "clip": "crouch_to_stand",
+          "start_s": 3.2,
+          "end_s": 4.5,
+          "blend_s": 0.25
+        }
+      ]
+    }
+  ]
+}

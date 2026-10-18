@@ -1,25 +1,46 @@
 #include "MainWindow.h"
-#include "PaintingCanvas.h"
-
+#include "AssetTypes.h"
+#include "ShotEngine.h"
+#include "UsdViewportWidget.h"
+#include <QApplication>
 #include <QDoubleSpinBox>
+#include <QCoreApplication>
+#include <QDialog>
+#include <QDir>
+#include <QFile>
 #include <QComboBox>
 #include <QCheckBox>
-#include <QFileDialog>
 #include <QFrame>
 #include <QFontComboBox>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QFormLayout>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QMessageBox>
+#include <QPixmap>
+#include <QPlainTextEdit>
+#include <QProcess>
 #include <QPushButton>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QRegularExpression>
+#include <QSaveFile>
 #include <QScrollArea>
 #include <QSlider>
 #include <QSignalBlocker>
+#include <QStackedWidget>
+#include <QStandardPaths>
+#include <QStringList>
+#include <QTimer>
 #include <QVBoxLayout>
 
 namespace {
@@ -35,6 +56,107 @@ QString toolStyle() {
            "QPushButton:hover { background: #29323d; }"
            "QPushButton:checked { color: #f7f9fb; background: #39536b; border-color: #73b5da; }";
 }
+
+QByteArray defaultSceneUsdaSource() {
+    return "#usda 1.0\n"
+           "(\n"
+           "    defaultPrim = \"World\"\n"
+           "    upAxis = \"Y\"\n"
+           "    metersPerUnit = 1\n"
+           ")\n\n"
+           "def Xform \"World\"\n"
+           "{\n"
+           "    def DomeLight \"BaseAmbient\"\n"
+           "    {\n"
+           "        color3f inputs:color = (0.35, 0.42, 0.55)\n"
+           "        float inputs:intensity = 0.45\n"
+           "    }\n"
+           "    def DistantLight \"BaseKeyLight\"\n"
+           "    {\n"
+           "        color3f inputs:color = (0.95, 0.88, 0.78)\n"
+           "        float inputs:intensity = 1.6\n"
+           "        float angle = 0.53\n"
+           "        float3 xformOp:rotateXYZ = (-35, -25, 0)\n"
+           "        uniform token[] xformOpOrder = [\"xformOp:rotateXYZ\"]\n"
+           "    }\n"
+           "    def Xform \"Ground\"\n"
+           "    {\n"
+           "        double3 xformOp:translate = (0, -0.04, 0)\n"
+           "        float3 xformOp:scale = (24, 0.08, 24)\n"
+           "        uniform token[] xformOpOrder = [\"xformOp:translate\", \"xformOp:scale\"]\n"
+           "        def Cube \"Floor\"\n"
+           "        {\n"
+           "            double size = 1\n"
+           "            color3f[] primvars:displayColor = [(0.16, 0.20, 0.24)] (\n"
+           "                interpolation = \"constant\"\n"
+           "            )\n"
+           "        }\n"
+           "    }\n"
+           "}\n";
+}
+
+QByteArray defaultShotUsdaSource() {
+    return "#usda 1.0\n"
+           "(\n"
+           "    defaultPrim = \"World\"\n"
+           "    upAxis = \"Y\"\n"
+           "    metersPerUnit = 1\n"
+           "    timeCodesPerSecond = 24\n"
+           "    startTimeCode = 0\n"
+           "    endTimeCode = 48\n"
+           "    subLayers = [\n"
+           "        @../scene.usda@\n"
+           "    ]\n"
+           ")\n\n"
+           "over \"World\"\n"
+           "{\n"
+           "    def Camera \"ShotCam\"\n"
+           "    {\n"
+           "        double3 xformOp:translate = (0, 2.2, 10.0)\n"
+           "        float3 xformOp:rotateXYZ = (-8.0, 0.0, 0.0)\n"
+           "        uniform token[] xformOpOrder = [\"xformOp:translate\", \"xformOp:rotateXYZ\"]\n"
+           "        float focalLength = 35\n"
+           "        float horizontalAperture = 36\n"
+           "        float verticalAperture = 20.25\n"
+           "        float2 clippingRange = (0.1, 1000)\n"
+           "    }\n"
+           "}\n";
+}
+
+QString painterSpaceProjectRoot() {
+    QDir directory(QCoreApplication::applicationDirPath());
+    do {
+        if (QFileInfo::exists(directory.filePath("manifest.json")) ||
+            QFileInfo::exists(directory.filePath("assets/manifest.json"))) {
+            return directory.absolutePath();
+        }
+    } while (directory.cdUp());
+    return QDir::currentPath();
+}
+
+QString worldStatePythonFor(const QString& projectRoot) {
+    const QString configured = qEnvironmentVariable("PAINTERSPACE_PYTHON");
+    if (!configured.isEmpty()) return configured;
+    const QString venv = QDir(projectRoot).filePath(".venv/bin/python3");
+    if (QFileInfo::exists(venv)) return venv;
+    return QStandardPaths::findExecutable("python3");
+}
+
+QJsonObject readJsonFile(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return QJsonDocument::fromJson(file.readAll()).object();
+}
+
+void syncManifestForProject(const QString& projectRoot) {
+    const QString script = QDir(projectRoot).filePath("tools/sync_manifest.py");
+    const QString python = worldStatePythonFor(projectRoot);
+    if (!QFileInfo::exists(script) || python.isEmpty()) return;
+    QProcess proc;
+    proc.setWorkingDirectory(projectRoot);
+    proc.start(python, {script, QStringLiteral("--project-root"), projectRoot, QStringLiteral("--quiet")});
+    proc.waitForFinished(15000);
+}
 }
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -42,128 +164,321 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     resize(1540, 900);
     setMinimumSize(1180, 700);
 
-    QWidget* central = new QWidget(this);
-    central->setObjectName("workspace");
-    setCentralWidget(central);
+    myViewStack = new QStackedWidget(this);
+    myViewStack->setObjectName("workspace");
+    setCentralWidget(myViewStack);
 
-    QVBoxLayout* root = new QVBoxLayout(central);
+    myProjectPage = new QWidget(myViewStack);
+    myProjectPage->setObjectName("projectPage");
+    QVBoxLayout* projectLayout = new QVBoxLayout(myProjectPage);
+    projectLayout->setContentsMargins(80, 54, 80, 54);
+    projectLayout->setSpacing(18);
+    QLabel* projectMark = new QLabel("P", myProjectPage);
+    projectMark->setObjectName("brandMark");
+    projectMark->setAlignment(Qt::AlignCenter);
+    projectMark->setFixedSize(48, 48);
+    projectLayout->addWidget(projectMark, 0, Qt::AlignLeft);
+    QLabel* explorerTitle = new QLabel("Project Explorer", myProjectPage);
+    explorerTitle->setObjectName("appTitle");
+    projectLayout->addWidget(explorerTitle);
+    QLabel* explorerHint = new QLabel("Create a new project or open an existing project to view your list of scenes as a grid.", myProjectPage);
+    explorerHint->setObjectName("mutedText");
+    projectLayout->addWidget(explorerHint);
+
+    QFrame* createProjectCard = new QFrame(myProjectPage);
+    createProjectCard->setObjectName("projectCard");
+    createProjectCard->setMaximumWidth(760);
+    QHBoxLayout* createProjectLayout = new QHBoxLayout(createProjectCard);
+    createProjectLayout->setContentsMargins(22, 18, 22, 18);
+    createProjectLayout->setSpacing(14);
+    QLabel* createProjectIcon = new QLabel("＋", createProjectCard);
+    createProjectIcon->setObjectName("projectIcon");
+    createProjectIcon->setAlignment(Qt::AlignCenter);
+    createProjectIcon->setFixedSize(52, 52);
+    createProjectLayout->addWidget(createProjectIcon);
+    QVBoxLayout* createProjectInfo = new QVBoxLayout();
+    QLabel* createProjectTitle = new QLabel("Create New Project", createProjectCard);
+    createProjectTitle->setObjectName("cardTitle");
+    QLabel* createProjectSub = new QLabel("Starts a new project with a grid of scenes  •  Describe each scene first, then build individual shots", createProjectCard);
+    createProjectSub->setObjectName("mutedText");
+    myNewProjectNameEdit = new QLineEdit(createProjectCard);
+    myNewProjectNameEdit->setPlaceholderText("Project title (e.g., My Storyboard Project)…");
+    createProjectInfo->addWidget(createProjectTitle);
+    createProjectInfo->addWidget(createProjectSub);
+    createProjectInfo->addWidget(myNewProjectNameEdit);
+    createProjectLayout->addLayout(createProjectInfo, 1);
+    QPushButton* createProjectButton = new QPushButton("＋  Create project  →", createProjectCard);
+    createProjectButton->setObjectName("primaryButton");
+    createProjectButton->setCursor(Qt::PointingHandCursor);
+    createProjectLayout->addWidget(createProjectButton);
+    connect(createProjectButton, &QPushButton::clicked, this, &MainWindow::createStoryboardProject);
+    projectLayout->addWidget(createProjectCard);
+
+    QFrame* projectCard = new QFrame(myProjectPage);
+    projectCard->setObjectName("projectCard");
+    projectCard->setMaximumWidth(760);
+    QHBoxLayout* projectCardLayout = new QHBoxLayout(projectCard);
+    projectCardLayout->setContentsMargins(22, 18, 22, 18);
+    QLabel* projectIcon = new QLabel("▦", projectCard);
+    projectIcon->setObjectName("projectIcon");
+    projectIcon->setAlignment(Qt::AlignCenter);
+    projectIcon->setFixedSize(52, 52);
+    projectCardLayout->addWidget(projectIcon);
+    QVBoxLayout* projectInfo = new QVBoxLayout();
+    QLabel* projectName = new QLabel("Storyboard Project", projectCard);
+    projectName->setObjectName("cardTitle");
+    QLabel* projectDescription = new QLabel("Existing project  •  Scenes grid & 3D / LLM shots", projectCard);
+    projectDescription->setObjectName("mutedText");
+    projectInfo->addWidget(projectName);
+    projectInfo->addWidget(projectDescription);
+    projectCardLayout->addLayout(projectInfo, 1);
+    QPushButton* openProjectButton = new QPushButton("Open project  →", projectCard);
+    openProjectButton->setObjectName("quietButton");
+    openProjectButton->setCursor(Qt::PointingHandCursor);
+    projectCardLayout->addWidget(openProjectButton);
+    connect(openProjectButton, &QPushButton::clicked, this, &MainWindow::openStoryboardProject);
+    projectLayout->addWidget(projectCard);
+
+    projectLayout->addStretch(1);
+    myViewStack->addWidget(myProjectPage);
+
+    myScenesPage = new QWidget(myViewStack);
+    myScenesPage->setObjectName("scenesPage");
+    QVBoxLayout* scenesLayout = new QVBoxLayout(myScenesPage);
+    scenesLayout->setContentsMargins(34, 26, 34, 30);
+    scenesLayout->setSpacing(16);
+    QHBoxLayout* scenesHeader = new QHBoxLayout();
+    QPushButton* scenesBackToProjects = new QPushButton("← Projects", myScenesPage);
+    scenesBackToProjects->setObjectName("quietButton");
+    scenesBackToProjects->setCursor(Qt::PointingHandCursor);
+    connect(scenesBackToProjects, &QPushButton::clicked, this, &MainWindow::showProjectExplorer);
+    scenesHeader->addWidget(scenesBackToProjects);
+    myScenesTitle = new QLabel("Storyboard Scenes", myScenesPage);
+    myScenesTitle->setObjectName("appTitle");
+    scenesHeader->addWidget(myScenesTitle);
+    scenesHeader->addStretch();
+    QPushButton* newSceneButton = new QPushButton("＋  New scene", myScenesPage);
+    newSceneButton->setObjectName("primaryButton");
+    newSceneButton->setCursor(Qt::PointingHandCursor);
+    connect(newSceneButton, &QPushButton::clicked, this, &MainWindow::addStoryboardScene);
+    scenesHeader->addWidget(newSceneButton);
+    scenesLayout->addLayout(scenesHeader);
+    QLabel* scenesHint = new QLabel("Click a scene to first describe it (via LLM prompt or 3D editor) before moving into its individual shots.", myScenesPage);
+    scenesHint->setObjectName("mutedText");
+    scenesLayout->addWidget(scenesHint);
+    QScrollArea* scenesScroll = new QScrollArea(myScenesPage);
+    scenesScroll->setObjectName("bookSheet");
+    scenesScroll->setWidgetResizable(true);
+    scenesScroll->setFrameStyle(QFrame::NoFrame);
+    scenesScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scenesScroll->setStyleSheet("QScrollArea#bookSheet { background: #1b2027; border: 1px solid #303945; border-radius: 12px; }");
+    QWidget* scenesGridWidget = new QWidget(scenesScroll);
+    myScenesGrid = new QGridLayout(scenesGridWidget);
+    myScenesGrid->setContentsMargins(4, 4, 4, 4);
+    myScenesGrid->setHorizontalSpacing(18);
+    myScenesGrid->setVerticalSpacing(18);
+    scenesScroll->setWidget(scenesGridWidget);
+    scenesLayout->addWidget(scenesScroll, 1);
+    myViewStack->addWidget(myScenesPage);
+
+    myBookPage = new QWidget(myViewStack);
+    myBookPage->setObjectName("bookPage");
+    QVBoxLayout* bookLayout = new QVBoxLayout(myBookPage);
+    bookLayout->setContentsMargins(34, 26, 34, 30);
+    bookLayout->setSpacing(16);
+    QHBoxLayout* bookHeader = new QHBoxLayout();
+    QPushButton* backToScenes = new QPushButton("← Scenes", myBookPage);
+    backToScenes->setObjectName("quietButton");
+    backToScenes->setCursor(Qt::PointingHandCursor);
+    connect(backToScenes, &QPushButton::clicked, this, &MainWindow::showStoryboardScenes);
+    bookHeader->addWidget(backToScenes);
+    QPushButton* editSceneButton = new QPushButton("✎  Edit Scene Input", myBookPage);
+    editSceneButton->setObjectName("quietButton");
+    editSceneButton->setCursor(Qt::PointingHandCursor);
+    connect(editSceneButton, &QPushButton::clicked, this, [this]() {
+        if (myCurrentScene >= 0) openSceneSetup(myCurrentScene);
+    });
+    bookHeader->addWidget(editSceneButton);
+    myBookTitle = new QLabel("Individual Shots", myBookPage);
+    myBookTitle->setObjectName("appTitle");
+    bookHeader->addWidget(myBookTitle);
+    bookHeader->addStretch();
+    myBookLastEdited = new QLabel("No shots yet", myBookPage);
+    myBookLastEdited->setObjectName("mutedText");
+    bookHeader->addWidget(myBookLastEdited);
+    QPushButton* newPanelButton = new QPushButton("＋  New shot", myBookPage);
+    newPanelButton->setObjectName("primaryButton");
+    newPanelButton->setCursor(Qt::PointingHandCursor);
+    connect(newPanelButton, &QPushButton::clicked, this, &MainWindow::startStoryboardPanel);
+    bookHeader->addWidget(newPanelButton);
+    bookLayout->addLayout(bookHeader);
+    myBookSceneSummary = new QLabel("All shots in this grid inherit the shared scene description and 3D layout.", myBookPage);
+    myBookSceneSummary->setObjectName("mutedText");
+    myBookSceneSummary->setWordWrap(true);
+    bookLayout->addWidget(myBookSceneSummary);
+    QScrollArea* bookScroll = new QScrollArea(myBookPage);
+    bookScroll->setObjectName("bookSheet");
+    bookScroll->setWidgetResizable(true);
+    bookScroll->setFrameStyle(QFrame::NoFrame);
+    bookScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    bookScroll->setStyleSheet("QScrollArea#bookSheet { background: #1b2027; border: 1px solid #303945; border-radius: 12px; }");
+    QWidget* bookGridWidget = new QWidget(bookScroll);
+    myBookGrid = new QGridLayout(bookGridWidget);
+    myBookGrid->setContentsMargins(4, 4, 4, 4);
+    myBookGrid->setHorizontalSpacing(18);
+    myBookGrid->setVerticalSpacing(18);
+    bookScroll->setWidget(bookGridWidget);
+    bookLayout->addWidget(bookScroll, 1);
+    myViewStack->addWidget(myBookPage);
+
+    myEditorPage = new QWidget(myViewStack);
+    myEditorPage->setObjectName("editorPage");
+    myViewStack->addWidget(myEditorPage);
+    QVBoxLayout* root = new QVBoxLayout(myEditorPage);
     root->setContentsMargins(18, 14, 18, 16);
-    root->setSpacing(12);
+    root->setSpacing(10);
 
-    QHBoxLayout* header = new QHBoxLayout();
-    header->setSpacing(12);
-    QLabel* mark = new QLabel("P", this);
-    mark->setObjectName("brandMark");
-    mark->setAlignment(Qt::AlignCenter);
-    mark->setFixedSize(34, 34);
-    header->addWidget(mark);
+    QHBoxLayout* editorHeader = new QHBoxLayout();
+    editorHeader->setSpacing(10);
+    myEditorBackButton = new QPushButton("← Scenes", myEditorPage);
+    myEditorBackButton->setObjectName("quietButton");
+    myEditorBackButton->setCursor(Qt::PointingHandCursor);
+    connect(myEditorBackButton, &QPushButton::clicked, this, [this]() {
+        if (myCurrentPanel < 0) {
+            if (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size()) {
+                if (myScenePrompt) myStoryboardScenes[myCurrentScene].prompt = myScenePrompt->toPlainText().trimmed();
+            }
+            showStoryboardScenes();
+        } else {
+            showStoryboardBook();
+        }
+    });
+    editorHeader->addWidget(myEditorBackButton);
 
-    QVBoxLayout* titleLayout = new QVBoxLayout();
-    titleLayout->setSpacing(1);
-    QLabel* title = new QLabel("PainterSpace", this);
-    title->setObjectName("appTitle");
-    QLabel* subtitle = new QLabel("3D concept studio  /  Untitled scene", this);
-    subtitle->setObjectName("mutedText");
-    titleLayout->addWidget(title);
-    titleLayout->addWidget(subtitle);
-    header->addLayout(titleLayout);
-    header->addStretch();
+    myEditorEditSceneButton = new QPushButton("✎  Scene Input", myEditorPage);
+    myEditorEditSceneButton->setObjectName("quietButton");
+    myEditorEditSceneButton->setCursor(Qt::PointingHandCursor);
+    connect(myEditorEditSceneButton, &QPushButton::clicked, this, [this]() {
+        if (myCurrentScene >= 0) {
+            if (myCurrentPanel >= 0 && myCurrentPanel < storyboardPanels().size()) {
+                if (myScenePrompt) storyboardPanels()[myCurrentPanel].prompt = myScenePrompt->toPlainText().trimmed();
+            }
+            openSceneSetup(myCurrentScene);
+        }
+    });
+    editorHeader->addWidget(myEditorEditSceneButton);
 
-    myCanvasStatus = new QLabel("Orbit with right-drag  •  Zoom with scroll", this);
+    myEditorTitle = new QLabel("Scene 1 — Describe Scene", myEditorPage);
+    myEditorTitle->setObjectName("appTitle");
+    editorHeader->addWidget(myEditorTitle);
+
+    myEditorModeBadge = new QLabel("STEP 1 OF 2  •  SCENE INPUT (LLM PROMPT OR 3D EDITOR)", myEditorPage);
+    myEditorModeBadge->setStyleSheet("background: #273849; color: #8ad0f5; border: 1px solid #416382; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700;");
+    editorHeader->addWidget(myEditorModeBadge);
+    editorHeader->addStretch();
+
+    myCanvasStatus = new QLabel(myEditorPage);
     myCanvasStatus->setObjectName("mutedText");
-    header->addWidget(myCanvasStatus);
-    QPushButton* newButton = new QPushButton("New concept", this);
-    newButton->setObjectName("primaryButton");
-    newButton->setCursor(Qt::PointingHandCursor);
-    connect(newButton, &QPushButton::clicked, this, &MainWindow::newConcept);
-    header->addWidget(newButton);
-    QPushButton* renderButton = new QPushButton("Render", this);
-    renderButton->setObjectName("renderButton");
-    renderButton->setCursor(Qt::PointingHandCursor);
-    connect(renderButton, &QPushButton::clicked, this, &MainWindow::renderScene);
-    header->addWidget(renderButton);
-    root->addLayout(header);
+    editorHeader->addWidget(myCanvasStatus);
+
+    QPushButton* resetCanvasButton = new QPushButton("Reset 3D view", myEditorPage);
+    resetCanvasButton->setObjectName("quietButton");
+    resetCanvasButton->setCursor(Qt::PointingHandCursor);
+    connect(resetCanvasButton, &QPushButton::clicked, this, &MainWindow::newConcept);
+    editorHeader->addWidget(resetCanvasButton);
+
+    myEditorPlayClipButton = new QPushButton("▶  Play Clip", myEditorPage);
+    myEditorPlayClipButton->setObjectName("primaryButton");
+    myEditorPlayClipButton->setCursor(Qt::PointingHandCursor);
+    myEditorPlayClipButton->setVisible(false);
+    connect(myEditorPlayClipButton, &QPushButton::clicked, this, [this]() {
+        if (myCurrentScene >= 0 && myCurrentPanel >= 0) {
+            const QString shotRelDir = QString("scenes/scene_%1/shot_%2")
+                .arg(myCurrentScene + 1, 2, 10, QChar('0'))
+                .arg(myCurrentPanel + 1, 3, 10, QChar('0'));
+            const QDir shotDir(QDir(painterSpaceProjectRoot()).filePath(shotRelDir));
+            playRenderedClipForShot(shotDir.absolutePath());
+        }
+    });
+    editorHeader->addWidget(myEditorPlayClipButton);
+
+    myEditorPrimaryActionButton = new QPushButton("Continue to Shots  →", myEditorPage);
+    myEditorPrimaryActionButton->setObjectName("renderButton");
+    myEditorPrimaryActionButton->setCursor(Qt::PointingHandCursor);
+    connect(myEditorPrimaryActionButton, &QPushButton::clicked, this, [this]() {
+        if (myCurrentPanel < 0) {
+            confirmSceneSetupAndOpenShots();
+        } else {
+            renderScene();
+        }
+    });
+    editorHeader->addWidget(myEditorPrimaryActionButton);
+    root->addLayout(editorHeader);
+
+    myPromptModeLabel = new QLabel("STEP 1 — DESCRIBE SCENE: Enter an LLM prompt below OR build the scene directly in the 3D editor (both options are open before moving into individual shots).", myEditorPage);
+    myPromptModeLabel->setObjectName("sectionLabel");
+    root->addWidget(myPromptModeLabel);
+
+    QHBoxLayout* promptRow = new QHBoxLayout();
+    promptRow->setSpacing(10);
+    myScenePrompt = new QPlainTextEdit(myEditorPage);
+    myScenePrompt->setObjectName("storyboardScenePrompt");
+    myScenePrompt->setFixedHeight(72);
+    myScenePrompt->setPlaceholderText("Option 1 (LLM Prompt): Describe the scene setting, environment, lighting, and baseline objects… (Or use Option 2: build the scene in the 3D editor below)");
+    myScenePrompt->setStyleSheet("QPlainTextEdit { background: #10151a; color: #e7edf3; border: 1px solid #303945; border-radius: 7px; padding: 9px; }");
+    promptRow->addWidget(myScenePrompt, 1);
+    myGenerateUsdButton = new QPushButton("✦  Generate Scene USD", myEditorPage);
+    myGenerateUsdButton->setObjectName("primaryButton");
+    myGenerateUsdButton->setMinimumWidth(190);
+    myGenerateUsdButton->setCursor(Qt::PointingHandCursor);
+    promptRow->addWidget(myGenerateUsdButton);
+    connect(myGenerateUsdButton, &QPushButton::clicked, this, &MainWindow::generateUsdForCurrentPanel);
+    root->addLayout(promptRow);
+    myPromptHintLabel = new QLabel("Both options are open: generate the scene from an LLM prompt, build/refine it in the 3D editor below, or combine both — then click 'Continue to Shots →'.", myEditorPage);
+    myPromptHintLabel->setObjectName("mutedText");
+    root->addWidget(myPromptHintLabel);
 
     QHBoxLayout* columns = new QHBoxLayout();
     columns->setSpacing(14);
 
     QWidget* leftSidebar = new QWidget(this);
-    leftSidebar->setFixedWidth(220);
+    leftSidebar->setFixedWidth(260);
     QVBoxLayout* leftLayout = new QVBoxLayout(leftSidebar);
     leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(2);
+    leftLayout->setSpacing(0);
 
-    QGroupBox* toolsBox = new QGroupBox("TOOLS", leftSidebar);
-    toolsBox->setStyleSheet(panelStyle());
-    QVBoxLayout* toolsLayout = new QVBoxLayout(toolsBox);
-    toolsLayout->setSpacing(6);
-    mySelectButton = makeToolButton("↖   Select / move", "selectTool");
-    myBrushButton = makeToolButton("✎   Brush", "brushTool");
-    myEraserButton = makeToolButton("⌫   Eraser strokes", "eraserTool");
-    mySelectButton->setCheckable(true);
-    myBrushButton->setCheckable(true);
-    myEraserButton->setCheckable(true);
-    mySelectButton->setChecked(true);
-    toolsLayout->addWidget(mySelectButton);
-    toolsLayout->addWidget(myBrushButton);
-    toolsLayout->addWidget(myEraserButton);
-
-
-    QFormLayout* brushForm = new QFormLayout();
-    brushForm->setContentsMargins(0, 10, 0, 0);
-    brushForm->setSpacing(8);
-    QDoubleSpinBox* brushSize = new QDoubleSpinBox(toolsBox);
-    brushSize->setRange(1, 100);
-    brushSize->setValue(12);
-    brushSize->setSuffix(" px");
-    brushForm->addRow("Size", brushSize);
-    QSlider* opacity = new QSlider(Qt::Horizontal, toolsBox);
-    opacity->setRange(10, 100);
-    opacity->setValue(100);
-    brushForm->addRow("Opacity", opacity);
-    toolsLayout->addLayout(brushForm);
-    leftLayout->addWidget(toolsBox);
-
-    QGroupBox* colorBox = new QGroupBox("PALETTE", leftSidebar);
-    colorBox->setStyleSheet(panelStyle());
-    QVBoxLayout* colorLayout = new QVBoxLayout(colorBox);
-    myCurrentColorButton = makeColorButton(QColor("#28323b"));
-    myCurrentColorButton->setText("  Current color");
-    myCurrentColorButton->setMinimumHeight(28);
-    colorLayout->addWidget(myCurrentColorButton);
-    QHBoxLayout* swatches = new QHBoxLayout();
-    const QList<QColor> colors = {QColor("#28323b"), QColor("#c85c4b"), QColor("#d49345"),
-                                  QColor("#e5bd55"), QColor("#679b75"), QColor("#5786ae"),
-                                  QColor("#a06b91"), QColor("#f1e6d0")};
-    for (const QColor& color : colors) {
-        QPushButton* swatch = makeColorButton(color);
-        connect(swatch, &QPushButton::clicked, this, &MainWindow::chooseColor);
-        swatches->addWidget(swatch);
-    }
-    colorLayout->addLayout(swatches);
-    leftLayout->addWidget(colorBox);
-
-    QGroupBox* canvasBox = new QGroupBox("3D VIEW", leftSidebar);
-    canvasBox->setStyleSheet(panelStyle());
-    QVBoxLayout* canvasLayout = new QVBoxLayout(canvasBox);
-    myBackgroundButton = makeColorButton(QColor("#4b5963"));
-    myBackgroundButton->setText("  Environment color");
-    myBackgroundButton->setMinimumHeight(28);
-    canvasLayout->addWidget(myBackgroundButton);
-    QCheckBox* groundPlaneCheck = new QCheckBox("Include ground in render", canvasBox);
-    groundPlaneCheck->setChecked(true);
-    groundPlaneCheck->setStyleSheet("QCheckBox { color: #f5f7f9; spacing: 7px; }");
-    groundPlaneCheck->setToolTip("Include the ground plane and horizon grid in exported renders");
-    canvasLayout->addWidget(groundPlaneCheck);
-    QPushButton* clearButton = new QPushButton("Clear ground strokes", canvasBox);
-    clearButton->setObjectName("quietButton");
-    canvasLayout->addWidget(clearButton);
-    leftLayout->addWidget(canvasBox);
-
-    QGroupBox* assetsBox = new QGroupBox("REFERENCE ASSETS", leftSidebar);
+    QGroupBox* assetsBox = new QGroupBox("ASSETS", leftSidebar);
     assetsBox->setStyleSheet(panelStyle());
     QVBoxLayout* assetsBoxLayout = new QVBoxLayout(assetsBox);
-    assetsBoxLayout->setContentsMargins(4, 12, 4, 6);
+    assetsBoxLayout->setContentsMargins(6, 12, 6, 6);
+    assetsBoxLayout->setSpacing(8);
+
+    QHBoxLayout* catHeader = new QHBoxLayout();
+    catHeader->setContentsMargins(0, 0, 0, 0);
+    catHeader->setSpacing(6);
+
+    QLabel* categoryLabel = new QLabel("CATEGORY", assetsBox);
+    categoryLabel->setStyleSheet("font-size: 11px; font-weight: 700; color: #8ad0f5;");
+    catHeader->addWidget(categoryLabel);
+    catHeader->addStretch();
+
+    QPushButton* refreshBtn = new QPushButton("↻ Refresh", assetsBox);
+    refreshBtn->setStyleSheet("QPushButton { font-size: 11px; padding: 2px 7px; border: 1px solid #364452; border-radius: 4px; color: #a0b0c0; background: #1a222a; }"
+                              "QPushButton:hover { background: #263544; color: #ffffff; }");
+    refreshBtn->setCursor(Qt::PointingHandCursor);
+    refreshBtn->setToolTip("Rescan assets/usdc_assets folder and reload categories");
+    connect(refreshBtn, &QPushButton::clicked, this, &MainWindow::refreshAssetList);
+    catHeader->addWidget(refreshBtn);
+    assetsBoxLayout->addLayout(catHeader);
+
+    myAssetCategoryCombo = new QComboBox(assetsBox);
+    myAssetCategoryCombo->setStyleSheet(
+        "QComboBox { background: #1a222a; color: #f0f4f8; border: 1px solid #364452; "
+        "border-radius: 5px; padding: 5px 8px; font-size: 12px; font-weight: 600; min-height: 28px; }"
+        "QComboBox::drop-down { border: none; width: 22px; }"
+        "QComboBox QAbstractItemView { background: #151b22; color: #f0f4f8; selection-background-color: #2e445a; border: 1px solid #364452; }");
+    assetsBoxLayout->addWidget(myAssetCategoryCombo);
+
     QScrollArea* assetScroll = new QScrollArea(assetsBox);
     assetScroll->setWidgetResizable(true);
     assetScroll->setFrameStyle(QFrame::NoFrame);
@@ -171,54 +486,24 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     assetScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     assetScroll->setStyleSheet("QScrollArea { background: transparent; }");
     QWidget* assetList = new QWidget(assetScroll);
-    QVBoxLayout* assetsLayout = new QVBoxLayout(assetList);
-    assetsLayout->setContentsMargins(0, 0, 4, 0);
-    assetsLayout->setSpacing(6);
-    QPushButton* humanButton = makeAssetButton("＋  Simple human body", "humanAsset");
-    QPushButton* treeButton = makeAssetButton("＋  Tree", "treeAsset");
-    QPushButton* mountainButton = makeAssetButton("＋  Mountain ridge", "mountainAsset");
-    QPushButton* rockButton = makeAssetButton("＋  Rock group", "rockAsset");
-    QPushButton* lightButton = makeAssetButton("＋  Light source", "lightAsset");
-    QPushButton* textBlockButton = makeAssetButton("＋  3D text block", "textBlockAsset");
-    QPushButton* downtownTowerButton = makeAssetButton("＋  Downtown Art Deco tower", "downtownTowerAsset");
-    QPushButton* residentialButton = makeAssetButton("＋  Residential neighborhood", "residentialAsset");
-    QPushButton* intersectionButton = makeAssetButton("＋  Residential street junction", "intersectionAsset");
-    QPushButton* avenueButton = makeAssetButton("＋  Long residential avenue", "avenueAsset");
-    QPushButton* oceanButton = makeAssetButton("＋  Ocean horizon", "oceanAsset");
-    QPushButton* harbourButton = makeAssetButton("＋  Grand harbour", "harbourAsset");
-    assetsLayout->addWidget(humanButton);
-    assetsLayout->addWidget(treeButton);
-    assetsLayout->addWidget(mountainButton);
-    assetsLayout->addWidget(rockButton);
-    assetsLayout->addWidget(lightButton);
-    assetsLayout->addWidget(textBlockButton);
-    assetsLayout->addWidget(downtownTowerButton);
-    assetsLayout->addWidget(residentialButton);
-    assetsLayout->addWidget(intersectionButton);
-    assetsLayout->addWidget(avenueButton);
-    assetsLayout->addWidget(oceanButton);
-    assetsLayout->addWidget(harbourButton);
-    assetsLayout->addStretch();
+    myAssetListLayout = new QVBoxLayout(assetList);
+    myAssetListLayout->setContentsMargins(0, 4, 4, 0);
+    myAssetListLayout->setSpacing(6);
+
+    populateAssetEntries();
+
     assetScroll->setWidget(assetList);
-    assetsBoxLayout->addWidget(assetScroll);
-    connect(humanButton, &QPushButton::clicked, this, &MainWindow::addHuman);
-    connect(treeButton, &QPushButton::clicked, this, &MainWindow::addTree);
-    connect(mountainButton, &QPushButton::clicked, this, &MainWindow::addMountain);
-    connect(rockButton, &QPushButton::clicked, this, &MainWindow::addRock);
-    connect(lightButton, &QPushButton::clicked, this, &MainWindow::addLight);
-    connect(textBlockButton, &QPushButton::clicked, this, &MainWindow::addTextBlock);
-    connect(downtownTowerButton, &QPushButton::clicked, this, &MainWindow::addDowntownTower);
-    connect(residentialButton, &QPushButton::clicked, this, &MainWindow::addResidentialNeighborhood);
-    connect(intersectionButton, &QPushButton::clicked, this, &MainWindow::addResidentialIntersection);
-    connect(avenueButton, &QPushButton::clicked, this, &MainWindow::addResidentialAvenue);
-    connect(oceanButton, &QPushButton::clicked, this, &MainWindow::addOcean);
-    connect(harbourButton, &QPushButton::clicked, this, &MainWindow::addGrandHarbour);
+    assetsBoxLayout->addWidget(assetScroll, 1);
+
+    connect(myAssetCategoryCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::filterAssetsByCategory);
+
     leftLayout->addWidget(assetsBox, 1);
     columns->addWidget(leftSidebar);
 
-    myCanvas = new PaintingCanvas(this);
-    myCanvas->setObjectName("paintingCanvas");
-    columns->addWidget(myCanvas, 1);
+    myUsdViewport = new UsdViewportWidget(this);
+    myUsdViewport->setObjectName("usdViewport");
+    columns->addWidget(myUsdViewport, 1);
 
     QWidget* rightSidebar = new QWidget(this);
     rightSidebar->setFixedWidth(238);
@@ -226,7 +511,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(2);
 
-    QGroupBox* layersBox = new QGroupBox("LAYERS", rightSidebar);
+    QGroupBox* layersBox = new QGroupBox("LAYERS / PRIM TREE", rightSidebar);
     layersBox->setStyleSheet(panelStyle());
     QVBoxLayout* layersLayout = new QVBoxLayout(layersBox);
     myLayers = new QListWidget(layersBox);
@@ -251,7 +536,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     myPositionY = new QDoubleSpinBox(inspectorBox);
     myPositionZ = new QDoubleSpinBox(inspectorBox);
     for (QDoubleSpinBox* spin : {myPositionX, myPositionY, myPositionZ}) {
-        spin->setRange(-20.0, 20.0);
+        spin->setRange(-500.0, 500.0);
         spin->setSingleStep(0.1);
         spin->setDecimals(2);
         spin->setSuffix(" m");
@@ -259,111 +544,27 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     inspectorForm->addRow("Position X", myPositionX);
     inspectorForm->addRow("Elevation Y", myPositionY);
     inspectorForm->addRow("Position Z", myPositionZ);
-    myTextEdit = new QLineEdit(inspectorBox);
-    myTextEdit->setMaxLength(8);
-    myTextEdit->setPlaceholderText("TEXT");
-    inspectorForm->addRow("Text", myTextEdit);
-    myTextFont = new QFontComboBox(inspectorBox);
-    inspectorForm->addRow("Font", myTextFont);
-    QWidget* textStyleWidget = new QWidget(inspectorBox);
-    QHBoxLayout* textStyleLayout = new QHBoxLayout(textStyleWidget);
-    textStyleLayout->setContentsMargins(0, 0, 0, 0);
-    textStyleLayout->setSpacing(8);
-    myTextItalic = new QCheckBox("Italic", textStyleWidget);
-    myTextBold = new QCheckBox("Bold", textStyleWidget);
-    textStyleLayout->addWidget(myTextItalic);
-    textStyleLayout->addWidget(myTextBold);
-    textStyleLayout->addStretch();
-    inspectorForm->addRow("Style", textStyleWidget);
-    myTextDirection = new QComboBox(inspectorBox);
-    myTextDirection->addItem("Horizontal", false);
-    myTextDirection->addItem("Vertical (stacked)", true);
-    inspectorForm->addRow("Direction", myTextDirection);
-    myTextFlat = new QCheckBox("Lay flat on ground", inspectorBox);
-    inspectorForm->addRow("Orientation", myTextFlat);
-    myTextLength = new QDoubleSpinBox(inspectorBox);
-    myTextBreadth = new QDoubleSpinBox(inspectorBox);
-    myTextWidth = new QDoubleSpinBox(inspectorBox);
-    myTextLength->setRange(0.5, 12.0);
-    myTextBreadth->setRange(0.5, 8.0);
-    myTextWidth->setRange(0.1, 12.0);
-    for (QDoubleSpinBox* spin : {myTextLength, myTextBreadth, myTextWidth}) {
-        spin->setSingleStep(0.1);
-        spin->setDecimals(2);
-        spin->setSuffix(" m");
+    myRotationX = new QDoubleSpinBox(inspectorBox);
+    myRotationY = new QDoubleSpinBox(inspectorBox);
+    myRotationZ = new QDoubleSpinBox(inspectorBox);
+    for (QDoubleSpinBox* spin : {myRotationX, myRotationY, myRotationZ}) {
+        spin->setRange(-360.0, 360.0);
+        spin->setSingleStep(5.0);
+        spin->setDecimals(1);
+        spin->setSuffix("°");
     }
-    inspectorForm->addRow("Length", myTextLength);
-    inspectorForm->addRow("Breadth", myTextBreadth);
-    inspectorForm->addRow("Width", myTextWidth);
+    inspectorForm->addRow("Rotate X", myRotationX);
+    inspectorForm->addRow("Rotate Y", myRotationY);
+    inspectorForm->addRow("Rotate Z", myRotationZ);
     myScaleSpin = new QDoubleSpinBox(inspectorBox);
-    myScaleSpin->setRange(0.25, 100.0);
-    myScaleSpin->setSingleStep(0.25);
+    myScaleSpin->setRange(0.01, 100.0);
+    myScaleSpin->setSingleStep(0.1);
     myScaleSpin->setValue(1.0);
     myScaleSpin->setSuffix(" ×");
     inspectorForm->addRow("Scale", myScaleSpin);
     inspectorLayout->addLayout(inspectorForm);
 
-    myPoseBox = new QGroupBox("POSE JOINT", inspectorBox);
-    QVBoxLayout* poseLayout = new QVBoxLayout(myPoseBox);
-    QLabel* expressionLabel = new QLabel("Facial expression", myPoseBox);
-    myExpressionCombo = new QComboBox(myPoseBox);
-    myExpressionCombo->addItem("Neutral", QStringLiteral("none"));
-    myExpressionCombo->addItem("Happy", QStringLiteral("happy"));
-    myExpressionCombo->addItem("Sad", QStringLiteral("sad"));
-    myExpressionCombo->addItem("Scared", QStringLiteral("scared"));
-    myExpressionCombo->addItem("Grumpy", QStringLiteral("grumpy"));
-    myExpressionCombo->addItem("Terrified", QStringLiteral("terrified"));
-    myExpressionCombo->addItem("Ecstatic", QStringLiteral("ecstatic"));
-    myExpressionCombo->addItem("Angry", QStringLiteral("angry"));
-    myExpressionCombo->addItem("Surprised", QStringLiteral("surprised"));
-    poseLayout->addWidget(expressionLabel);
-    poseLayout->addWidget(myExpressionCombo);
-    QLabel* heldObjectsLabel = new QLabel("Add held object", myPoseBox);
-    QPushButton* addBatButton = new QPushButton("＋  Baseball bat", myPoseBox);
-    QPushButton* addPistolButton = new QPushButton("＋  Pistol", myPoseBox);
-    addBatButton->setObjectName("quietButton");
-    addPistolButton->setObjectName("quietButton");
-    poseLayout->addWidget(heldObjectsLabel);
-    poseLayout->addWidget(addBatButton);
-    poseLayout->addWidget(addPistolButton);
-    connect(addBatButton, &QPushButton::clicked, this, [this]() {
-        const int humanId = myCanvas->selectedAssetId();
-        myCanvas->addAsset(AssetType::BaseballBat);
-        if (humanId >= 0) myCanvas->selectAsset(humanId);
-    });
-    connect(addPistolButton, &QPushButton::clicked, this, [this]() {
-        const int humanId = myCanvas->selectedAssetId();
-        myCanvas->addAsset(AssetType::Pistol);
-        if (humanId >= 0) myCanvas->selectAsset(humanId);
-    });
-    myJointCombo = new QComboBox(myPoseBox);
-    for (int i = 0; i < PaintingCanvas::humanJointCount(); ++i) {
-        if (i == static_cast<int>(HumanJoint::Neck)) continue;
-        myJointCombo->addItem(PaintingCanvas::humanJointName(i), i);
-    }
-    poseLayout->addWidget(myJointCombo);
-    QFormLayout* jointForm = new QFormLayout();
-    myJointX = new QDoubleSpinBox(myPoseBox);
-    myJointY = new QDoubleSpinBox(myPoseBox);
-    myJointZ = new QDoubleSpinBox(myPoseBox);
-    for (QDoubleSpinBox* spin : {myJointX, myJointY, myJointZ}) {
-        spin->setRange(-10.0, 10.0);
-        spin->setSingleStep(0.05);
-        spin->setDecimals(2);
-    }
-    myJointX->setSuffix(" m");
-    myJointY->setSuffix(" m");
-    myJointZ->setSuffix(" m");
-    jointForm->addRow("X", myJointX);
-    jointForm->addRow("Y", myJointY);
-    jointForm->addRow("Z", myJointZ);
-    poseLayout->addLayout(jointForm);
-    QLabel* poseHint = new QLabel("Bone lengths are locked. Neck stays fixed while the head moves.", myPoseBox);
-    poseHint->setObjectName("mutedText");
-    poseHint->setWordWrap(true);
-    poseLayout->addWidget(poseHint);
-    inspectorLayout->addWidget(myPoseBox);
-    QPushButton* removeButton = new QPushButton("Remove selected asset", inspectorBox);
+    QPushButton* removeButton = new QPushButton("Remove selected prim", inspectorBox);
     removeButton->setObjectName("dangerButton");
     inspectorLayout->addWidget(removeButton);
     QScrollArea* inspectorScroll = new QScrollArea(rightSidebar);
@@ -377,316 +578,1579 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     columns->addWidget(rightSidebar);
     root->addLayout(columns, 1);
 
-    connect(mySelectButton, &QPushButton::clicked, this, &MainWindow::selectTool);
-    connect(myBrushButton, &QPushButton::clicked, this, &MainWindow::brushTool);
-    connect(myEraserButton, &QPushButton::clicked, this, &MainWindow::eraserTool);
-    connect(brushSize, &QDoubleSpinBox::valueChanged, myCanvas, &PaintingCanvas::setBrushSize);
-    connect(opacity, &QSlider::valueChanged, this, [this](int value) { myCanvas->setBrushOpacity(value / 100.0); });
-    connect(clearButton, &QPushButton::clicked, myCanvas, &PaintingCanvas::clearStrokes);
-    connect(myCanvas, &PaintingCanvas::selectionChanged, this, &MainWindow::selectionChanged);
-    connect(myCanvas, &PaintingCanvas::assetsChanged, this, &MainWindow::syncLayers);
-    connect(myCanvas, &PaintingCanvas::assetsChanged, this, [this]() { updateSelectionPanel(); });
+    connect(myUsdViewport, &UsdViewportWidget::selectionChanged, this, [this](const QString&) {
+        updateSelectionPanel();
+        syncLayers();
+    });
+    connect(myUsdViewport, &UsdViewportWidget::stageChanged, this, [this]() {
+        syncLayers();
+        updateSelectionPanel();
+    });
+    connect(myUsdViewport, &UsdViewportWidget::userEditsChanged, this, [this](int) {
+        syncLayers();
+        updateSelectionPanel();
+    });
+    connect(myUsdViewport, &UsdViewportWidget::statusMessageChanged, this, [this](const QString& msg) {
+        if (myCanvasStatus) {
+            myCanvasStatus->setText(msg);
+        }
+    });
     connect(myLayers, &QListWidget::currentRowChanged, this, [this](int row) {
-        if (row >= 0 && row < myCanvas->assets().size()) myCanvas->selectAsset(myCanvas->assets().at(row).id);
+        if (myUsdViewport) {
+            QListWidgetItem* item = myLayers->item(row);
+            if (item) {
+                myUsdViewport->selectPrim(item->data(Qt::UserRole).toString());
+            }
+        }
     });
     connect(myLayers, &QListWidget::itemChanged, this, [this](QListWidgetItem* item) {
-        if (!item) return;
-        myCanvas->setAssetVisible(item->data(Qt::UserRole).toInt(), item->checkState() == Qt::Checked);
+        if (!item || !myUsdViewport) return;
+        myUsdViewport->setPrimVisible(item->data(Qt::UserRole).toString(), item->checkState() == Qt::Checked);
     });
     connect(myScaleSpin, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateSelectionScale);
-    connect(myTextEdit, &QLineEdit::textChanged, this, &MainWindow::updateSelectionText);
-    connect(myTextFont, &QFontComboBox::currentFontChanged, this, [this](const QFont&) { updateTextFont(); });
-    connect(myTextItalic, &QCheckBox::checkStateChanged, this, &MainWindow::updateTextStyle);
-    connect(myTextBold, &QCheckBox::checkStateChanged, this, &MainWindow::updateTextStyle);
-    connect(myTextDirection, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::updateTextOrientation);
-    connect(myTextFlat, &QCheckBox::checkStateChanged, this, &MainWindow::updateTextOrientation);
-    connect(myTextLength, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateTextBlockDimensions);
-    connect(myTextBreadth, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateTextBlockDimensions);
-    connect(myTextWidth, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateTextBlockDimensions);
     connect(myPositionX, &QDoubleSpinBox::valueChanged, this, &MainWindow::positionCoordinateChanged);
     connect(myPositionY, &QDoubleSpinBox::valueChanged, this, &MainWindow::positionCoordinateChanged);
     connect(myPositionZ, &QDoubleSpinBox::valueChanged, this, &MainWindow::positionCoordinateChanged);
-    connect(myJointCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::poseJointChanged);
-    connect(myExpressionCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::humanExpressionChanged);
-    connect(myJointX, &QDoubleSpinBox::valueChanged, this, &MainWindow::poseCoordinateChanged);
-    connect(myJointY, &QDoubleSpinBox::valueChanged, this, &MainWindow::poseCoordinateChanged);
-    connect(myJointZ, &QDoubleSpinBox::valueChanged, this, &MainWindow::poseCoordinateChanged);
+    connect(myRotationX, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateSelectionRotation);
+    connect(myRotationY, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateSelectionRotation);
+    connect(myRotationZ, &QDoubleSpinBox::valueChanged, this, &MainWindow::updateSelectionRotation);
     connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeSelectedAsset);
-    connect(myBackgroundButton, &QPushButton::clicked, this, &MainWindow::setBackgroundColor);
-    connect(groundPlaneCheck, &QCheckBox::toggled, this, [this](bool visible) {
-        myCanvas->setGroundPlaneVisible(visible);
-        myCanvasStatus->setText(visible ? "Ground plane included in renders"
-                                        : "Ground plane hidden from renders  •  abstract mode");
-    });
-    connect(myCanvas, &PaintingCanvas::documentChanged, this, [this]() {
-        myCanvasStatus->setText("Scene updated  •  drag assets or paint on the ground plane");
-    });
 
     setStyleSheet(
         "QMainWindow, #workspace { background: #15191e; color: #e3e8ed; }"
+        "#projectPage, #scenesPage, #bookPage, #editorPage { background: #15191e; }"
         "QLabel { color: #dce3e9; }"
         "#appTitle { font-size: 20px; font-weight: 700; color: #f5f7f9; }"
         "#brandMark { background: #c85c4b; color: white; border-radius: 8px; font-size: 20px; font-weight: 700; }"
+        "#projectIcon { background: #304252; color: #f0c47a; border-radius: 10px; font-size: 26px; }"
+        "#projectCard, #storyboardCard, #emptyStoryboardCard { background: #1b2027; border: 1px solid #303945; border-radius: 10px; }"
+        "#projectCard:hover, #storyboardCard:hover { border-color: #607f98; }"
+        "#cardTitle { color: #f0f3f6; font-size: 14px; font-weight: 700; }"
         "#mutedText { color: #82909d; font-size: 11px; }"
-        "QDoubleSpinBox, QLineEdit, QComboBox { background: #20262e; border: 1px solid #343e4b; border-radius: 4px; padding: 5px; }"
+        "#sectionLabel { color: #a9b3bf; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }"
+        "QDoubleSpinBox, QLineEdit, QComboBox { background: #20262e; border: 1px solid #343e4b; border-radius: 4px; padding: 5px; color: #e3e8ed; }"
         "#primaryButton { background: #c85c4b; color: white; border: none; border-radius: 6px; padding: 9px 14px; font-weight: 700; }"
         "#primaryButton:hover { background: #d56b59; }"
         "#renderButton { background: #d49345; color: #211b14; border: none; border-radius: 6px; padding: 9px 18px; font-weight: 700; }"
         "#renderButton:hover { background: #e2a255; }"
         "#quietButton, #dangerButton { background: #20262e; color: #aeb9c4; border: 1px solid #343e4b; border-radius: 5px; padding: 7px; }"
         "#dangerButton { color: #e38e83; }"
+        "#panelDeleteButton { background: #2a2023; color: #e38e83; border: 1px solid #704047; border-radius: 5px; font-size: 18px; font-weight: 700; }"
+        "#panelDeleteButton:hover { background: #63343a; color: white; }"
+        "#storyboardPanelButton, #emptyPanelButton { background: #20262e; color: #aeb9c4; border: 1px dashed #465464; border-radius: 7px; font-size: 14px; }"
+        "#storyboardPanelButton:hover, #emptyPanelButton:hover { background: #293743; color: white; border-color: #73b5da; }"
+        "#storyboardPanelButton { border-style: solid; }"
         "#layersList { background: #1b2027; border: none; border-radius: 5px; padding: 4px; }"
         "#layersList::item { padding: 8px 6px; color: #bac4ce; border-radius: 4px; }"
         "#layersList::item:selected { background: #304252; color: white; }"
-        "#selectionName { color: #f0c47a; font-weight: 700; padding: 3px 0 7px; }"
-        "#paintingCanvas { background: #1b2027; border: 1px solid #303945; border-radius: 8px; }");
+        "#usdViewport { background: #1b2027; border: 1px solid #303945; border-radius: 8px; }");
 
     syncLayers();
     updateSelectionPanel();
-    // Start with an empty scene; assets remain available from the left rail.
-    myCanvasStatus->setText("Orbit with right-drag  •  Zoom with scroll  •  Add an asset from the left rail");
+    loadProjectScenesFromDisk();
+    rebuildStoryboardScenes();
+    rebuildStoryboardBook();
+    if (!myStoryboardScenes.isEmpty() && myStoryboardScenes.first().configured) {
+        showStoryboardScenes();
+    } else {
+        myViewStack->setCurrentWidget(myProjectPage);
+    }
+    // The 3D editor opens from a scene or storyboard shot.
+    myCanvasStatus->setText("USD Hydra Storm Viewport  •  Orbit with right-drag  •  Pick & move prims in user_edits.usda");
 }
 
-QPushButton* MainWindow::makeToolButton(const QString& text, const QString& objectName) {
-    QPushButton* button = new QPushButton(text, this);
-    button->setObjectName(objectName);
-    button->setStyleSheet(toolStyle());
-    button->setCursor(Qt::PointingHandCursor);
-    return button;
+void MainWindow::loadProjectScenesFromDisk() {
+    myStoryboardScenes.clear();
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QJsonObject projectMeta = readJsonFile(QDir(projectRoot).filePath("project.json"));
+    if (!projectMeta.value("title").toString().trimmed().isEmpty()) {
+        myProjectTitle = projectMeta.value("title").toString().trimmed();
+    } else {
+        myProjectTitle = QStringLiteral("Storyboard Project");
+    }
+
+    for (int index = 0; index < 6; ++index) {
+        StoryboardScene scene;
+        scene.name = QString("Scene %1").arg(index + 1);
+        scene.panels.resize(9);
+        const QString sceneFolder = QString("scenes/scene_%1").arg(index + 1, 2, 10, QChar('0'));
+        const QDir sceneDir(QDir(projectRoot).filePath(sceneFolder));
+        const QString sceneUsda = sceneDir.filePath("scene.usda");
+        const QString sceneJson = sceneDir.filePath("scene.json");
+        const QString worldStateJson = sceneDir.filePath("world_state.json");
+
+        if (QFileInfo::exists(sceneUsda)) {
+            scene.usdStagePath = sceneUsda;
+            scene.loadFromDisk = true;
+            scene.configured = true;
+        }
+        if (QFileInfo::exists(sceneJson)) {
+            const QJsonObject meta = readJsonFile(sceneJson);
+            scene.prompt = meta.value("prompt").toString().trimmed();
+            const QJsonArray revisions = meta.value("revisions").toArray();
+            if (!revisions.isEmpty()) {
+                scene.prompt = revisions.last().toString(scene.prompt).trimmed();
+            }
+            if (!scene.prompt.isEmpty() || meta.value("configured").toBool()) {
+                scene.configured = true;
+            }
+        }
+        if (QFileInfo::exists(sceneDir.filePath("thumbnail.jpg"))) {
+            scene.render = QImage(sceneDir.filePath("thumbnail.jpg"));
+        } else if (QFileInfo::exists(sceneDir.filePath("world_state_topdown.png"))) {
+            scene.render = QImage(sceneDir.filePath("world_state_topdown.png"));
+        }
+        if (QFileInfo::exists(worldStateJson)) {
+            scene.loadFromDisk = true;
+            scene.configured = true;
+        }
+
+        for (int panelIdx = 0; panelIdx < scene.panels.size(); ++panelIdx) {
+            const QString shotRelDir = QString("%1/shot_%2").arg(sceneFolder).arg(panelIdx + 1, 3, 10, QChar('0'));
+            const QDir shotDir(QDir(projectRoot).filePath(shotRelDir));
+            const QString shotUsda = shotDir.filePath("shot.usda");
+            const QString shotJson = shotDir.filePath("shot.json");
+            if (!QFileInfo::exists(shotUsda) && !QFileInfo::exists(shotJson)) continue;
+            StoryboardPanel& panel = scene.panels[panelIdx];
+            panel.active = true;
+            panel.name = QString("Shot %1").arg(panelIdx + 1);
+            if (QFileInfo::exists(shotUsda)) panel.usdStagePath = shotUsda;
+            QFile metaFile(shotJson);
+            if (metaFile.open(QIODevice::ReadOnly)) {
+                const QJsonObject meta = QJsonDocument::fromJson(metaFile.readAll()).object();
+                panel.prompt = meta.value("prompt").toString();
+                const QJsonArray revisions = meta.value("revisions").toArray();
+                if (!revisions.isEmpty()) {
+                    panel.prompt = revisions.last().toString(panel.prompt);
+                }
+            }
+            const QString thumbPath = shotDir.filePath("thumbnail.jpg");
+            const QString firstFramePath = shotDir.filePath("frames/frame.000.png");
+            if (QFileInfo::exists(thumbPath)) {
+                panel.render = QImage(thumbPath);
+            } else if (QFileInfo::exists(firstFramePath)) {
+                panel.render = QImage(firstFramePath);
+            }
+            if (scene.render.isNull() && !panel.render.isNull()) {
+                scene.render = panel.render;
+            }
+            scene.configured = true;
+        }
+        myStoryboardScenes.push_back(scene);
+    }
+}
+
+void MainWindow::showProjectExplorer() {
+    if (myViewStack) myViewStack->setCurrentWidget(myProjectPage);
+}
+
+void MainWindow::createStoryboardProject() {
+    const QString enteredTitle = myNewProjectNameEdit ? myNewProjectNameEdit->text().trimmed() : QString();
+    myProjectTitle = enteredTitle.isEmpty() ? QStringLiteral("New Storyboard Project") : enteredTitle;
+    myStoryboardScenes.clear();
+    for (int index = 0; index < 6; ++index) {
+        StoryboardScene scene;
+        scene.name = QString("Scene %1").arg(index + 1);
+        scene.configured = false;
+        scene.loadFromDisk = false;
+        scene.panels.resize(9);
+        myStoryboardScenes.push_back(scene);
+    }
+    myCurrentScene = -1;
+    myCurrentPanel = -1;
+    myLastEditedPanel = -1;
+    showStoryboardScenes();
+}
+
+void MainWindow::openStoryboardProject() {
+    loadProjectScenesFromDisk();
+    showStoryboardScenes();
+}
+
+void MainWindow::addStoryboardScene() {
+    StoryboardScene scene;
+    scene.name = QString("Scene %1").arg(myStoryboardScenes.size() + 1);
+    scene.configured = false;
+    scene.loadFromDisk = false;
+    scene.panels.resize(9);
+    myStoryboardScenes.push_back(scene);
+    rebuildStoryboardScenes();
+}
+
+void MainWindow::showStoryboardScenes() {
+    if (myScenesTitle) {
+        myScenesTitle->setText(myProjectTitle + QStringLiteral(" — Scenes"));
+    }
+    rebuildStoryboardScenes();
+    if (myViewStack) myViewStack->setCurrentWidget(myScenesPage);
+}
+
+
+
+QString MainWindow::ensureSceneStageFile(int sceneIndex) const {
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QString sceneFolder = QString("scenes/scene_%1").arg(sceneIndex + 1, 2, 10, QChar('0'));
+    const QDir sceneDir(QDir(projectRoot).filePath(sceneFolder));
+    QDir().mkpath(sceneDir.absolutePath());
+    const QString sceneStagePath = sceneDir.filePath("scene.usda");
+    if (!QFileInfo::exists(sceneStagePath)) {
+        QSaveFile out(sceneStagePath);
+        const QByteArray bytes = defaultSceneUsdaSource();
+        if (out.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            out.write(bytes);
+            out.commit();
+        }
+    }
+    return sceneStagePath;
+}
+
+QString MainWindow::ensureShotStageFile(int sceneIndex, int panelIndex) const {
+    ensureSceneStageFile(sceneIndex);
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QString sceneFolder = QString("scenes/scene_%1").arg(sceneIndex + 1, 2, 10, QChar('0'));
+    const QString shotFolder = QString("%1/shot_%2").arg(sceneFolder).arg(panelIndex + 1, 3, 10, QChar('0'));
+    const QDir shotDir(QDir(projectRoot).filePath(shotFolder));
+    QDir().mkpath(shotDir.absolutePath());
+    const QString shotStagePath = shotDir.filePath("shot.usda");
+    if (!QFileInfo::exists(shotStagePath)) {
+        QSaveFile out(shotStagePath);
+        const QByteArray bytes = defaultShotUsdaSource();
+        if (out.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            out.write(bytes);
+            out.commit();
+        }
+    }
+    return shotStagePath;
+}
+
+void MainWindow::openStoryboardScene(int sceneIndex) {
+    if (sceneIndex < 0 || sceneIndex >= myStoryboardScenes.size()) return;
+    myCurrentScene = sceneIndex;
+    const StoryboardScene& scene = myStoryboardScenes.at(sceneIndex);
+    if (scene.configured) {
+        showStoryboardBook();
+    } else {
+        openSceneSetup(sceneIndex);
+    }
+}
+
+void MainWindow::openSceneSetup(int sceneIndex) {
+    if (sceneIndex < 0 || sceneIndex >= myStoryboardScenes.size()) return;
+    myCurrentScene = sceneIndex;
+    myCurrentPanel = -1;
+    myLastEditedPanel = -1;
+    for (int idx = 0; idx < storyboardPanels().size(); ++idx) {
+        if (storyboardPanels().at(idx).active) {
+            myLastEditedPanel = idx;
+            break;
+        }
+    }
+
+    StoryboardScene& scene = myStoryboardScenes[sceneIndex];
+    const QString sceneStagePath = ensureSceneStageFile(sceneIndex);
+    scene.usdStagePath = sceneStagePath;
+
+    if (myUsdViewport) {
+        myUsdViewport->openStage(sceneStagePath, true);
+    }
+
+    if (myScenePrompt) {
+        myScenePrompt->setPlainText(scene.prompt);
+    }
+    updateEditorModeUi();
+    syncLayers();
+    updateSelectionPanel();
+    myCanvasStatus->setText(QString("Step 1: Describe %1 via LLM prompt or USD 3D editor, then click 'Continue to Shots →'")
+                                .arg(scene.name));
+    if (myViewStack) myViewStack->setCurrentWidget(myEditorPage);
+}
+
+void MainWindow::confirmSceneSetupAndOpenShots() {
+    if (myCurrentScene < 0 || myCurrentScene >= myStoryboardScenes.size()) return;
+    StoryboardScene& scene = myStoryboardScenes[myCurrentScene];
+    const QString prompt = myScenePrompt ? myScenePrompt->toPlainText().trimmed() : QString();
+    const bool has3dEditorInput = (myUsdViewport && myUsdViewport->hasStage());
+    if (prompt.isEmpty() && !has3dEditorInput && !scene.configured) {
+        QMessageBox::information(
+            this,
+            "Describe the scene first",
+            "Please describe this scene before moving into individual shots.\n\n"
+            "You can either:\n"
+            "  • Enter a scene description in the LLM prompt box above, OR\n"
+            "  • Add reference assets / paint in the 3D editor below.");
+        if (myScenePrompt) myScenePrompt->setFocus();
+        return;
+    }
+
+    scene.prompt = prompt;
+    scene.configured = true;
+    scene.loadFromDisk = true;
+
+    const QString sceneStagePath = ensureSceneStageFile(myCurrentScene);
+    scene.usdStagePath = sceneStagePath;
+    const QDir sceneDir = QFileInfo(sceneStagePath).dir();
+
+    const QImage renderedView = myUsdViewport
+        ? myUsdViewport->renderCurrentView()
+        : QImage();
+    if (!renderedView.isNull()) {
+        scene.render = renderedView;
+        renderedView.save(sceneDir.filePath("thumbnail.jpg"), "JPG", 90);
+    }
+
+    // Save scene.json metadata sidecar
+    {
+        const QString sceneJsonPath = sceneDir.filePath("scene.json");
+        QJsonObject meta = readJsonFile(sceneJsonPath);
+        meta["scene_id"] = QString("scene_%1").arg(myCurrentScene + 1, 2, 10, QChar('0'));
+        meta["stage"] = QStringLiteral("scene.usda");
+        meta["prompt"] = prompt;
+        meta["configured"] = true;
+        meta["has_3d_editor_layout"] = has3dEditorInput;
+        QSaveFile metaOut(sceneJsonPath);
+        if (metaOut.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            metaOut.write(QJsonDocument(meta).toJson(QJsonDocument::Indented));
+            metaOut.commit();
+        }
+    }
+
+    showStoryboardBook();
+}
+
+void MainWindow::updateEditorModeUi() {
+    const bool isSceneMode = (myCurrentPanel < 0);
+    const QString sceneName = (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size())
+        ? myStoryboardScenes.at(myCurrentScene).name
+        : QStringLiteral("Scene");
+
+    if (isSceneMode) {
+        if (myEditorBackButton) myEditorBackButton->setText("← Scenes");
+        if (myEditorEditSceneButton) myEditorEditSceneButton->setVisible(false);
+        if (myEditorTitle) myEditorTitle->setText(QString("%1 — Describe Scene").arg(sceneName));
+        if (myEditorModeBadge) {
+            myEditorModeBadge->setText("STEP 1 OF 2  •  SCENE INPUT (LLM PROMPT OR USD 3D EDITOR)");
+            myEditorModeBadge->setStyleSheet("background: #273849; color: #8ad0f5; border: 1px solid #416382; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700;");
+        }
+        if (myEditorPrimaryActionButton) {
+            myEditorPrimaryActionButton->setText("Continue to Shots  →");
+        }
+        if (myPromptModeLabel) {
+            myPromptModeLabel->setText("STEP 1 — SCENE DESCRIPTION: Provide scene input via LLM prompt (below) OR build the scene directly in the USD 3D editor (both options are open).");
+        }
+        if (myScenePrompt) {
+            myScenePrompt->setPlaceholderText("Option 1 (LLM Prompt): Describe the scene environment, setting, lighting, and baseline objects… (Or use Option 2: build the scene in the USD 3D editor below)");
+        }
+        const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty();
+        if (myGenerateUsdButton) {
+            myGenerateUsdButton->setText(agentMode ? "✦  Queue Scene for Gemini" : "✦  Generate Scene USD");
+            myGenerateUsdButton->setToolTip(agentMode ? "Queue scene description for the Gemini Coding Agent in VS Code chat" : "Generate scene USD via LLM");
+        }
+        if (myPromptHintLabel) {
+            myPromptHintLabel->setText(agentMode
+                ? "Agent Bridge active: describe the scene and click 'Queue Scene for Gemini' to route the prompt to VS Code."
+                : "Scene input comes first: describe the scene with an LLM prompt, arrange it in the USD 3D editor below, or combine both — then click 'Continue to Shots →'.");
+        }
+        if (myEditorPlayClipButton) {
+            myEditorPlayClipButton->setVisible(false);
+        }
+    } else {
+        const QString shotName = (myCurrentPanel >= 0 && myCurrentPanel < storyboardPanels().size() &&
+                                  !storyboardPanels().at(myCurrentPanel).name.isEmpty())
+            ? storyboardPanels().at(myCurrentPanel).name
+            : QString("Shot %1").arg(myCurrentPanel + 1);
+        if (myEditorBackButton) myEditorBackButton->setText("← Shots");
+        if (myEditorEditSceneButton) myEditorEditSceneButton->setVisible(true);
+        if (myEditorTitle) myEditorTitle->setText(QString("%1  •  %2").arg(sceneName, shotName));
+        if (myEditorModeBadge) {
+            myEditorModeBadge->setText("STEP 2 OF 2  •  INDIVIDUAL SHOT (USD STAGE)");
+            myEditorModeBadge->setStyleSheet("background: #3d2e1e; color: #f0c47a; border: 1px solid #6e5232; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700;");
+        }
+        if (myEditorPrimaryActionButton) {
+            myEditorPrimaryActionButton->setText("Save / Render Shot  →");
+        }
+        if (myPromptModeLabel) {
+            myPromptModeLabel->setText(QString("STEP 2 — INDIVIDUAL SHOT (%1): Describe this shot's action/camera via LLM prompt OR edit in the USD 3D viewport below.").arg(shotName));
+        }
+        const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty();
+        if (myScenePrompt) {
+            myScenePrompt->setPlaceholderText(agentMode
+                ? "Describe this shot for Gemini Coding Agent (e.g. character actions, multi-action locomotion, camera motion, atmosphere)…"
+                : "Describe this shot as a cinematic moment (camera framing, character movement, action) or edit in the USD 3D viewport below…");
+        }
+        if (myGenerateUsdButton) {
+            myGenerateUsdButton->setText(agentMode ? "✦  Queue Shot for Gemini" : "✦  Generate Shot USD");
+            myGenerateUsdButton->setToolTip(agentMode ? "Queue shot prompt for the Gemini Coding Agent in VS Code chat" : "Generate shot USD via LLM");
+        }
+        if (myPromptHintLabel) {
+            myPromptHintLabel->setText(agentMode
+                ? "Agent Bridge active: click 'Queue Shot for Gemini' then ask Gemini in VS Code: 'Generate the queued shot'."
+                : "Composed USD stage (user_edits.usda over shot.usda over scene.usda). Manual edits stay in user_edits.usda and survive LLM regeneration.");
+        }
+        if (myEditorPlayClipButton) {
+            const QString shotRelDir = QString("scenes/scene_%1/shot_%2")
+                .arg(myCurrentScene + 1, 2, 10, QChar('0'))
+                .arg(myCurrentPanel + 1, 3, 10, QChar('0'));
+            const QDir shotDir(QDir(painterSpaceProjectRoot()).filePath(shotRelDir));
+            const QString videoPath = shotDir.filePath("video.mp4");
+            const QString framesDir = shotDir.filePath("frames");
+            const bool hasClip = QFileInfo::exists(videoPath) ||
+                (QDir(framesDir).exists() && !QDir(framesDir).entryList(QStringList() << "frame.*.png", QDir::Files).isEmpty());
+            myEditorPlayClipButton->setVisible(hasClip);
+        }
+    }
+}
+
+QVector<MainWindow::StoryboardPanel>& MainWindow::storyboardPanels() {
+    return myStoryboardScenes[myCurrentScene].panels;
+}
+
+const QVector<MainWindow::StoryboardPanel>& MainWindow::storyboardPanels() const {
+    return myStoryboardScenes.at(myCurrentScene).panels;
+}
+
+void MainWindow::showStoryboardBook() {
+    if (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size()) {
+        if (myCurrentPanel >= 0 && myCurrentPanel < storyboardPanels().size()) {
+            if (myScenePrompt) storyboardPanels()[myCurrentPanel].prompt = myScenePrompt->toPlainText();
+        }
+    }
+    rebuildStoryboardBook();
+    if (myViewStack) myViewStack->setCurrentWidget(myBookPage);
+}
+
+void MainWindow::startStoryboardPanel() {
+    if (myCurrentScene < 0) return;
+    for (int index = 0; index < storyboardPanels().size(); ++index) {
+        if (!storyboardPanels().at(index).active) {
+            startStoryboardPanelAt(index);
+            return;
+        }
+    }
+}
+
+void MainWindow::startStoryboardPanelAt(int panelIndex) {
+    if (myCurrentScene < 0 || panelIndex < 0 || panelIndex >= storyboardPanels().size()) return;
+    StoryboardPanel& panel = storyboardPanels()[panelIndex];
+    panel.active = true;
+    panel.name = QString("Shot %1").arg(panelIndex + 1);
+    panel.render = QImage();
+    panel.prompt.clear();
+    panel.usdStagePath = ensureShotStageFile(myCurrentScene, panelIndex);
+    myCurrentPanel = panelIndex;
+    myLastEditedPanel = myCurrentPanel;
+
+    if (myUsdViewport) {
+        myUsdViewport->openStage(panel.usdStagePath);
+    }
+    if (myScenePrompt) myScenePrompt->clear();
+    updateEditorModeUi();
+    syncLayers();
+    updateSelectionPanel();
+    myCanvasStatus->setText(QString("Editing %1  •  Composed USD stage (user_edits.usda over shot.usda over scene.usda)")
+                                .arg(storyboardPanels()[myCurrentPanel].name));
+    if (myViewStack) myViewStack->setCurrentWidget(myEditorPage);
+}
+
+void MainWindow::openStoryboardPanel(int panelIndex) {
+    if (myCurrentScene < 0 || panelIndex < 0 || panelIndex >= storyboardPanels().size() || !storyboardPanels().at(panelIndex).active) return;
+    myCurrentPanel = panelIndex;
+    StoryboardPanel& panel = storyboardPanels()[panelIndex];
+    if (panel.usdStagePath.isEmpty() || !QFileInfo::exists(panel.usdStagePath)) {
+        panel.usdStagePath = ensureShotStageFile(myCurrentScene, panelIndex);
+    }
+
+    if (myUsdViewport) {
+        myUsdViewport->openStage(panel.usdStagePath);
+    }
+    if (myScenePrompt) myScenePrompt->setPlainText(panel.prompt);
+    myLastEditedPanel = panelIndex;
+    updateEditorModeUi();
+    syncLayers();
+    updateSelectionPanel();
+    myCanvasStatus->setText(QString("Editing %1  •  Composed USD stage (%2)")
+                                .arg(panel.name, QFileInfo(panel.usdStagePath).fileName()));
+    if (myViewStack) myViewStack->setCurrentWidget(myEditorPage);
+}
+
+void MainWindow::deleteStoryboardPanel(int panelIndex) {
+    if (myCurrentScene < 0 || panelIndex < 0 || panelIndex >= storyboardPanels().size() || !storyboardPanels().at(panelIndex).active) return;
+    storyboardPanels()[panelIndex] = StoryboardPanel();
+    if (myCurrentPanel == panelIndex) myCurrentPanel = -1;
+    if (myLastEditedPanel == panelIndex) {
+        myLastEditedPanel = -1;
+        for (int index = 0; index < storyboardPanels().size(); ++index) {
+            if (storyboardPanels().at(index).active) {
+                myLastEditedPanel = index;
+                break;
+            }
+        }
+    }
+    rebuildStoryboardBook();
+}
+
+void MainWindow::rebuildStoryboardBook() {
+    if (!myBookGrid || myCurrentScene < 0 || myCurrentScene >= myStoryboardScenes.size()) return;
+    while (QLayoutItem* item = myBookGrid->takeAt(0)) {
+        if (QWidget* widget = item->widget()) widget->deleteLater();
+        delete item;
+    }
+
+    const StoryboardScene& currentScene = myStoryboardScenes.at(myCurrentScene);
+    if (myBookTitle) myBookTitle->setText(currentScene.name + " — Individual Shots");
+    if (myBookSceneSummary) {
+        if (!currentScene.prompt.isEmpty()) {
+            myBookSceneSummary->setText(QString("Scene Description: \"%1\"  •  All shots inherit this scene's 3D layout and USD layer.")
+                                            .arg(currentScene.prompt));
+        } else {
+            myBookSceneSummary->setText("Scene configured via 3D Editor  •  Click '✎ Edit Scene Input' above to update the scene prompt or 3D layout.");
+        }
+    }
+    if (myLastEditedPanel >= 0 && myLastEditedPanel < storyboardPanels().size() &&
+        storyboardPanels().at(myLastEditedPanel).active) {
+        myBookLastEdited->setText(QString("Last edited: %1").arg(storyboardPanels().at(myLastEditedPanel).name));
+    } else {
+        myBookLastEdited->setText("No shots yet");
+    }
+    myBookGrid->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+
+    for (int index = 0; index < storyboardPanels().size(); ++index) {
+        const StoryboardPanel& panel = storyboardPanels().at(index);
+        QFrame* card = new QFrame(myBookPage);
+        card->setObjectName(panel.active ? "storyboardCard" : "emptyStoryboardCard");
+        card->setFixedWidth(330);
+        QVBoxLayout* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(12, 10, 12, 12);
+        QHBoxLayout* cardHeader = new QHBoxLayout();
+        QLabel* label = new QLabel(panel.active ? panel.name : QString("Shot %1").arg(index + 1), card);
+        label->setObjectName("cardTitle");
+        cardHeader->addWidget(label);
+        cardHeader->addStretch();
+        if (panel.active) {
+            const QString projectRoot = painterSpaceProjectRoot();
+            const QString shotRelDir = QString("scenes/scene_%1/shot_%2")
+                .arg(myCurrentScene + 1, 2, 10, QChar('0'))
+                .arg(index + 1, 3, 10, QChar('0'));
+            const QDir shotDir(QDir(projectRoot).filePath(shotRelDir));
+            const QString videoPath = shotDir.filePath("video.mp4");
+            const QString framesDir = shotDir.filePath("frames");
+            const bool hasClip = QFileInfo::exists(videoPath) ||
+                (QDir(framesDir).exists() && !QDir(framesDir).entryList(QStringList() << "frame.*.png", QDir::Files).isEmpty());
+            if (hasClip) {
+                QLabel* clipBadge = new QLabel("Clip Ready", card);
+                clipBadge->setStyleSheet("background: #1e3328; color: #7ed9a6; border: 1px solid #35634b; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700;");
+                cardHeader->insertWidget(cardHeader->count() - 2, clipBadge);
+            }
+
+            QPushButton* remove = new QPushButton("−", card);
+            remove->setObjectName("panelDeleteButton");
+            remove->setFixedSize(28, 28);
+            remove->setToolTip("Delete shot");
+            remove->setCursor(Qt::PointingHandCursor);
+            connect(remove, &QPushButton::clicked, this, [this, index]() { deleteStoryboardPanel(index); });
+            cardHeader->addWidget(remove);
+        }
+        cardLayout->addLayout(cardHeader);
+
+        QPushButton* open = new QPushButton(card);
+        open->setObjectName(panel.active ? "storyboardPanelButton" : "emptyPanelButton");
+        open->setMinimumHeight(150);
+        open->setCursor(Qt::PointingHandCursor);
+        if (panel.active && !panel.render.isNull()) {
+            const QPixmap preview = QPixmap::fromImage(panel.render.scaled(310, 150, Qt::KeepAspectRatio,
+                                                                            Qt::SmoothTransformation));
+            open->setIcon(QIcon(preview));
+            open->setIconSize(preview.size());
+            open->setText("Open 3D shot");
+            connect(open, &QPushButton::clicked, this, [this, index]() { openStoryboardPanel(index); });
+        } else if (panel.active) {
+            open->setText("＋\nContinue shot");
+            connect(open, &QPushButton::clicked, this, [this, index]() { openStoryboardPanel(index); });
+        } else {
+            open->setText("＋\nStart shot");
+            connect(open, &QPushButton::clicked, this, [this, index]() { startStoryboardPanelAt(index); });
+        }
+        cardLayout->addWidget(open, 1);
+
+        if (panel.active) {
+            const QString projectRoot = painterSpaceProjectRoot();
+            const QString shotRelDir = QString("scenes/scene_%1/shot_%2")
+                .arg(myCurrentScene + 1, 2, 10, QChar('0'))
+                .arg(index + 1, 3, 10, QChar('0'));
+            const QDir shotDir(QDir(projectRoot).filePath(shotRelDir));
+            const QString videoPath = shotDir.filePath("video.mp4");
+            const QString framesDir = shotDir.filePath("frames");
+            const bool hasClip = QFileInfo::exists(videoPath) ||
+                (QDir(framesDir).exists() && !QDir(framesDir).entryList(QStringList() << "frame.*.png", QDir::Files).isEmpty());
+
+            if (hasClip) {
+                QPushButton* play = new QPushButton("▶  Play Clip", card);
+                play->setObjectName("primaryButton");
+                play->setCursor(Qt::PointingHandCursor);
+                play->setFixedHeight(32);
+                const QString shotDirPath = shotDir.absolutePath();
+                connect(play, &QPushButton::clicked, this, [this, shotDirPath]() {
+                    playRenderedClipForShot(shotDirPath);
+                });
+                cardLayout->addWidget(play);
+            }
+        }
+        myBookGrid->addWidget(card, index / 3, index % 3);
+    }
+}
+
+void MainWindow::rebuildStoryboardScenes() {
+    if (!myScenesGrid) return;
+    while (QLayoutItem* item = myScenesGrid->takeAt(0)) {
+        if (QWidget* widget = item->widget()) widget->deleteLater();
+        delete item;
+    }
+    myScenesGrid->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
+
+    for (int index = 0; index < myStoryboardScenes.size(); ++index) {
+        const StoryboardScene& scene = myStoryboardScenes.at(index);
+        int activePanels = 0;
+        for (const StoryboardPanel& panel : scene.panels) activePanels += panel.active ? 1 : 0;
+
+        QFrame* card = new QFrame(myScenesPage);
+        card->setObjectName(scene.configured ? "storyboardCard" : "emptyStoryboardCard");
+        card->setFixedWidth(330);
+        QVBoxLayout* cardLayout = new QVBoxLayout(card);
+        cardLayout->setContentsMargins(12, 10, 12, 12);
+
+        QHBoxLayout* headerRow = new QHBoxLayout();
+        QLabel* label = new QLabel(scene.name, card);
+        label->setObjectName("cardTitle");
+        headerRow->addWidget(label);
+        headerRow->addStretch();
+        QLabel* statusBadge = new QLabel(scene.configured ? "Scene Ready" : "Step 1: Describe Scene", card);
+        statusBadge->setStyleSheet(scene.configured
+            ? "background: #223b2e; color: #7ed9a6; border: 1px solid #35634b; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700;"
+            : "background: #273849; color: #8ad0f5; border: 1px solid #416382; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700;");
+        headerRow->addWidget(statusBadge);
+        cardLayout->addLayout(headerRow);
+
+        QString detailText;
+        if (scene.configured) {
+            if (!scene.prompt.isEmpty()) {
+                const QString snippet = scene.prompt.length() > 48 ? scene.prompt.left(45) + "…" : scene.prompt;
+                detailText = QString("\"%1\"  •  %2 of %3 shots").arg(snippet).arg(activePanels).arg(scene.panels.size());
+            } else {
+                detailText = QString("3D editor scene  •  %1 of %2 shots in use").arg(activePanels).arg(scene.panels.size());
+            }
+        } else {
+            detailText = QString("Click to describe scene (LLM prompt or 3D editor)");
+        }
+        QLabel* detail = new QLabel(detailText, card);
+        detail->setObjectName("mutedText");
+        detail->setWordWrap(true);
+        cardLayout->addWidget(detail);
+
+        QPushButton* open = new QPushButton(card);
+        open->setObjectName(scene.configured ? "storyboardPanelButton" : "emptyPanelButton");
+        open->setMinimumHeight(128);
+        open->setCursor(Qt::PointingHandCursor);
+        if (scene.configured && !scene.render.isNull()) {
+            const QPixmap preview = QPixmap::fromImage(scene.render.scaled(310, 128, Qt::KeepAspectRatio,
+                                                                           Qt::SmoothTransformation));
+            open->setIcon(QIcon(preview));
+            open->setIconSize(preview.size());
+            open->setText("View Shots (Panels)  →");
+        } else if (scene.configured) {
+            open->setText("View Shots (Panels)  →");
+        } else {
+            open->setText("＋\nDescribe scene  →");
+        }
+        connect(open, &QPushButton::clicked, this, [this, index]() { openStoryboardScene(index); });
+        cardLayout->addWidget(open, 1);
+        myScenesGrid->addWidget(card, index / 3, index % 3);
+    }
 }
 
 QPushButton* MainWindow::makeAssetButton(const QString& text, const QString& objectName) {
-    QPushButton* button = makeToolButton(text, objectName);
-    button->setStyleSheet(toolStyle() + "QPushButton { padding: 7px; }");
-    return button;
-}
-
-QPushButton* MainWindow::makeColorButton(const QColor& color) {
-    QPushButton* button = new QPushButton(this);
-    button->setProperty("swatchColor", color.name());
-    button->setStyleSheet(QString("QPushButton { background: %1; border: 1px solid #66717d; border-radius: 4px; }").arg(color.name()));
+    QPushButton* button = new QPushButton(text, this);
+    button->setObjectName(objectName);
+    button->setStyleSheet(toolStyle() + "QPushButton { padding: 7px; text-align: left; }");
     button->setCursor(Qt::PointingHandCursor);
     return button;
 }
 
-void MainWindow::setActiveTool(QPushButton* button) {
-    mySelectButton->setChecked(button == mySelectButton);
-    myBrushButton->setChecked(button == myBrushButton);
-    myEraserButton->setChecked(button == myEraserButton);
+static QString folderToCategoryName(const QString& folderName) {
+    QString name = folderName;
+    name.replace('_', ' ');
+    name.replace('-', ' ');
+    const QStringList parts = name.split(' ', Qt::SkipEmptyParts);
+    QStringList titleParts;
+    for (const QString& p : parts) {
+        if (!p.isEmpty()) {
+            QString cap = p;
+            cap[0] = cap[0].toUpper();
+            titleParts.append(cap);
+        }
+    }
+    return titleParts.join(' ');
 }
 
-void MainWindow::selectTool() { setActiveTool(mySelectButton); myCanvas->setTool(PaintingTool::Select); }
-void MainWindow::brushTool() { setActiveTool(myBrushButton); myCanvas->setTool(PaintingTool::Brush); }
-void MainWindow::eraserTool() { setActiveTool(myEraserButton); myCanvas->setTool(PaintingTool::Eraser); }
+void MainWindow::refreshAssetList() {
+    if (!myAssetListLayout) return;
+    const int savedIndex = myAssetCategoryCombo ? myAssetCategoryCombo->currentIndex() : 0;
+    const QString savedCat = myAssetCategoryCombo ? myAssetCategoryCombo->itemData(savedIndex).toString() : QString();
 
-void MainWindow::chooseColor() {
-    QPushButton* button = qobject_cast<QPushButton*>(sender());
-    if (!button) return;
-    const QColor color(button->property("swatchColor").toString());
-    myCanvas->setBrushColor(color);
-    myCurrentColorButton->setStyleSheet(QString("QPushButton { background: %1; color: white; border: 1px solid #66717d; border-radius: 4px; text-align: left; padding-left: 8px; }").arg(color.name()));
+    QLayoutItem* child;
+    while ((child = myAssetListLayout->takeAt(0)) != nullptr) {
+        if (child->widget()) {
+            delete child->widget();
+        }
+        delete child;
+    }
+
+    populateAssetEntries();
+
+    if (myAssetCategoryCombo && !savedCat.isEmpty()) {
+        for (int i = 0; i < myAssetCategoryCombo->count(); ++i) {
+            if (myAssetCategoryCombo->itemData(i).toString() == savedCat) {
+                myAssetCategoryCombo->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
 }
 
-void MainWindow::addHuman() { myCanvas->addAsset(AssetType::Human); }
-void MainWindow::addTree() { myCanvas->addAsset(AssetType::Tree); }
-void MainWindow::addMountain() { myCanvas->addAsset(AssetType::Mountain); }
-void MainWindow::addRock() { myCanvas->addAsset(AssetType::Rock); }
-void MainWindow::addLight() { myCanvas->addAsset(AssetType::Light); }
-void MainWindow::addTextBlock() { myCanvas->addAsset(AssetType::TextBlock); }
-void MainWindow::addDowntownTower() { myCanvas->addAsset(AssetType::DowntownTower); }
-void MainWindow::addResidentialNeighborhood() { myCanvas->addAsset(AssetType::ResidentialNeighborhood); }
-void MainWindow::addResidentialIntersection() { myCanvas->addAsset(AssetType::ResidentialIntersection); }
-void MainWindow::addResidentialAvenue() { myCanvas->addAsset(AssetType::ResidentialAvenue); }
-void MainWindow::addOcean() { myCanvas->addAsset(AssetType::Ocean); }
-void MainWindow::addGrandHarbour() { myCanvas->addAsset(AssetType::GrandHarbour); }
+void MainWindow::populateAssetEntries() {
+    if (!myAssetListLayout) return;
+    myAssetEntries.clear();
+    const QString projectRoot = painterSpaceProjectRoot();
+
+    // Automatically synchronize manifest.json with assets/usdc_assets/
+    syncManifestForProject(projectRoot);
+
+    QString manifestPath = QDir(projectRoot).filePath("manifest.json");
+    if (!QFileInfo::exists(manifestPath)) {
+        manifestPath = QDir(projectRoot).filePath("assets/manifest.json");
+    }
+    const QJsonObject manifestObj = readJsonFile(manifestPath);
+    QMap<QString, QJsonObject> manifestByPath;
+    for (const QJsonValue& val : manifestObj.value("assets").toArray()) {
+        const QJsonObject obj = val.toObject();
+        const QString p = obj.value("path").toString();
+        if (!p.isEmpty()) {
+            manifestByPath.insert(p, obj);
+        }
+    }
+
+    QTimer* assetRescanTimer = findChild<QTimer*>(QStringLiteral("assetRescanTimer"), Qt::FindDirectChildrenOnly);
+    if (!assetRescanTimer) {
+        assetRescanTimer = new QTimer(this);
+        assetRescanTimer->setObjectName(QStringLiteral("assetRescanTimer"));
+        assetRescanTimer->setSingleShot(true);
+        assetRescanTimer->setInterval(350);
+        connect(assetRescanTimer, &QTimer::timeout, this, &MainWindow::refreshAssetList);
+    }
+    QFileSystemWatcher* assetDirWatcher = findChild<QFileSystemWatcher*>(QStringLiteral("assetDirWatcher"), Qt::FindDirectChildrenOnly);
+    if (!assetDirWatcher) {
+        assetDirWatcher = new QFileSystemWatcher(this);
+        assetDirWatcher->setObjectName(QStringLiteral("assetDirWatcher"));
+        connect(assetDirWatcher, &QFileSystemWatcher::directoryChanged, this, [assetRescanTimer](const QString&) {
+            if (assetRescanTimer) assetRescanTimer->start();
+        });
+    }
+
+    // 1. Dynamic folder-based categories under assets/usdc_assets
+    const QDir usdcBaseDir(QDir(projectRoot).filePath("assets/usdc_assets"));
+    if (usdcBaseDir.exists()) {
+        if (!assetDirWatcher->directories().contains(usdcBaseDir.absolutePath())) {
+            assetDirWatcher->addPath(usdcBaseDir.absolutePath());
+        }
+        const QStringList subdirs = usdcBaseDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+        for (const QString& subdir : subdirs) {
+            const QDir catDir(usdcBaseDir.filePath(subdir));
+            if (!assetDirWatcher->directories().contains(catDir.absolutePath())) {
+                assetDirWatcher->addPath(catDir.absolutePath());
+            }
+            const QStringList usdFiles = catDir.entryList(QStringList() << "*.usdc" << "*.usda", QDir::Files, QDir::Name);
+            if (usdFiles.isEmpty()) continue;
+
+            const QString categoryName = folderToCategoryName(subdir);
+            QSet<QString> seenStems;
+
+            for (const QString& file : usdFiles) {
+                const QString ext = file.endsWith(".usdc", Qt::CaseInsensitive) ? QStringLiteral(".usdc") : QStringLiteral(".usda");
+                QString stem = file;
+                stem.chop(ext.length());
+
+                // Skip standalone wind-simulation demo scenes (e.g. *_wind_demo.usda, 19–292 MB ASCII time-sampled stages)
+                if (ext == ".usda" && (stem.contains("_demo", Qt::CaseInsensitive) || stem.endsWith("demo", Qt::CaseInsensitive))) {
+                    continue;
+                }
+
+                if (ext == ".usda" && seenStems.contains(stem)) {
+                    continue; // prefer compiled .usdc if both exist
+                }
+                seenStems.insert(stem);
+
+                // Format display name
+                QString displayName = stem;
+                displayName.replace('_', ' ');
+                displayName.replace('-', ' ');
+                const QStringList words = displayName.split(' ', Qt::SkipEmptyParts);
+                QStringList capWords;
+                for (const QString& w : words) {
+                    if (!w.isEmpty()) {
+                        QString c = w;
+                        c[0] = c[0].toUpper();
+                        capWords.append(c);
+                    }
+                }
+                displayName = capWords.join(' ');
+
+                // Clean prim base name
+                QString primBase = capWords.join(QString());
+                primBase.replace(QRegularExpression("[^A-Za-z0-9_]"), "");
+                if (primBase.isEmpty()) primBase = "Asset";
+
+                AssetEntry entry;
+                entry.name = displayName;
+                entry.category = categoryName;
+                entry.id = QString("%1.%2").arg(subdir, stem);
+                entry.path = QString("assets/usdc_assets/%1/%2").arg(subdir, file);
+                entry.basePrimName = primBase;
+                entry.forwardAxis = (subdir == "humans" || subdir == "cars") ? QStringLiteral("+Z") : QStringLiteral("-Z");
+                if (manifestByPath.contains(entry.path)) {
+                    const QJsonObject mEntry = manifestByPath.value(entry.path);
+                    const QString mFwd = mEntry.value("forward_axis").toString();
+                    if (!mFwd.isEmpty() && mFwd != QStringLiteral("unknown")) {
+                        entry.forwardAxis = mFwd;
+                    }
+                }
+                entry.defaultScale = (stem.contains("tower", Qt::CaseInsensitive)) ? 0.25 : 1.0;
+                myAssetEntries.append(entry);
+            }
+        }
+    }
+
+    // 2. Procedural Props
+    const struct PropDef {
+        const char* name;
+        AssetType type;
+    } props[] = {
+        {"Tree", AssetType::Tree},
+        {"Mountain ridge", AssetType::Mountain},
+        {"Rock group", AssetType::Rock},
+        {"Light source", AssetType::Light},
+        {"3D text block", AssetType::TextBlock}
+    };
+    for (const auto& p : props) {
+        AssetEntry entry;
+        entry.name = p.name;
+        entry.category = QStringLiteral("Procedural Props");
+        entry.id = QString("prop.%1").arg(p.name);
+        entry.isProcedural = true;
+        entry.proceduralType = p.type;
+        myAssetEntries.append(entry);
+    }
+
+    // 3. Facial Expressions (if directory exists)
+    const QDir expressionsDir(QDir(projectRoot).filePath("assets/facial_expressions"));
+    if (expressionsDir.exists()) {
+        const QStringList exprFiles = expressionsDir.entryList(QStringList() << "*.obj", QDir::Files, QDir::Name);
+        for (const QString& file : exprFiles) {
+            QString stem = file;
+            stem.chop(4); // remove .obj
+            QString title = stem;
+            if (!title.isEmpty()) title[0] = title[0].toUpper();
+
+            AssetEntry entry;
+            entry.name = QString("%1 (Expression)").arg(title);
+            entry.category = QStringLiteral("Facial Expressions");
+            entry.id = "expression." + stem;
+            entry.path = "assets/facial_expressions/" + file;
+            entry.isFacialExpression = true;
+            myAssetEntries.append(entry);
+        }
+    }
+
+    // Collect unique categories in order of appearance
+    QStringList orderedCategories;
+    QMap<QString, int> categoryCounts;
+    for (const AssetEntry& entry : myAssetEntries) {
+        if (!categoryCounts.contains(entry.category)) {
+            orderedCategories.append(entry.category);
+        }
+        categoryCounts[entry.category]++;
+    }
+
+    // Create buttons in myAssetListLayout
+    for (int i = 0; i < myAssetEntries.size(); ++i) {
+        AssetEntry& entry = myAssetEntries[i];
+        QPushButton* btn = makeAssetButton(QString("＋  %1").arg(entry.name), "assetBtn_" + entry.id);
+        btn->setToolTip(QString("Category: %1\nPath: %2\nClick to add to 3D stage and prompt").arg(entry.category, entry.path));
+        connect(btn, &QPushButton::clicked, this, [this, i]() {
+            if (i >= 0 && i < myAssetEntries.size()) {
+                handleAssetClicked(myAssetEntries.at(i));
+            }
+        });
+        entry.button = btn;
+        myAssetListLayout->addWidget(btn);
+    }
+    myAssetListLayout->addStretch();
+
+    // Populate category dropdown dynamically
+    if (myAssetCategoryCombo) {
+        QSignalBlocker blocker(myAssetCategoryCombo);
+        myAssetCategoryCombo->clear();
+        myAssetCategoryCombo->addItem(QString("All Categories (%1)").arg(myAssetEntries.size()), QString());
+        for (const QString& cat : orderedCategories) {
+            myAssetCategoryCombo->addItem(QString("%1 (%2)").arg(cat).arg(categoryCounts.value(cat)), cat);
+        }
+    }
+}
+
+void MainWindow::filterAssetsByCategory(int index) {
+    if (!myAssetCategoryCombo) return;
+    const QString filterCat = myAssetCategoryCombo->itemData(index).toString();
+
+    for (const AssetEntry& entry : myAssetEntries) {
+        if (entry.button) {
+            entry.button->setVisible(filterCat.isEmpty() || entry.category == filterCat);
+        }
+    }
+}
+
+void MainWindow::handleAssetClicked(const AssetEntry& entry) {
+    if (entry.isProcedural) {
+        if (myUsdViewport) {
+            myUsdViewport->addProceduralAsset(entry.proceduralType, entry.name);
+        }
+        if (myCanvasStatus) {
+            myCanvasStatus->setText(QString("Added procedural '%1' to 3D stage").arg(entry.name));
+        }
+        return;
+    }
+
+    if (entry.isFacialExpression) {
+        useUsdAssetInPrompt(entry.path);
+        if (myCanvasStatus) {
+            myCanvasStatus->setText(QString("Added facial expression '%1' to prompt").arg(entry.name));
+        }
+        return;
+    }
+
+    // USDC Asset
+    if (myUsdViewport) {
+        myUsdViewport->addReferencedAsset(entry.id, entry.path, entry.basePrimName, entry.forwardAxis, entry.defaultScale);
+    }
+    useUsdAssetInPrompt(entry.path);
+    if (myCanvasStatus) {
+        myCanvasStatus->setText(QString("Added '%1' to 3D stage and prompt").arg(entry.name));
+    }
+}
+
+void MainWindow::addHuman() {
+    useUsdAssetInPrompt("../../../assets/usdc_assets/humans/walking.usdc");
+}
+void MainWindow::addTree() {
+    if (myUsdViewport) myUsdViewport->addProceduralAsset(AssetType::Tree, "Tree");
+}
+void MainWindow::addMountain() {
+    if (myUsdViewport) myUsdViewport->addProceduralAsset(AssetType::Mountain, "Mountain");
+}
+void MainWindow::addRock() {
+    if (myUsdViewport) myUsdViewport->addProceduralAsset(AssetType::Rock, "Rock");
+}
+void MainWindow::addLight() {
+    if (myUsdViewport) myUsdViewport->addProceduralAsset(AssetType::Light, "Light");
+}
+void MainWindow::addTextBlock() {
+    if (myUsdViewport) myUsdViewport->addProceduralAsset(AssetType::TextBlock, "TextBlock");
+}
+void MainWindow::addDowntownTower() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/environments/downtown_art_deco_tower.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/environments/downtown_art_deco_tower.usdc");
+        myUsdViewport->addReferencedAsset("downtown_art_deco_tower", rel, "DowntownTower", "-Z", 0.25);
+    }
+}
+void MainWindow::addResidentialNeighborhood() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/environments/residential_neighborhood.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/environments/residential_neighborhood.usdc");
+        myUsdViewport->addReferencedAsset("residential_neighborhood", rel, "ResidentialNeighborhood", "-Z", 1.0);
+    }
+}
+void MainWindow::addResidentialIntersection() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/environments/residential_intersection.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/environments/residential_intersection.usdc");
+        myUsdViewport->addReferencedAsset("residential_intersection", rel, "ResidentialIntersection", "-Z", 1.0);
+    }
+}
+void MainWindow::addResidentialAvenue() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/environments/residential_avenue.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/environments/residential_avenue.usdc");
+        myUsdViewport->addReferencedAsset("residential_avenue", rel, "ResidentialAvenue", "-Z", 1.0);
+    }
+}
+void MainWindow::addOcean() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/environments/ocean_horizon.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/environments/ocean_horizon.usdc");
+        myUsdViewport->addReferencedAsset("ocean_horizon", rel, "Ocean", "-Z", 1.0);
+    }
+}
+void MainWindow::addGrandHarbour() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/environments/grand_harbour.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/environments/grand_harbour.usdc");
+        myUsdViewport->addReferencedAsset("grand_harbour", rel, "GrandHarbour", "-Z", 1.0);
+    }
+}
+void MainWindow::addMustang() {
+    if (myUsdViewport) {
+        const QString rel = (myCurrentPanel < 0)
+            ? QStringLiteral("../../assets/usdc_assets/vehicles/mustang_fastback.usdc")
+            : QStringLiteral("../../../assets/usdc_assets/vehicles/mustang_fastback.usdc");
+        myUsdViewport->addReferencedAsset("mustang_fastback", rel, "Car", "+Z", 1.0);
+    }
+}
+void MainWindow::addPontiac() {
+    if (myUsdViewport) {
+        myUsdViewport->addProceduralAsset(AssetType::Pontiac, "Pontiac");
+    }
+}
 
 void MainWindow::syncLayers() {
     QSignalBlocker blocker(myLayers);
     myLayers->clear();
-    for (const PaintingAsset& asset : myCanvas->assets()) {
-        QListWidgetItem* item = new QListWidgetItem(asset.name, myLayers);
-        item->setData(Qt::UserRole, asset.id);
-        item->setCheckState(asset.visible ? Qt::Checked : Qt::Unchecked);
-    }
-    const int selectedId = myCanvas->selectedAssetId();
-    for (int i = 0; i < myCanvas->assets().size(); ++i) {
-        if (myCanvas->assets().at(i).id == selectedId) { myLayers->setCurrentRow(i); break; }
+    if (!myUsdViewport) return;
+    const QVector<UsdPrimItem> entries = myUsdViewport->primList();
+    const QString selectedPath = myUsdViewport->selectedPrimPath();
+    for (int i = 0; i < entries.size(); ++i) {
+        const UsdPrimItem& e = entries.at(i);
+        const QString indent(qMax(0, (e.depth - 1) * 2), QChar(' '));
+        QString label = indent + e.name + QString(" (%1)").arg(e.typeName);
+        if (e.hasUserEdit) {
+            label += QStringLiteral("  • [edited]");
+        }
+        QListWidgetItem* item = new QListWidgetItem(label, myLayers);
+        item->setData(Qt::UserRole, e.path);
+        item->setToolTip(e.path + (e.assetId.isEmpty() ? QString() : QString("  [asset_id=%1]").arg(e.assetId)));
+        item->setCheckState(e.visible ? Qt::Checked : Qt::Unchecked);
+        if (e.hasUserEdit) {
+            item->setForeground(QColor("#8ad0f5"));
+        }
+        if (e.path == selectedPath) {
+            myLayers->setCurrentRow(i);
+        }
     }
 }
 
-void MainWindow::selectionChanged(int) { updateSelectionPanel(); syncLayers(); }
+void MainWindow::selectionChanged() {
+    updateSelectionPanel();
+    syncLayers();
+}
 
 void MainWindow::updateSelectionPanel() {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    const bool hasSelection = asset != nullptr;
-    mySelectionName->setText(hasSelection ? asset->name : "No asset selected");
+    if (!myUsdViewport) return;
+    const QString primPath = myUsdViewport->selectedPrimPath();
+    const bool hasSelection = !primPath.isEmpty();
+    mySelectionName->setText(hasSelection ? primPath : "No USD prim selected");
     myPositionX->setEnabled(hasSelection);
     myPositionY->setEnabled(hasSelection);
     myPositionZ->setEnabled(hasSelection);
+    myRotationX->setEnabled(hasSelection);
+    myRotationY->setEnabled(hasSelection);
+    myRotationZ->setEnabled(hasSelection);
+    myScaleSpin->setEnabled(hasSelection);
     if (hasSelection) {
-        const QVector3D position = myCanvas->selectedAssetPosition();
+        const QVector3D position = myUsdViewport->selectedPrimPosition();
+        const QVector3D rotation = myUsdViewport->selectedPrimRotation();
+        const double scale = myUsdViewport->selectedPrimScale();
         QSignalBlocker blockX(myPositionX);
         QSignalBlocker blockY(myPositionY);
         QSignalBlocker blockZ(myPositionZ);
+        QSignalBlocker blockRotationX(myRotationX);
+        QSignalBlocker blockRotationY(myRotationY);
+        QSignalBlocker blockRotationZ(myRotationZ);
+        QSignalBlocker blockScale(myScaleSpin);
         myPositionX->setValue(position.x());
         myPositionY->setValue(position.y());
         myPositionZ->setValue(position.z());
-    }
-    const bool isTextBlock = hasSelection && asset->type == AssetType::TextBlock;
-    myScaleSpin->setEnabled(hasSelection && !isTextBlock);
-    if (hasSelection) {
-        QSignalBlocker blocker(myScaleSpin);
-        myScaleSpin->setValue(asset->scale);
-    }
-
-    myTextEdit->setEnabled(isTextBlock);
-    myTextFont->setEnabled(isTextBlock);
-    myTextItalic->setEnabled(isTextBlock);
-    myTextBold->setEnabled(isTextBlock);
-    myTextDirection->setEnabled(isTextBlock);
-    myTextFlat->setEnabled(isTextBlock);
-    myTextLength->setEnabled(isTextBlock);
-    myTextBreadth->setEnabled(isTextBlock);
-    myTextWidth->setEnabled(isTextBlock);
-    if (isTextBlock) {
-        QSignalBlocker blocker(myTextEdit);
-        myTextEdit->setText(asset->text);
-        QSignalBlocker blockFont(myTextFont);
-        myTextFont->setCurrentFont(QFont(asset->fontFamily));
-        QSignalBlocker blockItalic(myTextItalic);
-        QSignalBlocker blockBold(myTextBold);
-        myTextItalic->setChecked(asset->fontItalic);
-        myTextBold->setChecked(asset->fontBold);
-        QSignalBlocker blockDirection(myTextDirection);
-        myTextDirection->setCurrentIndex(asset->textVertical ? 1 : 0);
-        QSignalBlocker blockFlat(myTextFlat);
-        myTextFlat->setChecked(asset->textFlat);
-        const QVector3D dimensions = myCanvas->selectedTextBlockDimensions();
-        QSignalBlocker blockLength(myTextLength);
-        QSignalBlocker blockBreadth(myTextBreadth);
-        QSignalBlocker blockWidth(myTextWidth);
-        myTextLength->setValue(dimensions.x());
-        myTextBreadth->setValue(dimensions.y());
-        myTextWidth->setValue(dimensions.z());
-    }
-
-    const bool isHuman = hasSelection && asset->type == AssetType::Human;
-    myPoseBox->setEnabled(isHuman);
-    if (isHuman) {
-        {
-            QSignalBlocker blocker(myExpressionCombo);
-            const int expressionIndex = myExpressionCombo->findData(asset->expression);
-            myExpressionCombo->setCurrentIndex(expressionIndex >= 0 ? expressionIndex : 0);
-        }
-        int jointIndex = myCanvas->selectedHumanJointIndex();
-        if (jointIndex < 0 || jointIndex == static_cast<int>(HumanJoint::Neck)) jointIndex = 0;
-        {
-            QSignalBlocker blocker(myJointCombo);
-            myJointCombo->setCurrentIndex(myJointCombo->findData(jointIndex));
-        }
-        const QVector3D position = myCanvas->selectedHumanJointPosition(jointIndex);
-        QSignalBlocker blockX(myJointX);
-        QSignalBlocker blockY(myJointY);
-        QSignalBlocker blockZ(myJointZ);
-        myJointX->setValue(position.x());
-        myJointY->setValue(position.y());
-        myJointZ->setValue(position.z());
+        myRotationX->setValue(rotation.x());
+        myRotationY->setValue(rotation.y());
+        myRotationZ->setValue(rotation.z());
+        myScaleSpin->setValue(scale);
     }
 }
 
 void MainWindow::updateSelectionScale(double scale) {
-    if (myCanvas->selectedAssetId() >= 0) myCanvas->setSelectedAssetScale(scale);
+    if (myUsdViewport && !myUsdViewport->selectedPrimPath().isEmpty()) {
+        myUsdViewport->setSelectedPrimScale(scale);
+    }
 }
 
-void MainWindow::updateSelectionText(const QString& text) {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    if (asset && asset->type == AssetType::TextBlock) myCanvas->setSelectedAssetText(text);
-}
-
-void MainWindow::updateTextFont() {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    if (!asset || asset->type != AssetType::TextBlock) return;
-    myCanvas->setSelectedAssetFont(myTextFont->currentFont().family(), myTextItalic->isChecked(), myTextBold->isChecked());
-}
-
-void MainWindow::updateTextStyle() {
-    updateTextFont();
-}
-
-void MainWindow::updateTextOrientation() {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    if (!asset || asset->type != AssetType::TextBlock) return;
-    myCanvas->setSelectedTextBlockOrientation(
-        myTextDirection->currentData().toBool(), myTextFlat->isChecked());
+void MainWindow::updateSelectionRotation(double) {
+    if (myUsdViewport && !myUsdViewport->selectedPrimPath().isEmpty()) {
+        myUsdViewport->setSelectedPrimRotation(QVector3D(
+            static_cast<float>(myRotationX->value()),
+            static_cast<float>(myRotationY->value()),
+            static_cast<float>(myRotationZ->value())));
+    }
 }
 
 void MainWindow::positionCoordinateChanged(double) {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    if (!asset) return;
-    QVector3D position = myCanvas->selectedAssetPosition();
-    if (sender() == myPositionX) position.setX(static_cast<float>(myPositionX->value()));
-    if (sender() == myPositionY) position.setY(static_cast<float>(myPositionY->value()));
-    if (sender() == myPositionZ) position.setZ(static_cast<float>(myPositionZ->value()));
-    myCanvas->setSelectedAssetPosition(position);
+    if (myUsdViewport && !myUsdViewport->selectedPrimPath().isEmpty()) {
+        myUsdViewport->setSelectedPrimPosition(QVector3D(
+            static_cast<float>(myPositionX->value()),
+            static_cast<float>(myPositionY->value()),
+            static_cast<float>(myPositionZ->value())));
+    }
 }
 
-void MainWindow::updateTextBlockDimensions(double) {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    if (!asset || asset->type != AssetType::TextBlock) return;
-    myCanvas->setSelectedTextBlockDimensions(QVector3D(
-        static_cast<float>(myTextLength->value()),
-        static_cast<float>(myTextBreadth->value()),
-        static_cast<float>(myTextWidth->value())));
+void MainWindow::removeSelectedAsset() {
+    if (myUsdViewport) {
+        myUsdViewport->deleteSelectedPrim();
+    }
 }
-
-void MainWindow::poseJointChanged(int) {
-    const int jointIndex = myJointCombo->currentData().toInt();
-    myCanvas->selectHumanJoint(jointIndex);
-    updateSelectionPanel();
-}
-
-void MainWindow::humanExpressionChanged(int) {
-    const QString expression = myExpressionCombo->currentData().toString();
-    myCanvas->setSelectedHumanExpression(expression);
-}
-
-void MainWindow::poseCoordinateChanged(double) {
-    const PaintingAsset* asset = myCanvas->selectedAsset();
-    const int jointIndex = myCanvas->selectedHumanJointIndex();
-    if (!asset || asset->type != AssetType::Human || jointIndex < 0) return;
-    QVector3D position = myCanvas->selectedHumanJointPosition(jointIndex);
-    if (sender() == myJointX) position.setX(myJointX->value());
-    if (sender() == myJointY) position.setY(myJointY->value());
-    if (sender() == myJointZ) position.setZ(myJointZ->value());
-    myCanvas->setSelectedHumanJointPosition(jointIndex, position);
-}
-
-void MainWindow::removeSelectedAsset() { myCanvas->removeSelectedAsset(); }
 
 void MainWindow::newConcept() {
-    myCanvas->newConcept();
-    myCanvasStatus->setText("Fresh 3D scene  •  add a reference or paint on the ground plane");
+    if (myUsdViewport) {
+        myUsdViewport->resetFreeCamera();
+        myCanvasStatus->setText("USD camera reset to default view");
+    }
 }
 
 void MainWindow::renderScene() {
-    const QString fileName = QFileDialog::getSaveFileName(
-        this, "Render current 3D view", "PainterSpace-render.png", "PNG image (*.png)");
-    if (fileName.isEmpty()) return;
+    if (myCurrentScene < 0 || myCurrentPanel < 0 || myCurrentPanel >= storyboardPanels().size()) {
+        startStoryboardPanel();
+    }
+    if (myCurrentScene < 0 || myCurrentPanel < 0 || myCurrentPanel >= storyboardPanels().size()) return;
 
-    const QImage renderedView = myCanvas->renderCurrentView();
-    if (!renderedView.save(fileName, "PNG")) {
-        QMessageBox::warning(this, "Render failed", "The rendered image could not be saved.");
+    const QImage renderedView = myUsdViewport
+        ? myUsdViewport->renderCurrentView()
+        : QImage();
+    if (renderedView.isNull()) {
+        QMessageBox::warning(this, "Render failed", "The storyboard panel could not be rendered.");
+        return;
+    }
+    const QString stagePath = ensureShotStageFile(myCurrentScene, myCurrentPanel);
+    const QFileInfo stageInfo(stagePath);
+    renderedView.save(stageInfo.dir().filePath("thumbnail.jpg"), "JPG", 90);
+
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QString script = QDir(projectRoot).filePath("tools/world_state.py");
+    const QString python = worldStatePythonFor(projectRoot);
+    if (QFileInfo::exists(script) && !python.isEmpty()) {
+        QProcess proc;
+        proc.setWorkingDirectory(projectRoot);
+        proc.start(python, {script, QStringLiteral("finalize-shot"), stagePath, QStringLiteral("--no-images")});
+        proc.waitForFinished(30000);
+    }
+
+    storyboardPanels()[myCurrentPanel].usdStagePath = stagePath;
+    storyboardPanels()[myCurrentPanel].render = renderedView;
+    if (myScenePrompt) storyboardPanels()[myCurrentPanel].prompt = myScenePrompt->toPlainText();
+    myLastEditedPanel = myCurrentPanel;
+    showStoryboardBook();
+}
+
+void MainWindow::useUsdAssetInPrompt(const QString& assetPath) {
+    if (!myScenePrompt) return;
+    QString assetName;
+    QString clipName;
+    QString assetId;
+    if (assetPath.endsWith("running_fast.usdc")) {
+        assetName = "running human";
+        clipName = "running";
+        assetId = "running_fast";
+    } else if (assetPath.endsWith("walking.usdc")) {
+        assetName = "walking human";
+        clipName = "walking";
+        assetId = "walking";
+    } else {
         return;
     }
 
-    myCanvasStatus->setText(QString("Rendered view saved  •  %1 × %2 px")
-                                .arg(renderedView.width())
-                                .arg(renderedView.height()));
+    QString effectiveAssetPath = assetPath;
+    if (myCurrentPanel < 0 && effectiveAssetPath.startsWith("../../../assets/")) {
+        effectiveAssetPath = QStringLiteral("../../assets/") + effectiveAssetPath.mid(16);
+    }
+
+    if (myUsdViewport) {
+        myUsdViewport->addReferencedAsset(assetId, effectiveAssetPath, "Human", "+Z", 1.0);
+    }
+
+    QString prompt = myScenePrompt->toPlainText().trimmed();
+    if (!prompt.contains(effectiveAssetPath)) {
+        if (!prompt.isEmpty()) prompt += "\n";
+        prompt += QString("Use the rigged %1 asset @%2@ and its embedded mixamo_com %3 animation clip.")
+                      .arg(assetName, effectiveAssetPath, clipName);
+        myScenePrompt->setPlainText(prompt);
+    }
+    myScenePrompt->setFocus();
 }
 
-void MainWindow::setBackgroundColor() {
-    const QString current = myCanvas->backgroundColor().name();
-    const QColor next = current == "#4b5963" ? QColor("#efe5d0") : QColor("#4b5963");
-    myCanvas->setBackgroundColor(next);
-    myBackgroundButton->setStyleSheet(QString("QPushButton { background: %1; color: #28323b; border: 1px solid #66717d; border-radius: 4px; text-align: left; padding-left: 8px; }").arg(next.name()));
+void MainWindow::generateUsdForCurrentPanel() {
+    if (myUsdGenerationProcess) return;
+    const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty() ||
+                           qEnvironmentVariable("PAINTERSPACE_LLM_PROVIDER") == "agent" ||
+                           qEnvironmentVariable("PAINTERSPACE_AGENT_MODE") == "1";
+    if (!agentMode && qEnvironmentVariableIsEmpty("OPENAI_API_KEY")) {
+        QMessageBox::warning(this, "API key missing",
+                             "Set OPENAI_API_KEY in the environment before launching PainterSpace to generate a USD scene.");
+        return;
+    }
+
+    const QString prompt = myScenePrompt ? myScenePrompt->toPlainText().trimmed() : QString();
+    if (prompt.isEmpty()) {
+        QMessageBox::information(this, "Describe the scene or shot", "Enter a prompt before generating a USD stage.");
+        if (myScenePrompt) myScenePrompt->setFocus();
+        return;
+    }
+
+    if (myCurrentScene < 0 || myCurrentScene >= myStoryboardScenes.size()) {
+        QMessageBox::warning(this, "No scene selected", "Select a scene before generating USD.");
+        return;
+    }
+
+    const QString projectRoot = painterSpaceProjectRoot();
+
+    // SCENE SETUP MODE (Step 1: Describe Scene before moving to shots)
+    if (myCurrentPanel < 0) {
+        const int sceneIndex = myCurrentScene;
+        const QString relativeStagePath = QString("scenes/scene_%1/scene.usda")
+                                              .arg(sceneIndex + 1, 2, 10, QChar('0'));
+        const QString stagePath = QDir(projectRoot).absoluteFilePath(relativeStagePath);
+
+        StoryboardScene& scene = myStoryboardScenes[sceneIndex];
+        scene.prompt = prompt;
+        scene.usdStagePath = stagePath;
+
+        myCanvasStatus->setText(QString("Generating shared USD scene for %1…").arg(scene.name));
+        if (myUsdViewport) {
+            myUsdViewport->setGenerationStatus(
+                QString("LLM generating %1 (scene.usda)…").arg(scene.name), false, true);
+        }
+        myGenerateUsdButton->setEnabled(false);
+        myUsdGenerationProcess = new QProcess(this);
+        myUsdGenerationProcess->setWorkingDirectory(projectRoot);
+        QProcess* process = myUsdGenerationProcess;
+        connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+                [this, process, sceneIndex, prompt, stagePath, relativeStagePath](int exitCode, QProcess::ExitStatus exitStatus) {
+            if (myUsdGenerationProcess != process) return;
+            myUsdGenerationProcess = nullptr;
+            myGenerateUsdButton->setEnabled(true);
+            if (myUsdViewport) myUsdViewport->setGenerationStatus(QString());
+            const QString output = QString::fromUtf8(process->readAllStandardOutput()).trimmed();
+            const QString errors = QString::fromUtf8(process->readAllStandardError()).trimmed();
+            process->deleteLater();
+
+            if (output.contains("[AGENT_DISPATCH]")) {
+                if (sceneIndex >= 0 && sceneIndex < myStoryboardScenes.size()) {
+                    myStoryboardScenes[sceneIndex].prompt = prompt;
+                }
+                myCanvasStatus->setText("Prompt queued for Gemini Coding Agent! In VS Code chat, say: 'Generate the queued scene'");
+                if (myUsdViewport) {
+                    myUsdViewport->setGenerationStatus("Prompt dispatched to Gemini Coding Agent in VS Code chat!", false, false);
+                }
+                QMessageBox::information(this, "Prompt Queued for Gemini Agent",
+                    QString("Your scene prompt has been queued for the Gemini Coding Agent in VS Code!\n\n"
+                            "Target: %1\n"
+                            "Prompt: \"%2\"\n\n"
+                            "In your VS Code chat with Gemini, say:\n"
+                            "  \"Generate the queued scene\"\n\n"
+                            "The agent will author the USD stage, and PainterSpace will live-reload automatically.")
+                        .arg(relativeStagePath, prompt));
+                return;
+            }
+
+            if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+                const QString reason = !errors.isEmpty() ? errors : output;
+                if (myUsdViewport) {
+                    myUsdViewport->setGenerationStatus(
+                        "Scene USD generation failed — keeping last valid stage", true, false);
+                }
+                myCanvasStatus->setText("Scene USD generation failed  •  keeping previous stage");
+                QMessageBox::warning(this, "Scene USD generation failed",
+                                     reason.isEmpty() ? "The generator exited before producing a scene stage." : reason);
+                return;
+            }
+
+            if (sceneIndex >= 0 && sceneIndex < myStoryboardScenes.size()) {
+                StoryboardScene& s = myStoryboardScenes[sceneIndex];
+                s.prompt = prompt;
+                s.usdStagePath = stagePath;
+                s.configured = true;
+                if (myUsdViewport) {
+                    if (myUsdViewport->stagePath() == stagePath) {
+                        myUsdViewport->reloadStage();
+                    } else {
+                        myUsdViewport->openStage(stagePath, true);
+                    }
+                    const QImage renderedView = myUsdViewport->renderCurrentView();
+                    if (!renderedView.isNull()) {
+                        s.render = renderedView;
+                        renderedView.save(QFileInfo(stagePath).dir().filePath("thumbnail.jpg"), "JPG", 90);
+                    }
+                }
+                rebuildStoryboardScenes();
+            }
+            myCanvasStatus->setText("Scene USD generated & live-reloaded in Hydra viewport");
+        });
+        connect(process, &QProcess::errorOccurred, this, [this, process](QProcess::ProcessError error) {
+            if (error != QProcess::FailedToStart || myUsdGenerationProcess != process) return;
+            myUsdGenerationProcess = nullptr;
+            myGenerateUsdButton->setEnabled(true);
+            if (myUsdViewport) myUsdViewport->setGenerationStatus(QString());
+            myCanvasStatus->setText("Unable to start the USDA generator");
+            QMessageBox::warning(this, "USD generation failed",
+                                 "PainterSpace could not start its USDA generation command.");
+            process->deleteLater();
+        });
+        process->start(QCoreApplication::applicationFilePath(), {"--generate-usda", prompt, relativeStagePath});
+        return;
+    }
+
+    // SHOT EDITOR MODE (Step 2: Individual Shots)
+    if (myCurrentPanel >= storyboardPanels().size() || !storyboardPanels().at(myCurrentPanel).active) {
+        startStoryboardPanel();
+        if (myScenePrompt && myScenePrompt->toPlainText().isEmpty()) myScenePrompt->setPlainText(prompt);
+    }
+    if (myCurrentPanel < 0 || myCurrentPanel >= storyboardPanels().size() ||
+        !storyboardPanels().at(myCurrentPanel).active) {
+        QMessageBox::warning(this, "No storyboard panel available",
+                             "Create or open a storyboard panel before generating a shot.");
+        return;
+    }
+
+    const int panelIndex = myCurrentPanel;
+    const QString relativeStagePath = QString("scenes/scene_%1/shot_%2/shot.usda")
+                                          .arg(myCurrentScene + 1, 2, 10, QChar('0'))
+                                          .arg(panelIndex + 1, 3, 10, QChar('0'));
+    const QString stagePath = QDir(projectRoot).absoluteFilePath(relativeStagePath);
+
+    storyboardPanels()[panelIndex].prompt = prompt;
+    storyboardPanels()[panelIndex].usdStagePath = stagePath;
+
+    myCanvasStatus->setText(QString("Generating USD for %1…").arg(storyboardPanels().at(panelIndex).name));
+    if (myUsdViewport) {
+        myUsdViewport->setGenerationStatus(
+            QString("LLM generating %1 (shot.usda)…").arg(storyboardPanels().at(panelIndex).name), false, true);
+    }
+    myGenerateUsdButton->setEnabled(false);
+    myUsdGenerationProcess = new QProcess(this);
+    myUsdGenerationProcess->setWorkingDirectory(projectRoot);
+    QProcess* process = myUsdGenerationProcess;
+    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this, process, panelIndex, prompt, stagePath, relativeStagePath](int exitCode, QProcess::ExitStatus exitStatus) {
+        if (myUsdGenerationProcess != process) return;
+        myUsdGenerationProcess = nullptr;
+        myGenerateUsdButton->setEnabled(true);
+        if (myUsdViewport) myUsdViewport->setGenerationStatus(QString());
+        const QString output = QString::fromUtf8(process->readAllStandardOutput()).trimmed();
+        const QString errors = QString::fromUtf8(process->readAllStandardError()).trimmed();
+        process->deleteLater();
+
+        if (output.contains("[AGENT_DISPATCH]")) {
+            if (panelIndex >= 0 && panelIndex < storyboardPanels().size() && storyboardPanels().at(panelIndex).active) {
+                storyboardPanels()[panelIndex].prompt = prompt;
+            }
+            myCanvasStatus->setText("Prompt queued for Gemini Coding Agent! In VS Code chat, say: 'Generate the queued shot'");
+            if (myUsdViewport) {
+                myUsdViewport->setGenerationStatus("Prompt dispatched to Gemini Coding Agent in VS Code chat!", false, false);
+            }
+            QMessageBox::information(this, "Prompt Queued for Gemini Agent",
+                QString("Your shot prompt has been queued for the Gemini Coding Agent in VS Code!\n\n"
+                        "Target: %1\n"
+                        "Prompt: \"%2\"\n\n"
+                        "In your VS Code chat with Gemini, say:\n"
+                        "  \"Generate the queued shot\"\n\n"
+                        "The agent will author the USD stage, bind animations, and PainterSpace will live-reload automatically.")
+                    .arg(relativeStagePath, prompt));
+            return;
+        }
+
+        if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+            const QString reason = !errors.isEmpty() ? errors : output;
+            if (myUsdViewport) {
+                myUsdViewport->setGenerationStatus(
+                    "Shot USD generation failed — keeping last valid stage", true, false);
+            }
+            myCanvasStatus->setText("USD generation failed  •  keeping previous shot stage");
+            QMessageBox::warning(this, "USD generation failed",
+                                 reason.isEmpty() ? "The generator exited before producing a stage." : reason);
+            return;
+        }
+
+        if (panelIndex >= 0 && panelIndex < storyboardPanels().size() && storyboardPanels().at(panelIndex).active) {
+            storyboardPanels()[panelIndex].prompt = prompt;
+            storyboardPanels()[panelIndex].usdStagePath = stagePath;
+            if (myUsdViewport) {
+                if (myUsdViewport->stagePath() == stagePath) {
+                    myUsdViewport->reloadStage();
+                } else {
+                    myUsdViewport->openStage(stagePath);
+                }
+                const QImage preview = myUsdViewport->renderCurrentView();
+                if (!preview.isNull()) {
+                    storyboardPanels()[panelIndex].render = preview;
+                    preview.save(QFileInfo(stagePath).dir().filePath("thumbnail.jpg"), "JPG", 90);
+                }
+                myLastEditedPanel = panelIndex;
+                syncLayers();
+                updateSelectionPanel();
+                myCanvasStatus->setText("Shot USD generated & live-reloaded in Hydra viewport (camera & user_edits preserved)");
+                return;
+            }
+        }
+        myCanvasStatus->setText("USD generated and validated • rendering preview…");
+        renderAndPlayUsdStageFile(stagePath, true);
+    });
+    connect(process, &QProcess::errorOccurred, this, [this, process](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart || myUsdGenerationProcess != process) return;
+        myUsdGenerationProcess = nullptr;
+        myGenerateUsdButton->setEnabled(true);
+        if (myUsdViewport) myUsdViewport->setGenerationStatus(QString());
+        myCanvasStatus->setText("Unable to start the USDA generator");
+        QMessageBox::warning(this, "USD generation failed",
+                             "PainterSpace could not start its USDA generation command.");
+        process->deleteLater();
+    });
+    process->start(QCoreApplication::applicationFilePath(), {"--generate-usda", prompt, relativeStagePath});
+}
+
+void MainWindow::renderAndPlayUsdStageFile(const QString& stagePath, bool updateStoryboardPanel) {
+    const QString validationError = ShotEngine::validateAuthoredUsdStage(stagePath);
+    if (!validationError.isEmpty()) {
+        QMessageBox::warning(this, "USD validation failed", validationError);
+        return;
+    }
+
+    const ShotEngine::UsdStageInfo stageMeta = ShotEngine::inspectUsdStage(stagePath);
+    const int fps = stageMeta.fps;
+    const int startFrame = stageMeta.startFrame;
+    const int endFrame = stageMeta.endFrame;
+    const QString cameraPath = stageMeta.cameraPath;
+    const QFileInfo stageInfo(stagePath);
+    const QString renderDir = stageInfo.dir().filePath("frames");
+    const QString pattern = QDir(renderDir).filePath("frame.###.png");
+    myCanvasStatus->setText("Rendering USD frames with Hydra Storm…");
+    QApplication::processEvents();
+    const ShotEngine::UsdRenderResult rendered = ShotEngine::renderOpenUsdStage(
+        stagePath, pattern, startFrame, endFrame, 960, cameraPath);
+    if (!rendered.success) {
+        QMessageBox::warning(this, "USD render failed", rendered.error);
+        myCanvasStatus->setText("USD rendering failed");
+        return;
+    }
+
+    const QImage firstFrameImage(rendered.frames.first());
+    if (!firstFrameImage.isNull()) {
+        firstFrameImage.save(stageInfo.dir().filePath("thumbnail.jpg"), "JPG", 90);
+    }
+    ShotEngine::encodeFrameSequence(pattern, fps, stageInfo.dir().filePath("video.mp4"));
+
+    if (updateStoryboardPanel && myCurrentScene >= 0 && myCurrentPanel >= 0 && myCurrentPanel < storyboardPanels().size()) {
+        storyboardPanels()[myCurrentPanel].prompt = myScenePrompt ? myScenePrompt->toPlainText() : QString();
+        storyboardPanels()[myCurrentPanel].usdStagePath = stagePath;
+        storyboardPanels()[myCurrentPanel].render = firstFrameImage;
+        myLastEditedPanel = myCurrentPanel;
+    }
+
+    showPlaybackDialog(rendered.frames, fps, stageInfo.dir().dirName() + " — USD playback");
+}
+
+void MainWindow::playRenderedClipForShot(const QString& shotDirPath) {
+    const QDir shotDir(shotDirPath);
+    const QDir framesDir(shotDir.filePath("frames"));
+    QStringList frames;
+    if (framesDir.exists()) {
+        const QStringList entries = framesDir.entryList(QStringList() << "frame.*.png", QDir::Files, QDir::Name);
+        for (const QString& entry : entries) {
+            frames.append(framesDir.filePath(entry));
+        }
+    }
+    int fps = 24;
+    const QString shotJson = shotDir.filePath("shot.json");
+    if (QFileInfo::exists(shotJson)) {
+        const QJsonObject meta = readJsonFile(shotJson);
+        if (meta.contains("fps")) fps = meta.value("fps").toInt(24);
+    }
+    if (!frames.isEmpty()) {
+        showPlaybackDialog(frames, fps, shotDir.dirName() + " — Playback");
+        return;
+    }
+    const QString shotUsda = shotDir.filePath("shot.usda");
+    if (QFileInfo::exists(shotUsda)) {
+        renderAndPlayUsdStageFile(shotUsda, false);
+    } else {
+        QMessageBox::information(this, "No clip found", "No rendered frames or USD stage found for this shot.");
+    }
+}
+
+void MainWindow::showPlaybackDialog(const QStringList& frames, int fps, const QString& title) {
+    if (frames.isEmpty()) return;
+    auto* dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setWindowTitle(title);
+    dialog->resize(1000, 660);
+    auto* layout = new QVBoxLayout(dialog);
+    auto* frameView = new QLabel(dialog);
+    frameView->setAlignment(Qt::AlignCenter);
+    frameView->setMinimumSize(640, 360);
+    frameView->setStyleSheet("background: #111; border: 1px solid #343e4b;");
+    layout->addWidget(frameView, 1);
+    auto* frameSlider = new QSlider(Qt::Horizontal, dialog);
+    frameSlider->setRange(0, frames.size() - 1);
+    layout->addWidget(frameSlider);
+    auto* controls = new QHBoxLayout();
+    auto* playPause = new QPushButton("▶ Play", dialog);
+    auto* frameLabel = new QLabel(dialog);
+    controls->addWidget(playPause);
+    controls->addWidget(frameLabel);
+    controls->addStretch();
+    auto* closeButton = new QPushButton("Close", dialog);
+    controls->addWidget(closeButton);
+    layout->addLayout(controls);
+    auto* timer = new QTimer(dialog);
+    timer->setInterval(qMax(1, 1000 / fps));
+    const auto showFrame = [frames, frameView, frameSlider, frameLabel](int index) {
+        if (index < 0 || index >= frames.size()) return;
+        const QPixmap pixmap(frames.at(index));
+        frameView->setPixmap(pixmap.scaled(frameView->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        frameLabel->setText(QString("Frame %1 / %2").arg(index + 1).arg(frames.size()));
+        const QSignalBlocker blocker(frameSlider);
+        frameSlider->setValue(index);
+    };
+    showFrame(0);
+    timer->start();
+    playPause->setText("Ⅱ Pause");
+    connect(frameSlider, &QSlider::valueChanged, dialog, showFrame);
+    connect(timer, &QTimer::timeout, dialog, [frameSlider, frames, timer, playPause, showFrame] {
+        const int next = frameSlider->value() + 1;
+        if (next >= frames.size()) {
+            timer->stop();
+            playPause->setText("▶ Play");
+            return;
+        }
+        showFrame(next);
+    });
+    connect(playPause, &QPushButton::clicked, dialog, [timer, playPause, frameSlider, frames] {
+        if (timer->isActive()) {
+            timer->stop();
+            playPause->setText("▶ Play");
+        } else {
+            if (frameSlider->value() >= frames.size() - 1) frameSlider->setValue(0);
+            timer->start();
+            playPause->setText("Ⅱ Pause");
+        }
+    });
+    connect(closeButton, &QPushButton::clicked, dialog, &QDialog::accept);
+    myCanvasStatus->setText(QString("Rendered %1 frames • ready to play").arg(frames.size()));
+    dialog->exec();
 }

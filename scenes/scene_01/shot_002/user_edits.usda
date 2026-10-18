@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    def Xform "Car1" (
+        customData = {
+            string asset_id = "cars.car1"
+            string forward_axis = "+Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/cars/car1.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (4.243828296661377, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+

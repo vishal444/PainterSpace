@@ -1,0 +1,387 @@
+{
+  "schema_version": "1.0",
+  "generated_by": "tools/world_state.py",
+  "source": {
+    "stage": "scenes/scene_01/shot_002/shot.usda",
+    "label": "shot_002 start",
+    "frame": 0.0,
+    "time_s": 0.0,
+    "fps": 24.0,
+    "frame_range": [
+      0.0,
+      96.0
+    ]
+  },
+  "world": {
+    "units": "m",
+    "up": "Y",
+    "north": "-Z",
+    "east": "+X",
+    "ground_y": 0.0
+  },
+  "objects": [
+    {
+      "id": "DowntownTower",
+      "path": "/World/DowntownTower",
+      "asset": "environment.downtown_tower",
+      "category": "environment",
+      "defined_in": "scene",
+      "position": [
+        0.0,
+        0.0,
+        -24.0
+      ],
+      "heading_deg": 180.0,
+      "size": [
+        19.0,
+        51.42,
+        17.5
+      ],
+      "bounds_min": [
+        -9.5,
+        0.0,
+        -32.75
+      ],
+      "bounds_max": [
+        9.5,
+        51.42,
+        -15.25
+      ],
+      "motion": {
+        "moving": false
+      }
+    },
+    {
+      "id": "WestBrownstones",
+      "path": "/World/WestBrownstones",
+      "asset": "environment.residential_neighborhood",
+      "category": "environment",
+      "defined_in": "scene",
+      "position": [
+        -11.5,
+        0.0,
+        -2.0
+      ],
+      "heading_deg": 90.0,
+      "size": [
+        20.5,
+        13.45,
+        15.0
+      ],
+      "bounds_min": [
+        -19.0,
+        0.0,
+        -12.25
+      ],
+      "bounds_max": [
+        -4.0,
+        13.45,
+        8.25
+      ],
+      "motion": {
+        "moving": false
+      }
+    },
+    {
+      "id": "EastBrownstones",
+      "path": "/World/EastBrownstones",
+      "asset": "environment.residential_neighborhood",
+      "category": "environment",
+      "defined_in": "scene",
+      "position": [
+        11.5,
+        0.0,
+        -2.0
+      ],
+      "heading_deg": 270.0,
+      "size": [
+        20.5,
+        13.45,
+        15.0
+      ],
+      "bounds_min": [
+        4.0,
+        0.0,
+        -12.25
+      ],
+      "bounds_max": [
+        19.0,
+        13.45,
+        8.25
+      ],
+      "motion": {
+        "moving": false
+      }
+    },
+    {
+      "id": "Car",
+      "path": "/World/Car",
+      "asset": "vehicle.mustang",
+      "category": "prop",
+      "defined_in": "scene",
+      "position": [
+        1.4,
+        0.25,
+        9.0
+      ],
+      "heading_deg": 0.0,
+      "size": [
+        1.85,
+        1.16,
+        3.8
+      ],
+      "bounds_min": [
+        0.47,
+        0.25,
+        7.1
+      ],
+      "bounds_max": [
+        2.33,
+        1.41,
+        10.9
+      ],
+      "motion": {
+        "moving": true,
+        "speed_mps": 2.77,
+        "vertical_mps": 0.0,
+        "direction_deg": 352.75,
+        "direction": "north"
+      }
+    },
+    {
+      "id": "Hero",
+      "path": "/World/Hero",
+      "asset": "character.human.poseable",
+      "category": "character",
+      "defined_in": "shot",
+      "position": [
+        -1.81,
+        0.0,
+        0.94
+      ],
+      "heading_deg": 0.0,
+      "size": [
+        0.51,
+        1.8,
+        0.42
+      ],
+      "bounds_min": [
+        -2.06,
+        0.0,
+        0.73
+      ],
+      "bounds_max": [
+        -1.55,
+        1.8,
+        1.15
+      ],
+      "pose": {
+        "clip": null,
+        "state": "rest_pose"
+      },
+      "motion": {
+        "moving": true,
+        "speed_mps": 0.63,
+        "vertical_mps": 0.0,
+        "direction_deg": 350.91,
+        "direction": "north"
+      }
+    }
+  ],
+  "groups": [],
+  "omitted": null,
+  "environment": [
+    {
+      "id": "Bridge",
+      "asset": null,
+      "bounds_min": [
+        -3.5,
+        -0.24,
+        -12.0
+      ],
+      "bounds_max": [
+        3.5,
+        0.83,
+        12.0
+      ],
+      "top_y": 0.83
+    }
+  ],
+  "zones": [
+    {
+      "id": "lane_west",
+      "min": [
+        -3.22,
+        0.0,
+        -12.0
+      ],
+      "max": [
+        0.0,
+        0.01,
+        12.0
+      ],
+      "description": "Southbound lane of the bridge roadway, between the west rail and the centre line"
+    },
+    {
+      "id": "lane_east",
+      "min": [
+        0.0,
+        0.0,
+        -12.0
+      ],
+      "max": [
+        3.22,
+        0.01,
+        12.0
+      ],
+      "description": "Northbound lane of the bridge roadway, between the centre line and the east rail"
+    }
+  ],
+  "camera": {
+    "path": "/World/ShotCam",
+    "position": [
+      -2.8,
+      2.2,
+      9.0
+    ],
+    "look_at": [
+      -7.64,
+      0.0,
+      -5.89
+    ],
+    "heading_deg": 342.0,
+    "pitch_deg": -8.0,
+    "focal_mm": 35.0,
+    "fov_deg": 54.43,
+    "vertical_fov_deg": 32.27,
+    "aspect": 1.78
+  },
+  "camera_view": [
+    {
+      "id": "DowntownTower",
+      "state": "partial",
+      "screen": "right",
+      "coverage_pct": 20.81,
+      "visible_pct": 1.94,
+      "distance_m": 40.61
+    },
+    {
+      "id": "WestBrownstones",
+      "state": "partial",
+      "screen": "center",
+      "coverage_pct": 78.03,
+      "visible_pct": 2.65,
+      "distance_m": 14.74
+    },
+    {
+      "id": "EastBrownstones",
+      "state": "outside",
+      "side": "right",
+      "distance_m": 18.6
+    },
+    {
+      "id": "Car",
+      "state": "outside",
+      "side": "right",
+      "distance_m": 4.42
+    },
+    {
+      "id": "Hero",
+      "state": "inside",
+      "screen": "right",
+      "coverage_pct": 4.08,
+      "visible_pct": 100.0,
+      "distance_m": 8.23
+    }
+  ],
+  "relations": [
+    {
+      "a": "Hero",
+      "b": "Car",
+      "distance_m": 8.68,
+      "gap_m": 6.29,
+      "direction": "north",
+      "a_faces_b": false,
+      "b_faces_a": true,
+      "text": "Hero is 8.68 m north of Car, 6.29 m from its nearest side"
+    },
+    {
+      "a": "Hero",
+      "b": "WestBrownstones",
+      "distance_m": 10.13,
+      "gap_m": 1.94,
+      "direction": "east",
+      "a_faces_b": false,
+      "b_faces_a": true,
+      "text": "Hero is 10.13 m east of WestBrownstones, 1.94 m from its nearest side"
+    },
+    {
+      "a": "Hero",
+      "b": "EastBrownstones",
+      "distance_m": 13.63,
+      "gap_m": 5.55,
+      "direction": "west",
+      "a_faces_b": false,
+      "b_faces_a": true,
+      "text": "Hero is 13.63 m west of EastBrownstones, 5.55 m from its nearest side"
+    },
+    {
+      "a": "Car",
+      "b": "EastBrownstones",
+      "distance_m": 14.93,
+      "gap_m": 1.67,
+      "direction": "southwest",
+      "a_faces_b": false,
+      "b_faces_a": false,
+      "text": "Car is 14.93 m southwest of EastBrownstones, 1.67 m from its nearest side"
+    }
+  ],
+  "overlaps": [],
+  "free_space": [
+    {
+      "zone": "lane_west",
+      "min": [
+        -3.22,
+        0.0,
+        -12.0
+      ],
+      "max": [
+        -0.22,
+        0.01,
+        0.5
+      ],
+      "size": [
+        3.0,
+        12.5
+      ]
+    },
+    {
+      "zone": "lane_east",
+      "min": [
+        0.0,
+        0.0,
+        -12.0
+      ],
+      "max": [
+        3.0,
+        0.01,
+        6.75
+      ],
+      "size": [
+        3.0,
+        18.75
+      ]
+    }
+  ],
+  "warnings": [
+    "Car floats 0.25 m above the ground with nothing under it."
+  ],
+  "images": {
+    "topdown": "state_start_topdown.png",
+    "camera": "state_start_camera.png"
+  },
+  "continuity": {
+    "from": "shot_001",
+    "note": "This shot includes current 3D editor / shot.usda state continuing from the previous shot."
+  }
+}

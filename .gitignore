@@ -1,0 +1,20 @@
+# Python virtual environment for tools/ (usd-core, Pillow)
+.venv/
+__pycache__/
+
+# World state records are generated caches; rebuild them from the USD files at any time
+# with tools/world_state.py (see README "World state record").
+scenes/**/world_state.json
+scenes/**/world_state_*.png
+scenes/**/state_start.json
+scenes/**/state_start_*.png
+scenes/**/state_end.json
+scenes/**/state_end_*.png
+
+# Local OpenUSD C++ headers staged by scripts/setup_openusd_sdk.sh
+third_party/
+build/
+build-*/
+assets/
+.DS_Store
+

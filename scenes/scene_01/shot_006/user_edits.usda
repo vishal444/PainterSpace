@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    over "Car" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+    }
+
+    def Xform "Car1" (
+        customData = {
+            string asset_id = "cars.car1"
+            string forward_axis = "+Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/cars/car1.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    over "Bridge"
+    {
+        float3 xformOp:rotateXYZ = (0, 85, 0)
+        double3 xformOp:translate = (1.8279087543487549, 0, 2.4677772521972656)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "Car1_2" (
+        customData = {
+            string asset_id = "cars.car1"
+            string forward_axis = "+Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/cars/car1.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0.9786328077316284, 0.44847601652145386, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "Car2" (
+        active = false
+        customData = {
+            string asset_id = "cars.car2"
+            string forward_axis = "+Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/cars/car2.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+        over "Camera"
+        {
+            token visibility = "invisible"
+        }
+
+        over "Cube"
+        {
+            token visibility = "invisible"
+        }
+
+        over "Light"
+        {
+            token visibility = "invisible"
+        }
+
+        over "env_light" (
+            active = false
+        )
+        {
+        }
+    }
+}
+

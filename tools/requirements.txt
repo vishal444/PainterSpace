@@ -1,0 +1,5 @@
+# Python tools (tools/world_state.py). Install into the repo venv:
+#   python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
+usd-core>=24.0
+Pillow>=10.1
+

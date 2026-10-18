@@ -1,0 +1,16 @@
+{
+  "shot_id": "human_run_stop_walk",
+  "duration": 7,
+  "fps": 24,
+  "camera_prim_path": "/Shot/World/CameraRig/RenderCamera",
+  "timing": {
+    "run": { "start_frame": 0, "end_frame": 72, "asset_clip": "mixamo_com", "looped": true },
+    "stop": { "start_frame": 72, "end_frame": 95 },
+    "walk": { "start_frame": 96, "end_frame": 168, "asset_clip": "mixamo_com", "looped": true }
+  },
+  "assets": [
+    "assets/usdc_assets/humans/running_fast.usdc",
+    "assets/usdc_assets/humans/walking.usdc"
+  ],
+  "notes": "The embedded SkelAnimation clips are looped through repeated USD reference time offsets. The stop holds the final running pose."
+}

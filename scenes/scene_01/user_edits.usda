@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    over "Car"
+    {
+        double3 xformOp:translate = (0.7419925332069397, 0, 1.2000000476837158)
+    }
+
+    over "WestBrownstones"
+    {
+        double3 xformOp:translate = (-11.5274019241333, 0, 0.32696533203125)
+    }
+
+    over "DowntownTower" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+        double3 xformOp:translate = (0, 0, -15.058244705200195)
+    }
+
+    def Xform "Tree" (
+        active = false
+        customData = {
+            string asset_id = "prop.tree"
+        }
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (-2.834990978240967, 0, 0.4431943893432617)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Cylinder "Trunk"
+        {
+            uniform token axis = "Y"
+            double height = 1.8
+            color3f[] primvars:displayColor = [(0.42, 0.28, 0.18)] (
+                interpolation = "constant"
+            )
+            double radius = 0.22
+            double3 xformOp:translate = (0, 0.9, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cone "Canopy"
+        {
+            uniform token axis = "Y"
+            double height = 2.8
+            color3f[] primvars:displayColor = [(0.24, 0.52, 0.3)] (
+                interpolation = "constant"
+            )
+            double radius = 1.25
+            double3 xformOp:translate = (0, 2.8, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+

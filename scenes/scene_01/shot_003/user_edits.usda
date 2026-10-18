@@ -1,0 +1,54 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    over "Car" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+        double3 xformOp:translate = (1.4774222373962402, -0.2684757709503174, -0.20000000298023224)
+    }
+
+    over "DowntownTower"
+    {
+        double3 xformOp:translate = (2.230898857116699, 0, -16.609922409057617)
+    }
+
+    def Xform "MustangFastback" (
+        customData = {
+            string asset_id = "vehicle.mustang_fastback"
+            string forward_axis = "+Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/cars/car1.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0.7813899517059326, 0, -1.5680046081542969)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    over "EastBrownstones"
+    {
+        double3 xformOp:translate = (12.615318298339844, 0, -0.8652534484863281)
+    }
+
+    def Xform "OakTree" (
+        customData = {
+            string asset_id = "trees.oak_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/oak_tree.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (5.465712547302246, 0, 11.978704452514648)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+

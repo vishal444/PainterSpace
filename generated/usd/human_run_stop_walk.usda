@@ -1,0 +1,472 @@
+#usda 1.0
+(
+    defaultPrim = "Shot"
+    startTimeCode = 0
+    endTimeCode = 168
+    timeCodesPerSecond = 24
+    framesPerSecond = 24
+    upAxis = "Y"
+    metersPerUnit = 1
+)
+
+def Xform "Shot"
+{
+    custom string application:description = "The human runs, stops, then walks using the authored Mixamo clips."
+
+    def Xform "World"
+    {
+        def DomeLight "SoftFill"
+        {
+            color3f inputs:color = (0.68, 0.76, 0.92)
+            float inputs:intensity = 0.35
+        }
+        def DistantLight "KeyLight"
+        {
+            color3f inputs:color = (1.0, 0.82, 0.65)
+            float inputs:intensity = 2.0
+            float angle = 1.0
+            float3 xformOp:rotateXYZ = (-35, -25, 0)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+        }
+        def Xform "Ground"
+        {
+            double3 xformOp:translate = (0, -0.02, 0)
+            float3 xformOp:scale = (12, 0.08, 16)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            def Cube "StageFloor"
+            {
+                float size = 1
+                color3f[] primvars:displayColor = [(0.12, 0.16, 0.20)] (
+                    interpolation = "constant"
+                )
+            }
+        }
+
+        def Xform "RunCycle01"
+        {
+            double3 xformOp:translate.timeSamples = { 0: (0, 0.02, -5), 18: (0, 0.02, -3.75) }
+            token visibility.timeSamples = { 0: "inherited", 18: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/running_fast.usdc@</root> (offset = -1.0588235294; scale = 1.0588235294)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    0: (0, 0, -0.018112041),
+                    1.05882: (0, 0, -0.234452740),
+                    2.11765: (0, 0, -0.452730900),
+                    3.17647: (0, 0, -0.668156740),
+                    4.23529: (0, 0, -0.875940800),
+                    5.29412: (0, 0, -1.073740400),
+                    6.35294: (0, 0, -1.254615500),
+                    7.41176: (0, 0, -1.424541200),
+                    8.47059: (0, 0, -1.591652400),
+                    9.52941: (0, 0, -1.787739600),
+                    10.5882: (0, 0, -1.993625800),
+                    11.6471: (0, 0, -2.194911500),
+                    12.7059: (0, 0, -2.395754000),
+                    13.7647: (0, 0, -2.599025300),
+                    14.8235: (0, 0, -2.787305600),
+                    15.8824: (0, 0, -2.962702000),
+                    16.9412: (0, 0, -3.141396200),
+                    18: (0, 0, -3.342536600)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+        def Xform "RunCycle02"
+        {
+            double3 xformOp:translate.timeSamples = { 18: (0, 0.02, -3.75), 36: (0, 0.02, -2.5) }
+            token visibility.timeSamples = { 0: "invisible", 18: "inherited", 36: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/running_fast.usdc@</root> (offset = 16.9411764706; scale = 1.0588235294)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    18: (0, 0, -0.018112041),
+                    19.0588: (0, 0, -0.234452740),
+                    20.1176: (0, 0, -0.452730900),
+                    21.1765: (0, 0, -0.668156740),
+                    22.2353: (0, 0, -0.875940800),
+                    23.2941: (0, 0, -1.073740400),
+                    24.3529: (0, 0, -1.254615500),
+                    25.4118: (0, 0, -1.424541200),
+                    26.4706: (0, 0, -1.591652400),
+                    27.5294: (0, 0, -1.787739600),
+                    28.5882: (0, 0, -1.993625800),
+                    29.6471: (0, 0, -2.194911500),
+                    30.7059: (0, 0, -2.395754000),
+                    31.7647: (0, 0, -2.599025300),
+                    32.8235: (0, 0, -2.787305600),
+                    33.8824: (0, 0, -2.962702000),
+                    34.9412: (0, 0, -3.141396200),
+                    36: (0, 0, -3.342536600)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+        def Xform "RunCycle03"
+        {
+            double3 xformOp:translate.timeSamples = { 36: (0, 0.02, -2.5), 54: (0, 0.02, -1.25) }
+            token visibility.timeSamples = { 0: "invisible", 36: "inherited", 54: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/running_fast.usdc@</root> (offset = 34.9411764706; scale = 1.0588235294)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    36: (0, 0, -0.018112041),
+                    37.0588: (0, 0, -0.234452740),
+                    38.1176: (0, 0, -0.452730900),
+                    39.1765: (0, 0, -0.668156740),
+                    40.2353: (0, 0, -0.875940800),
+                    41.2941: (0, 0, -1.073740400),
+                    42.3529: (0, 0, -1.254615500),
+                    43.4118: (0, 0, -1.424541200),
+                    44.4706: (0, 0, -1.591652400),
+                    45.5294: (0, 0, -1.787739600),
+                    46.5882: (0, 0, -1.993625800),
+                    47.6471: (0, 0, -2.194911500),
+                    48.7059: (0, 0, -2.395754000),
+                    49.7647: (0, 0, -2.599025300),
+                    50.8235: (0, 0, -2.787305600),
+                    51.8824: (0, 0, -2.962702000),
+                    52.9412: (0, 0, -3.141396200),
+                    54: (0, 0, -3.342536600)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+        def Xform "RunCycle04"
+        {
+            double3 xformOp:translate.timeSamples = { 54: (0, 0.02, -1.25), 72: (0, 0.02, 0) }
+            token visibility.timeSamples = { 0: "invisible", 54: "inherited", 72: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/running_fast.usdc@</root> (offset = 52.9411764706; scale = 1.0588235294)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    54: (0, 0, -0.018112041),
+                    55.0588: (0, 0, -0.234452740),
+                    56.1176: (0, 0, -0.452730900),
+                    57.1765: (0, 0, -0.668156740),
+                    58.2353: (0, 0, -0.875940800),
+                    59.2941: (0, 0, -1.073740400),
+                    60.3529: (0, 0, -1.254615500),
+                    61.4118: (0, 0, -1.424541200),
+                    62.4706: (0, 0, -1.591652400),
+                    63.5294: (0, 0, -1.787739600),
+                    64.5882: (0, 0, -1.993625800),
+                    65.6471: (0, 0, -2.194911500),
+                    66.7059: (0, 0, -2.395754000),
+                    67.7647: (0, 0, -2.599025300),
+                    68.8235: (0, 0, -2.787305600),
+                    69.8824: (0, 0, -2.962702000),
+                    70.9412: (0, 0, -3.141396200),
+                    72: (0, 0, -3.342536600)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+
+        def Xform "StopHold"
+        {
+            double3 xformOp:translate = (0, 0.02, 0)
+            token visibility.timeSamples = { 0: "invisible", 72: "inherited", 96: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/running_fast.usdc@</root> (offset = -179928; scale = 10000)
+            )
+            {
+                double3 xformOp:translate = (0, 0, -3.342536600)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+
+        def Xform "WalkCycle01"
+        {
+            double3 xformOp:translate.timeSamples = { 96: (0, 0.02, 0), 120: (0, 0.02, 1) }
+            token visibility.timeSamples = { 0: "invisible", 96: "inherited", 120: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/walking.usdc@</root> (offset = 95)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    96: (0, 0, -0.015296831),
+                    97: (0, 0, -0.089190370),
+                    98: (0, 0, -0.163543130),
+                    99: (0, 0, -0.236843010),
+                    100: (0, 0, -0.309036370),
+                    101: (0, 0, -0.383704260),
+                    102: (0, 0, -0.468934000),
+                    103: (0, 0, -0.558242570),
+                    104: (0, 0, -0.644018600),
+                    105: (0, 0, -0.722587660),
+                    106: (0, 0, -0.797116600),
+                    107: (0, 0, -0.868893200),
+                    108: (0, 0, -0.941427400),
+                    109: (0, 0, -1.011276600),
+                    110: (0, 0, -1.083151100),
+                    111: (0, 0, -1.157258800),
+                    112: (0, 0, -1.231087900),
+                    113: (0, 0, -1.306401200),
+                    114: (0, 0, -1.388887300),
+                    115: (0, 0, -1.472725400),
+                    116: (0, 0, -1.552710000),
+                    117: (0, 0, -1.630103900),
+                    118: (0, 0, -1.707031600),
+                    119: (0, 0, -1.784241800),
+                    120: (0, 0, -1.860521200)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+        def Xform "WalkCycle02"
+        {
+            double3 xformOp:translate.timeSamples = { 120: (0, 0.02, 1), 144: (0, 0.02, 2) }
+            token visibility.timeSamples = { 0: "invisible", 120: "inherited", 144: "invisible" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/walking.usdc@</root> (offset = 119)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    120: (0, 0, -0.015296831),
+                    121: (0, 0, -0.089190370),
+                    122: (0, 0, -0.163543130),
+                    123: (0, 0, -0.236843010),
+                    124: (0, 0, -0.309036370),
+                    125: (0, 0, -0.383704260),
+                    126: (0, 0, -0.468934000),
+                    127: (0, 0, -0.558242570),
+                    128: (0, 0, -0.644018600),
+                    129: (0, 0, -0.722587660),
+                    130: (0, 0, -0.797116600),
+                    131: (0, 0, -0.868893200),
+                    132: (0, 0, -0.941427400),
+                    133: (0, 0, -1.011276600),
+                    134: (0, 0, -1.083151100),
+                    135: (0, 0, -1.157258800),
+                    136: (0, 0, -1.231087900),
+                    137: (0, 0, -1.306401200),
+                    138: (0, 0, -1.388887300),
+                    139: (0, 0, -1.472725400),
+                    140: (0, 0, -1.552710000),
+                    141: (0, 0, -1.630103900),
+                    142: (0, 0, -1.707031600),
+                    143: (0, 0, -1.784241800),
+                    144: (0, 0, -1.860521200)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+        def Xform "WalkCycle03"
+        {
+            double3 xformOp:translate.timeSamples = { 144: (0, 0.02, 2), 168: (0, 0.02, 3) }
+            token visibility.timeSamples = { 0: "invisible", 144: "inherited", 168: "inherited" }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            def Xform "Model" (
+                references = @assets/usdc_assets/humans/walking.usdc@</root> (offset = 143)
+            )
+            {
+                double3 xformOp:translate.timeSamples = {
+                    144: (0, 0, -0.015296831),
+                    145: (0, 0, -0.089190370),
+                    146: (0, 0, -0.163543130),
+                    147: (0, 0, -0.236843010),
+                    148: (0, 0, -0.309036370),
+                    149: (0, 0, -0.383704260),
+                    150: (0, 0, -0.468934000),
+                    151: (0, 0, -0.558242570),
+                    152: (0, 0, -0.644018600),
+                    153: (0, 0, -0.722587660),
+                    154: (0, 0, -0.797116600),
+                    155: (0, 0, -0.868893200),
+                    156: (0, 0, -0.941427400),
+                    157: (0, 0, -1.011276600),
+                    158: (0, 0, -1.083151100),
+                    159: (0, 0, -1.157258800),
+                    160: (0, 0, -1.231087900),
+                    161: (0, 0, -1.306401200),
+                    162: (0, 0, -1.388887300),
+                    163: (0, 0, -1.472725400),
+                    164: (0, 0, -1.552710000),
+                    165: (0, 0, -1.630103900),
+                    166: (0, 0, -1.707031600),
+                    167: (0, 0, -1.784241800),
+                    168: (0, 0, -1.860521200)
+                }
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+                over SkelRoot "Armature"
+                {
+                    float3 xformOp:rotateXYZ.timeSamples = { 1: (0, 0, 0) }
+                }
+                over Xform "Camera"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Cube"
+                {
+                    token visibility = "invisible"
+                }
+                over Xform "Light"
+                {
+                    token visibility = "invisible"
+                }
+                over DomeLight "env_light" (active = false)
+                {
+                }
+            }
+        }
+
+        def Xform "CameraRig"
+        {
+            double3 xformOp:translate = (0, 2.2, 13)
+            float3 xformOp:rotateXYZ = (-5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            def Camera "RenderCamera"
+            {
+                float focalLength = 40
+                float horizontalAperture = 36
+                float verticalAperture = 20.25
+                float2 clippingRange = (0.1, 1000)
+            }
+        }
+    }
+}
