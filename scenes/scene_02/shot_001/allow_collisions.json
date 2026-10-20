@@ -1,0 +1,17 @@
+[
+  {
+    "actor": "Driver",
+    "asset": "cars.car1",
+    "shape": "door",
+    "joints": [
+      "LeftHand",
+      "RightHand",
+      "LeftForeArm",
+      "RightForeArm",
+      "LeftArm"
+    ],
+    "t0": 4.0,
+    "t1": 6.5,
+    "max_depth_m": 0.08
+  }
+]

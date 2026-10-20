@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "World"
+{
+    def DomeLight "BaseAmbient"
+    {
+        color3f inputs:color = (0.35, 0.42, 0.55)
+        float inputs:intensity = 0.45
+    }
+
+    def DistantLight "BaseKeyLight"
+    {
+        float angle = 0.53
+        color3f inputs:color = (0.95, 0.88, 0.78)
+        float inputs:intensity = 1.6
+        float3 xformOp:rotateXYZ = (-35, -25, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+
+    def Xform "Ground"
+    {
+        float3 xformOp:scale = (24, 0.08, 24)
+        double3 xformOp:translate = (0, -0.04, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+
+        def Cube "Floor"
+        {
+            color3f[] primvars:displayColor = [(0.16, 0.2, 0.24)] (
+                interpolation = "constant"
+            )
+            double size = 1
+        }
+    }
+
+    def Xform "HighEndClubSmall" (
+        active = false
+        customData = {
+            string asset_id = "buildings.high_end_club_small"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../assets/usdc_assets/buildings/high_end_club_small.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "GrandNightClub" (
+        customData = {
+            string asset_id = "buildings.grand_night_club"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../assets/usdc_assets/buildings/grand_night_club.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+

@@ -1,0 +1,346 @@
+{
+  "total_duration_s": 13.708,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "perform_activity_1",
+      "actor_id": "human_1",
+      "function": "perform_activity",
+      "start_time": 0.0,
+      "end_time": 4.0,
+      "duration": 4.0,
+      "params": {
+        "activity": "smoke",
+        "target": null
+      },
+      "is_idle_fill": false,
+      "events": {
+        "perform_activity_1.started": 0.0,
+        "perform_activity_1.finished": 4.0,
+        "human_1.started": 0.0,
+        "human_1.finished": 4.0
+      }
+    },
+    {
+      "beat_id": "dance_2",
+      "actor_id": "human_2",
+      "function": "dance",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {
+        "style": "freestyle"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "dance_2.started": 0.0,
+        "dance_2.finished": 3.0,
+        "human_2.started": 0.0,
+        "human_2.finished": 3.0
+      }
+    },
+    {
+      "beat_id": "converse_5",
+      "actor_id": "human_2",
+      "function": "converse",
+      "start_time": 3.0,
+      "end_time": 7.0,
+      "duration": 4.0,
+      "params": {
+        "actors": [
+          "Man",
+          "Girl"
+        ],
+        "center": null,
+        "topic": "friendly",
+        "turns": 2
+      },
+      "is_idle_fill": false,
+      "events": {
+        "converse_5.started": 3.0,
+        "converse_5.finished": 7.0,
+        "human_2.started": 3.0,
+        "human_2.finished": 7.0
+      }
+    },
+    {
+      "beat_id": "converse_4",
+      "actor_id": "human_1",
+      "function": "converse",
+      "start_time": 4.0,
+      "end_time": 8.0,
+      "duration": 4.0,
+      "params": {
+        "actors": [
+          "Man",
+          "Girl"
+        ],
+        "center": null,
+        "topic": "friendly",
+        "turns": 2
+      },
+      "is_idle_fill": false,
+      "events": {
+        "converse_4.started": 4.0,
+        "converse_4.finished": 8.0,
+        "human_1.started": 4.0,
+        "human_1.finished": 8.0
+      }
+    },
+    {
+      "beat_id": "idle_human_2_700",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 7.0,
+      "end_time": 13.708,
+      "duration": 6.708,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "hug_or_kiss_6",
+      "actor_id": "human_1",
+      "function": "hug_or_kiss",
+      "start_time": 8.0,
+      "end_time": 10.0,
+      "duration": 2.0,
+      "params": {
+        "target": "Girl",
+        "style": "kiss"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "hug_or_kiss_6.started": 8.0,
+        "hug_or_kiss_6.finished": 10.0,
+        "human_1.started": 8.0,
+        "human_1.finished": 10.0
+      }
+    },
+    {
+      "beat_id": "idle_human_1_1000",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 10.0,
+      "end_time": 10.2,
+      "duration": 0.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "walk_to_3",
+      "actor_id": "human_1",
+      "function": "walk_to",
+      "start_time": 10.2,
+      "end_time": 13.2,
+      "duration": 3.0,
+      "params": {
+        "target": "in_front_of(Girl, 1.1)"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_3.started": 10.2,
+        "walk_to_3.finished": 13.2,
+        "human_1.started": 10.2,
+        "human_1.finished": 13.2,
+        "human_1.arrived": 13.2,
+        "walk_to_3.arrived": 13.2
+      }
+    },
+    {
+      "beat_id": "idle_human_1_1320",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 13.2,
+      "end_time": 13.708,
+      "duration": 0.508,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "perform_activity_1.started": 0.0,
+    "perform_activity_1.finished": 4.0,
+    "human_1.started": 10.2,
+    "human_1.finished": 13.2,
+    "dance_2.started": 0.0,
+    "dance_2.finished": 3.0,
+    "human_2.started": 3.0,
+    "human_2.finished": 7.0,
+    "converse_4.started": 4.0,
+    "converse_4.finished": 8.0,
+    "converse_5.started": 3.0,
+    "converse_5.finished": 7.0,
+    "hug_or_kiss_6.started": 8.0,
+    "hug_or_kiss_6.finished": 10.0,
+    "walk_to_3.started": 10.2,
+    "walk_to_3.finished": 13.2,
+    "human_1.arrived": 13.2,
+    "walk_to_3.arrived": 13.2
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "perform_activity_1",
+        "actor_id": "human_1",
+        "function": "perform_activity",
+        "start_time": 0.0,
+        "end_time": 4.0,
+        "duration": 4.0,
+        "params": {
+          "activity": "smoke",
+          "target": null
+        },
+        "is_idle_fill": false,
+        "events": {
+          "perform_activity_1.started": 0.0,
+          "perform_activity_1.finished": 4.0,
+          "human_1.started": 0.0,
+          "human_1.finished": 4.0
+        }
+      },
+      {
+        "beat_id": "converse_4",
+        "actor_id": "human_1",
+        "function": "converse",
+        "start_time": 4.0,
+        "end_time": 8.0,
+        "duration": 4.0,
+        "params": {
+          "actors": [
+            "Man",
+            "Girl"
+          ],
+          "center": null,
+          "topic": "friendly",
+          "turns": 2
+        },
+        "is_idle_fill": false,
+        "events": {
+          "converse_4.started": 4.0,
+          "converse_4.finished": 8.0,
+          "human_1.started": 4.0,
+          "human_1.finished": 8.0
+        }
+      },
+      {
+        "beat_id": "hug_or_kiss_6",
+        "actor_id": "human_1",
+        "function": "hug_or_kiss",
+        "start_time": 8.0,
+        "end_time": 10.0,
+        "duration": 2.0,
+        "params": {
+          "target": "Girl",
+          "style": "kiss"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "hug_or_kiss_6.started": 8.0,
+          "hug_or_kiss_6.finished": 10.0,
+          "human_1.started": 8.0,
+          "human_1.finished": 10.0
+        }
+      },
+      {
+        "beat_id": "idle_human_1_1000",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 10.0,
+        "end_time": 10.2,
+        "duration": 0.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "walk_to_3",
+        "actor_id": "human_1",
+        "function": "walk_to",
+        "start_time": 10.2,
+        "end_time": 13.2,
+        "duration": 3.0,
+        "params": {
+          "target": "in_front_of(Girl, 1.1)"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_3.started": 10.2,
+          "walk_to_3.finished": 13.2,
+          "human_1.started": 10.2,
+          "human_1.finished": 13.2,
+          "human_1.arrived": 13.2,
+          "walk_to_3.arrived": 13.2
+        }
+      },
+      {
+        "beat_id": "idle_human_1_1320",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 13.2,
+        "end_time": 13.708,
+        "duration": 0.508,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "dance_2",
+        "actor_id": "human_2",
+        "function": "dance",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {
+          "style": "freestyle"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "dance_2.started": 0.0,
+          "dance_2.finished": 3.0,
+          "human_2.started": 0.0,
+          "human_2.finished": 3.0
+        }
+      },
+      {
+        "beat_id": "converse_5",
+        "actor_id": "human_2",
+        "function": "converse",
+        "start_time": 3.0,
+        "end_time": 7.0,
+        "duration": 4.0,
+        "params": {
+          "actors": [
+            "Man",
+            "Girl"
+          ],
+          "center": null,
+          "topic": "friendly",
+          "turns": 2
+        },
+        "is_idle_fill": false,
+        "events": {
+          "converse_5.started": 3.0,
+          "converse_5.finished": 7.0,
+          "human_2.started": 3.0,
+          "human_2.finished": 7.0
+        }
+      },
+      {
+        "beat_id": "idle_human_2_700",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 7.0,
+        "end_time": 13.708,
+        "duration": 6.708,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "time_steps": 313,
+  "actors": [
+    "Girl",
+    "Man"
+  ],
+  "assets": [
+    "GrandNightClub",
+    "Ground"
+  ],
+  "unprotected_assets": [],
+  "violations": [],
+  "level_violations": []
+}

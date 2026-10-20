@@ -1,0 +1,319 @@
+{
+  "total_duration_s": 7.708,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "idle_car_1_0",
+      "actor_id": "car_1",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.708,
+      "duration": 7.708,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_car_2_0",
+      "actor_id": "car_2",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.708,
+      "duration": 7.708,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_car_3_0",
+      "actor_id": "car_3",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.708,
+      "duration": 7.708,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "run_to_1",
+      "actor_id": "human_1",
+      "function": "run_to",
+      "start_time": 0.0,
+      "end_time": 2.0,
+      "duration": 2.0,
+      "params": {
+        "target": "Coupe2:stand_front",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "run_to_1.started": 0.0,
+        "run_to_1.finished": 2.0,
+        "human_1.started": 0.0,
+        "human_1.finished": 2.0,
+        "human_1.arrived": 2.0,
+        "run_to_1.arrived": 2.0
+      }
+    },
+    {
+      "beat_id": "jump_on_2",
+      "actor_id": "human_1",
+      "function": "jump_on",
+      "start_time": 2.0,
+      "end_time": 3.2,
+      "duration": 1.2,
+      "params": {
+        "target": "Coupe2:hood",
+        "at_time": 2.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "jump_on_2.started": 2.0,
+        "jump_on_2.finished": 3.2,
+        "human_1.started": 2.0,
+        "human_1.finished": 3.2
+      }
+    },
+    {
+      "beat_id": "jump_down_3",
+      "actor_id": "human_1",
+      "function": "jump_down",
+      "start_time": 3.2,
+      "end_time": 4.2,
+      "duration": 1.0,
+      "params": {
+        "target": "beside(Coupe2, left, 1.2)",
+        "at_time": 3.2
+      },
+      "is_idle_fill": false,
+      "events": {
+        "jump_down_3.started": 3.2,
+        "jump_down_3.finished": 4.2,
+        "human_1.started": 3.2,
+        "human_1.finished": 4.2
+      }
+    },
+    {
+      "beat_id": "run_to_4",
+      "actor_id": "human_1",
+      "function": "run_to",
+      "start_time": 4.2,
+      "end_time": 6.0,
+      "duration": 1.8,
+      "params": {
+        "target": "Sedan1:stand_front",
+        "at_time": 4.2
+      },
+      "is_idle_fill": false,
+      "events": {
+        "run_to_4.started": 4.2,
+        "run_to_4.finished": 6.0,
+        "human_1.started": 4.2,
+        "human_1.finished": 6.0,
+        "human_1.arrived": 6.0,
+        "run_to_4.arrived": 6.0
+      }
+    },
+    {
+      "beat_id": "jump_on_5",
+      "actor_id": "human_1",
+      "function": "jump_on",
+      "start_time": 6.0,
+      "end_time": 7.2,
+      "duration": 1.2,
+      "params": {
+        "target": "Sedan1:hood",
+        "at_time": 6.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "jump_on_5.started": 6.0,
+        "jump_on_5.finished": 7.2,
+        "human_1.started": 6.0,
+        "human_1.finished": 7.2
+      }
+    },
+    {
+      "beat_id": "idle_human_1_720",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 7.2,
+      "end_time": 7.708,
+      "duration": 0.508,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "run_to_1.started": 0.0,
+    "run_to_1.finished": 2.0,
+    "human_1.started": 6.0,
+    "human_1.finished": 7.2,
+    "human_1.arrived": 6.0,
+    "run_to_1.arrived": 2.0,
+    "jump_on_2.started": 2.0,
+    "jump_on_2.finished": 3.2,
+    "jump_down_3.started": 3.2,
+    "jump_down_3.finished": 4.2,
+    "run_to_4.started": 4.2,
+    "run_to_4.finished": 6.0,
+    "run_to_4.arrived": 6.0,
+    "jump_on_5.started": 6.0,
+    "jump_on_5.finished": 7.2
+  },
+  "actor_schedules": {
+    "car_1": [
+      {
+        "beat_id": "idle_car_1_0",
+        "actor_id": "car_1",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.708,
+        "duration": 7.708,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "car_2": [
+      {
+        "beat_id": "idle_car_2_0",
+        "actor_id": "car_2",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.708,
+        "duration": 7.708,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "car_3": [
+      {
+        "beat_id": "idle_car_3_0",
+        "actor_id": "car_3",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.708,
+        "duration": 7.708,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_1": [
+      {
+        "beat_id": "run_to_1",
+        "actor_id": "human_1",
+        "function": "run_to",
+        "start_time": 0.0,
+        "end_time": 2.0,
+        "duration": 2.0,
+        "params": {
+          "target": "Coupe2:stand_front",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "run_to_1.started": 0.0,
+          "run_to_1.finished": 2.0,
+          "human_1.started": 0.0,
+          "human_1.finished": 2.0,
+          "human_1.arrived": 2.0,
+          "run_to_1.arrived": 2.0
+        }
+      },
+      {
+        "beat_id": "jump_on_2",
+        "actor_id": "human_1",
+        "function": "jump_on",
+        "start_time": 2.0,
+        "end_time": 3.2,
+        "duration": 1.2,
+        "params": {
+          "target": "Coupe2:hood",
+          "at_time": 2.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "jump_on_2.started": 2.0,
+          "jump_on_2.finished": 3.2,
+          "human_1.started": 2.0,
+          "human_1.finished": 3.2
+        }
+      },
+      {
+        "beat_id": "jump_down_3",
+        "actor_id": "human_1",
+        "function": "jump_down",
+        "start_time": 3.2,
+        "end_time": 4.2,
+        "duration": 1.0,
+        "params": {
+          "target": "beside(Coupe2, left, 1.2)",
+          "at_time": 3.2
+        },
+        "is_idle_fill": false,
+        "events": {
+          "jump_down_3.started": 3.2,
+          "jump_down_3.finished": 4.2,
+          "human_1.started": 3.2,
+          "human_1.finished": 4.2
+        }
+      },
+      {
+        "beat_id": "run_to_4",
+        "actor_id": "human_1",
+        "function": "run_to",
+        "start_time": 4.2,
+        "end_time": 6.0,
+        "duration": 1.8,
+        "params": {
+          "target": "Sedan1:stand_front",
+          "at_time": 4.2
+        },
+        "is_idle_fill": false,
+        "events": {
+          "run_to_4.started": 4.2,
+          "run_to_4.finished": 6.0,
+          "human_1.started": 4.2,
+          "human_1.finished": 6.0,
+          "human_1.arrived": 6.0,
+          "run_to_4.arrived": 6.0
+        }
+      },
+      {
+        "beat_id": "jump_on_5",
+        "actor_id": "human_1",
+        "function": "jump_on",
+        "start_time": 6.0,
+        "end_time": 7.2,
+        "duration": 1.2,
+        "params": {
+          "target": "Sedan1:hood",
+          "at_time": 6.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "jump_on_5.started": 6.0,
+          "jump_on_5.finished": 7.2,
+          "human_1.started": 6.0,
+          "human_1.finished": 7.2
+        }
+      },
+      {
+        "beat_id": "idle_human_1_720",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 7.2,
+        "end_time": 7.708,
+        "duration": 0.508,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

@@ -1,9 +1,0 @@
-{
-  "format_version": "2.0",
-  "project_id": "bridge_escape",
-  "title": "Bridge Escape",
-  "manifest": "manifest.json",
-  "scenes": [
-    "scenes/scene_01/scene.usda"
-  ]
-}

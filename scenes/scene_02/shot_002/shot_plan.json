@@ -1,0 +1,366 @@
+{
+  "schema_version": "1.0",
+  "prompt": "",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "car_1",
+      "asset_id": "cars.car1",
+      "label": "Red Car",
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.15,
+          0.12
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.6,
+        0.0,
+        9.5
+      ],
+      "facing_deg": 0.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "car_2",
+      "asset_id": "cars.car1",
+      "label": "Black Car",
+      "appearance": {
+        "color_variant": "obsidian",
+        "tint_rgb": [
+          0.18,
+          0.2,
+          0.24
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.6,
+        0.0,
+        -9.5
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "Driver 1",
+      "at_reference": "car_1:driver_seat",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.25,
+          0.25,
+          0.28
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.human",
+      "label": "Driver 2",
+      "at_reference": "car_2:driver_seat",
+      "appearance": {
+        "color_variant": "navy",
+        "tint_rgb": [
+          0.18,
+          0.25,
+          0.42
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      }
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "drive_to_1",
+      "function": "drive_to",
+      "actor_id": "car_1",
+      "params": {
+        "target": "roadway.stop_mark",
+        "speed": "normal",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.5
+      }
+    },
+    {
+      "beat_id": "drive_to_2",
+      "function": "drive_to",
+      "actor_id": "car_2",
+      "params": {
+        "target": "roadway.north_stop",
+        "speed": "normal",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.5
+      }
+    },
+    {
+      "beat_id": "drive_3",
+      "function": "drive",
+      "actor_id": "human_1",
+      "params": {
+        "target": "car_1:driver_seat",
+        "vehicle": "car_1",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.5
+      }
+    },
+    {
+      "beat_id": "drive_4",
+      "function": "drive",
+      "actor_id": "human_2",
+      "params": {
+        "target": "car_2:driver_seat",
+        "vehicle": "car_2",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.5
+      }
+    },
+    {
+      "beat_id": "exit_vehicle_5",
+      "function": "exit_vehicle",
+      "actor_id": "human_1",
+      "params": {
+        "door_part": "door_fl",
+        "at_time": 3.5,
+        "vehicle": "car_1",
+        "target": "car_1:door_fl_stand",
+        "part": "car_1:door_fl"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "exit_vehicle_6",
+      "function": "exit_vehicle",
+      "actor_id": "human_2",
+      "params": {
+        "door_part": "door_fl",
+        "at_time": 3.5,
+        "vehicle": "car_2",
+        "target": "car_2:door_fl_stand",
+        "part": "car_2:door_fl"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "walk_to_7",
+      "function": "walk_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "roadway.clear_south",
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "walk_to_8",
+      "function": "walk_to",
+      "actor_id": "human_2",
+      "params": {
+        "target": "roadway.clear_north",
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "walk_to_9",
+      "function": "walk_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "roadway.center_south",
+        "at_time": 6.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "walk_to_10",
+      "function": "walk_to",
+      "actor_id": "human_2",
+      "params": {
+        "target": "roadway.center_north",
+        "at_time": 6.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "argue_11",
+      "function": "argue",
+      "actor_id": "human_1",
+      "params": {
+        "actors": [
+          "human_1",
+          "human_2"
+        ],
+        "center": null,
+        "intensity": "heated",
+        "at_time": 8.0,
+        "for_duration": 1.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "short"
+      }
+    },
+    {
+      "beat_id": "argue_12",
+      "function": "argue",
+      "actor_id": "human_2",
+      "params": {
+        "actors": [
+          "human_1",
+          "human_2"
+        ],
+        "center": null,
+        "intensity": "heated",
+        "at_time": 8.0,
+        "for_duration": 1.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "short"
+      }
+    },
+    {
+      "beat_id": "attack_13",
+      "function": "attack",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "moves": [
+          "left_hook"
+        ],
+        "at_time": 9.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_14",
+      "function": "react",
+      "actor_id": "human_2",
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 9.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "attack_15",
+      "function": "attack",
+      "actor_id": "human_2",
+      "params": {
+        "target": "human_1",
+        "moves": [
+          "elbow_punch"
+        ],
+        "at_time": 11.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_16",
+      "function": "react",
+      "actor_id": "human_1",
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 11.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "attack_17",
+      "function": "attack",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "moves": [
+          "kick_to_the_groin"
+        ],
+        "at_time": 12.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_18",
+      "function": "react",
+      "actor_id": "human_2",
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 12.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    }
+  ],
+  "camera": {
+    "style": "three_quarter_front_left",
+    "actors": [
+      "human_1",
+      "human_2",
+      "car_1",
+      "car_2"
+    ],
+    "vantage": "front",
+    "move": "push_in"
+  }
+}

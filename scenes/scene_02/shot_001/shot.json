@@ -1,0 +1,45 @@
+{
+  "prompt": "",
+  "version": "1.0",
+  "fps": 24,
+  "duration_s": 9.5,
+  "end_frame": 228,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "2393821af2e8aa60",
+  "actors": [
+    {
+      "actor_id": "human_1",
+      "label": "Driver",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Driver"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "Runner",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "light_beige",
+        "tint_rgb": [
+          0.92,
+          0.88,
+          0.78
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Runner"
+    }
+  ]
+}

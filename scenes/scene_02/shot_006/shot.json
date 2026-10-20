@@ -1,0 +1,46 @@
+{
+  "prompt": "",
+  "version": "1.0",
+  "scene_version": "scene_v1.usda",
+  "fps": 24,
+  "duration_s": 9.0,
+  "end_frame": 216,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "b6eaca645b3a3593",
+  "actors": [
+    {
+      "actor_id": "human_1",
+      "label": "Partner_A",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "navy",
+        "tint_rgb": [
+          0.18,
+          0.25,
+          0.45
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Partner_A"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "Partner_B",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Partner_B"
+    }
+  ]
+}

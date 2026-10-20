@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build PainterSpace",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Run PainterSpace",
+            "type": "shell",
+            "command": "${workspaceFolder}/build/PainterSpace",
+            "dependsOn": "Build PainterSpace",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "DYLD_FRAMEWORK_PATH": "/Users/vishaljose/Qt/6.11.1/macos/lib"
+                }
+            }
+        }
+    ]
+}
+

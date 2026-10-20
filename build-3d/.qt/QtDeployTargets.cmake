@@ -1,2 +1,0 @@
-set(__QT_DEPLOY_TARGET_PainterSpace_FILE /Users/vishaljose/PainterSpace/build-3d/PainterSpace)
-set(__QT_DEPLOY_TARGET_PainterSpace_TYPE EXECUTABLE)

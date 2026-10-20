@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch PainterSpace (C++ Desktop App)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/PainterSpace",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build PainterSpace",
+            "env": {
+                "DYLD_FRAMEWORK_PATH": "/Users/vishaljose/Qt/6.11.1/macos/lib"
+            }
+        }
+    ]
+}
+

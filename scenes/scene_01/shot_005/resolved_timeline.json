@@ -1,0 +1,313 @@
+{
+  "total_duration_s": 8.458,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "drive_toward_1",
+      "actor_id": "car_1",
+      "function": "drive_toward",
+      "start_time": 0.0,
+      "end_time": 2.0,
+      "duration": 2.0,
+      "params": {
+        "target": "human_1",
+        "mode": "stop_short",
+        "gap": "near",
+        "speed": "fast"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_toward_1.started": 0.0,
+        "drive_toward_1.finished": 2.0,
+        "car_1.started": 0.0,
+        "car_1.finished": 2.0,
+        "car_1.stopped": 2.0,
+        "drive_toward_1.stopped": 2.0
+      }
+    },
+    {
+      "beat_id": "idle_human_1_0",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 1.125,
+      "duration": 1.125,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "dodge_2",
+      "actor_id": "human_1",
+      "function": "dodge",
+      "start_time": 1.125,
+      "end_time": 2.525,
+      "duration": 1.4,
+      "params": {
+        "threat": "car_1",
+        "lateral_distance_m": 2.2
+      },
+      "is_idle_fill": false,
+      "events": {
+        "dodge_2.started": 1.125,
+        "dodge_2.finished": 2.525,
+        "human_1.started": 1.125,
+        "human_1.finished": 2.525,
+        "human_1.arrived": 2.525,
+        "dodge_2.arrived": 2.525
+      }
+    },
+    {
+      "beat_id": "idle_car_1_200",
+      "actor_id": "car_1",
+      "function": "wait",
+      "start_time": 2.0,
+      "end_time": 8.458,
+      "duration": 6.458,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_1_252",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 2.525,
+      "end_time": 2.725,
+      "duration": 0.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "run_to_3",
+      "actor_id": "human_1",
+      "function": "run_to",
+      "start_time": 2.725,
+      "end_time": 5.725,
+      "duration": 3.0,
+      "params": {
+        "target": "car_1:hood_strike"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "run_to_3.started": 2.725,
+        "run_to_3.finished": 5.725,
+        "human_1.started": 2.725,
+        "human_1.finished": 5.725,
+        "human_1.arrived": 5.725,
+        "run_to_3.arrived": 5.725
+      }
+    },
+    {
+      "beat_id": "idle_human_1_572",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 5.725,
+      "end_time": 5.925,
+      "duration": 0.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "attack_4",
+      "actor_id": "human_1",
+      "function": "attack",
+      "start_time": 5.925,
+      "end_time": 7.925,
+      "duration": 2.0,
+      "params": {
+        "target": "cars.car1",
+        "moves": [
+          "left_hook",
+          "elbow_punch"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_4.started": 5.925,
+        "attack_4.finished": 7.925,
+        "human_1.started": 5.925,
+        "human_1.finished": 7.925
+      }
+    },
+    {
+      "beat_id": "idle_human_1_792",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 7.925,
+      "end_time": 8.458,
+      "duration": 0.533,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "drive_toward_1.started": 0.0,
+    "drive_toward_1.finished": 2.0,
+    "car_1.started": 0.0,
+    "car_1.finished": 2.0,
+    "car_1.stopped": 2.0,
+    "drive_toward_1.stopped": 2.0,
+    "dodge_2.started": 1.125,
+    "dodge_2.finished": 2.525,
+    "human_1.started": 5.925,
+    "human_1.finished": 7.925,
+    "human_1.arrived": 5.725,
+    "dodge_2.arrived": 2.525,
+    "run_to_3.started": 2.725,
+    "run_to_3.finished": 5.725,
+    "run_to_3.arrived": 5.725,
+    "attack_4.started": 5.925,
+    "attack_4.finished": 7.925
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "idle_human_1_0",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 1.125,
+        "duration": 1.125,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "dodge_2",
+        "actor_id": "human_1",
+        "function": "dodge",
+        "start_time": 1.125,
+        "end_time": 2.525,
+        "duration": 1.4,
+        "params": {
+          "threat": "car_1",
+          "lateral_distance_m": 2.2
+        },
+        "is_idle_fill": false,
+        "events": {
+          "dodge_2.started": 1.125,
+          "dodge_2.finished": 2.525,
+          "human_1.started": 1.125,
+          "human_1.finished": 2.525,
+          "human_1.arrived": 2.525,
+          "dodge_2.arrived": 2.525
+        }
+      },
+      {
+        "beat_id": "idle_human_1_252",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 2.525,
+        "end_time": 2.725,
+        "duration": 0.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "run_to_3",
+        "actor_id": "human_1",
+        "function": "run_to",
+        "start_time": 2.725,
+        "end_time": 5.725,
+        "duration": 3.0,
+        "params": {
+          "target": "car_1:hood_strike"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "run_to_3.started": 2.725,
+          "run_to_3.finished": 5.725,
+          "human_1.started": 2.725,
+          "human_1.finished": 5.725,
+          "human_1.arrived": 5.725,
+          "run_to_3.arrived": 5.725
+        }
+      },
+      {
+        "beat_id": "idle_human_1_572",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 5.725,
+        "end_time": 5.925,
+        "duration": 0.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "attack_4",
+        "actor_id": "human_1",
+        "function": "attack",
+        "start_time": 5.925,
+        "end_time": 7.925,
+        "duration": 2.0,
+        "params": {
+          "target": "cars.car1",
+          "moves": [
+            "left_hook",
+            "elbow_punch"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_4.started": 5.925,
+          "attack_4.finished": 7.925,
+          "human_1.started": 5.925,
+          "human_1.finished": 7.925
+        }
+      },
+      {
+        "beat_id": "idle_human_1_792",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 7.925,
+        "end_time": 8.458,
+        "duration": 0.533,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "car_1": [
+      {
+        "beat_id": "drive_toward_1",
+        "actor_id": "car_1",
+        "function": "drive_toward",
+        "start_time": 0.0,
+        "end_time": 2.0,
+        "duration": 2.0,
+        "params": {
+          "target": "human_1",
+          "mode": "stop_short",
+          "gap": "near",
+          "speed": "fast"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_toward_1.started": 0.0,
+          "drive_toward_1.finished": 2.0,
+          "car_1.started": 0.0,
+          "car_1.finished": 2.0,
+          "car_1.stopped": 2.0,
+          "drive_toward_1.stopped": 2.0
+        }
+      },
+      {
+        "beat_id": "idle_car_1_200",
+        "actor_id": "car_1",
+        "function": "wait",
+        "start_time": 2.0,
+        "end_time": 8.458,
+        "duration": 6.458,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

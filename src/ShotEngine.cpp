@@ -666,7 +666,8 @@ QString ShotEngine::validateAuthoredUsdStage(const QString& stagePath) {
         const bool allowedSceneSublayer = !sceneDir.isEmpty() &&
             (fullPath == QFileInfo(QDir(sceneDir).filePath("scene.usda")).canonicalFilePath() ||
              (fullPath.startsWith(sceneDir + QDir::separator()) && fullPath.endsWith("/shot.usda")));
-        if (!allowedInAssets && !allowedSceneSublayer) {
+        const bool allowedSiblingLayer = QFileInfo(fullPath).canonicalPath() == info.canonicalPath();
+        if (!allowedInAssets && !allowedSceneSublayer && !allowedSiblingLayer) {
             return QString("USD asset reference is missing or outside assets/: %1").arg(reference);
         }
     }
@@ -684,6 +685,43 @@ QString ShotEngine::validateAuthoredUsdStage(const QString& stagePath) {
         if (!checkerProcess.waitForFinished(30000) || checkerProcess.exitCode() != 0)
             return QString("usdchecker rejected the authored stage: %1")
                 .arg(QString::fromUtf8(checkerProcess.readAllStandardError()).trimmed());
+    }
+    if (info.fileName() == "shot.usda") {
+        QString projectRoot;
+        for (const QString& root : assetRoots) {
+            const QString candidateRoot = QFileInfo(QDir(root).filePath("..")).canonicalFilePath();
+            if (QFileInfo::exists(QDir(candidateRoot).filePath("tools/collision/validate_collisions.py")) &&
+                QFileInfo::exists(QDir(candidateRoot).filePath("manifest.json"))) {
+                projectRoot = candidateRoot;
+                break;
+            }
+        }
+        if (!projectRoot.isEmpty()) {
+            QString python = qEnvironmentVariable("PAINTERSPACE_PYTHON");
+            if (python.isEmpty()) {
+                const QString venvPy = QDir(projectRoot).filePath(".venv/bin/python3");
+                python = QFileInfo::exists(venvPy) ? venvPy : QStandardPaths::findExecutable("python3");
+            }
+            const QString collisionScript = QDir(projectRoot).filePath("tools/collision/validate_collisions.py");
+            const QString manifestPath = QDir(projectRoot).filePath("manifest.json");
+            if (!python.isEmpty()) {
+                QProcess collisionProc;
+                collisionProc.setWorkingDirectory(projectRoot);
+                collisionProc.start(python, {
+                    collisionScript,
+                    info.absoluteFilePath(),
+                    QStringLiteral("--manifest"), manifestPath,
+                    QStringLiteral("--apply-intents"),
+                    QStringLiteral("--repair")
+                });
+                if (!collisionProc.waitForFinished(120000) || collisionProc.exitCode() != 0) {
+                    const QString out = QString::fromUtf8(collisionProc.readAllStandardOutput()).trimmed();
+                    const QString err = QString::fromUtf8(collisionProc.readAllStandardError()).trimmed();
+                    return QString("Solid-object collision check failed: %1")
+                        .arg(!out.isEmpty() ? out : err);
+                }
+            }
+        }
     }
     return {};
 }

@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "lint_passed": true,
+  "collision_passed": true,
+  "camera_passed": true,
+  "lint_warnings": [],
+  "collision_report": {
+    "ok": true,
+    "time_steps": 407,
+    "actors": [
+      "Hero"
+    ],
+    "assets": [
+      "Speeding_Car",
+      "Bridge",
+      "Car"
+    ],
+    "unprotected_assets": [],
+    "violations": []
+  },
+  "camera_warnings": []
+}

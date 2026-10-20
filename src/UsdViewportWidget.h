@@ -33,6 +33,10 @@ struct UsdPrimItem {
     bool visible = true;
     bool hasUserEdit = false;
     int depth = 0;
+    QString actorId;
+    QString actorLabel;
+    QString appearanceVariant;
+    QColor identityColor = QColor("#5ca0d3");
 };
 
 enum class UsdGizmoMode { Move, Rotate, Scale };
@@ -44,6 +48,9 @@ public:
     explicit UsdViewportWidget(QWidget* parent = nullptr);
     ~UsdViewportWidget() override;
 
+    // Actor Identity & Labeling (Shot Function Library Phase 0)
+    bool renameActorLabel(const QString& primPath, const QString& newLabel);
+
     // Stage lifecycle (Phases 1 & 2)
     bool openStage(const QString& stagePath, bool isSceneStage = false);
     void reloadStage();
@@ -51,6 +58,8 @@ public:
     QString userEditsLayerPath() const;
     bool hasStage() const;
     bool isSceneStage() const;
+    bool saveSceneEdits(QString* errorMsg = nullptr);
+    int snapshotSceneForExistingShots(QString* snapshotFileName = nullptr);
 
     // Playback & timeline (Phases 0, 1, 4)
     void setPlaying(bool playing);
@@ -146,6 +155,7 @@ private:
     void renderHydraToImage(int pixelWidth, int pixelHeight, QImage& outImage);
     void drawGridOverlay(QPainter& painter, const QMatrix4x4& viewProj) const;
     void drawSelectionAndGizmoOverlay(QPainter& painter, const QMatrix4x4& viewProj) const;
+    void drawActorNameTags(QPainter& painter, const QMatrix4x4& viewProj) const;
     void drawOrientationGizmo(QPainter& painter) const;
     void drawStatusBanner(QPainter& painter) const;
     QMatrix4x4 currentViewMatrix() const;

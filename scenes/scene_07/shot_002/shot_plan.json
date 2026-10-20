@@ -1,0 +1,155 @@
+{
+  "schema_version": "1.0",
+  "prompt": "The shot starts with a man standing on the corner smoking, he sees a girl dancing, he walks to her talks a bit, and then they kiss.",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.male",
+      "label": "Man",
+      "at_reference": "sidewalk.start",
+      "facing_reference": "north",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.female",
+      "label": "Girl",
+      "at_reference": "in_front_of(Man, 3.8)",
+      "facing_reference": "south",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      }
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "perform_activity_1",
+      "function": "perform_activity",
+      "actor_id": "human_1",
+      "params": {
+        "activity": "smoke",
+        "target": null
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "short"
+      }
+    },
+    {
+      "beat_id": "dance_2",
+      "function": "dance",
+      "actor_id": "human_2",
+      "params": {
+        "style": "freestyle"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "walk_to_3",
+      "function": "walk_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "in_front_of(Girl, 1.1)"
+      },
+      "start_condition": {
+        "type": "after",
+        "value": "perform_activity_1"
+      }
+    },
+    {
+      "beat_id": "converse_4",
+      "function": "converse",
+      "actor_id": "human_1",
+      "params": {
+        "actors": [
+          "Man",
+          "Girl"
+        ],
+        "center": null,
+        "topic": "friendly",
+        "turns": 2
+      },
+      "start_condition": {
+        "type": "after",
+        "value": "walk_to_1"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "short"
+      }
+    },
+    {
+      "beat_id": "converse_5",
+      "function": "converse",
+      "actor_id": "human_2",
+      "params": {
+        "actors": [
+          "Man",
+          "Girl"
+        ],
+        "center": null,
+        "topic": "friendly",
+        "turns": 2
+      },
+      "start_condition": {
+        "type": "after",
+        "value": "walk_to_1"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "short"
+      }
+    },
+    {
+      "beat_id": "hug_or_kiss_6",
+      "function": "hug_or_kiss",
+      "actor_id": "human_1",
+      "params": {
+        "target": "Girl",
+        "style": "kiss"
+      },
+      "start_condition": {
+        "type": "after",
+        "value": "converse_1"
+      }
+    }
+  ],
+  "camera": {
+    "style": "medium",
+    "actors": [
+      "Man",
+      "Girl"
+    ],
+    "vantage": "three_quarter_left"
+  }
+}

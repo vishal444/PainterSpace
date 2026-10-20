@@ -1,0 +1,26 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    upAxis = "Y"
+    metersPerUnit = 1
+    timeCodesPerSecond = 24
+    startTimeCode = 0
+    endTimeCode = 48
+    subLayers = [
+        @../scene.usda@
+    ]
+)
+
+over "World"
+{
+    def Camera "ShotCam"
+    {
+        double3 xformOp:translate = (0, 2.2, 10.0)
+        float3 xformOp:rotateXYZ = (-8.0, 0.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+        float focalLength = 35
+        float horizontalAperture = 36
+        float verticalAperture = 20.25
+        float2 clippingRange = (0.1, 1000)
+    }
+}

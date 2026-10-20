@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "lint_passed": true,
+  "collision_passed": true,
+  "camera_passed": true,
+  "bake_errors": [],
+  "lint_warnings": [],
+  "collision_report": {
+    "ok": true,
+    "time_steps": 313,
+    "actors": [
+      "Girl",
+      "Man"
+    ],
+    "assets": [
+      "GrandNightClub",
+      "Ground"
+    ],
+    "unprotected_assets": [],
+    "violations": [],
+    "level_violations": []
+  },
+  "camera_warnings": [],
+  "prompt_adherence": {
+    "passed": true,
+    "violations": [],
+    "checks": {}
+  }
+}

@@ -1,0 +1,356 @@
+{
+  "total_duration_s": 9.5,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "walk_to_1",
+      "actor_id": "human_1",
+      "function": "walk_to",
+      "start_time": 0.0,
+      "end_time": 4.0,
+      "duration": 4.0,
+      "params": {
+        "target": "Car1:door_fl_stand",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_1.started": 0.0,
+        "walk_to_1.finished": 4.0,
+        "human_1.started": 0.0,
+        "human_1.finished": 4.0,
+        "human_1.arrived": 4.0,
+        "walk_to_1.arrived": 4.0
+      }
+    },
+    {
+      "beat_id": "wait_3",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 5.0,
+      "duration": 5.0,
+      "params": {
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "wait_3.started": 0.0,
+        "wait_3.finished": 5.0,
+        "human_2.started": 0.0,
+        "human_2.finished": 5.0
+      }
+    },
+    {
+      "beat_id": "open_part_2",
+      "actor_id": "human_1",
+      "function": "open_part",
+      "start_time": 4.0,
+      "end_time": 6.0,
+      "duration": 2.0,
+      "params": {
+        "part": "Car1:door_fl",
+        "at_time": 4.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "open_part_2.started": 4.0,
+        "open_part_2.finished": 6.0,
+        "human_1.started": 4.0,
+        "human_1.finished": 6.0
+      }
+    },
+    {
+      "beat_id": "run_to_4",
+      "actor_id": "human_2",
+      "function": "run_to",
+      "start_time": 5.0,
+      "end_time": 7.0,
+      "duration": 2.0,
+      "params": {
+        "target": "beside(human_1, left, 1.4)",
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "run_to_4.started": 5.0,
+        "run_to_4.finished": 7.0,
+        "human_2.started": 5.0,
+        "human_2.finished": 7.0,
+        "human_2.arrived": 7.0,
+        "run_to_4.arrived": 7.0
+      }
+    },
+    {
+      "beat_id": "turn_to_face_6",
+      "actor_id": "human_1",
+      "function": "turn_to_face",
+      "start_time": 6.0,
+      "end_time": 6.6,
+      "duration": 0.6,
+      "params": {
+        "target": "human_2",
+        "at_time": 7.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "turn_to_face_6.started": 6.0,
+        "turn_to_face_6.finished": 6.6,
+        "human_1.started": 6.0,
+        "human_1.finished": 6.6
+      }
+    },
+    {
+      "beat_id": "gesture_7",
+      "actor_id": "human_1",
+      "function": "gesture",
+      "start_time": 6.6,
+      "end_time": 8.0,
+      "duration": 1.4,
+      "params": {
+        "move": "acknowledging",
+        "target": null,
+        "at_time": 7.6
+      },
+      "is_idle_fill": false,
+      "events": {
+        "gesture_7.started": 6.6,
+        "gesture_7.finished": 8.0,
+        "human_1.started": 6.6,
+        "human_1.finished": 8.0
+      }
+    },
+    {
+      "beat_id": "react_5",
+      "actor_id": "human_2",
+      "function": "react",
+      "start_time": 7.0,
+      "end_time": 9.0,
+      "duration": 2.0,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 7.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_5.started": 7.0,
+        "react_5.finished": 9.0,
+        "human_2.started": 7.0,
+        "human_2.finished": 9.0
+      }
+    },
+    {
+      "beat_id": "idle_human_1_800",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 8.0,
+      "end_time": 9.5,
+      "duration": 1.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_2_900",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 9.0,
+      "end_time": 9.5,
+      "duration": 0.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "walk_to_1.started": 0.0,
+    "walk_to_1.finished": 4.0,
+    "human_1.started": 6.6,
+    "human_1.finished": 8.0,
+    "human_1.arrived": 4.0,
+    "walk_to_1.arrived": 4.0,
+    "wait_3.started": 0.0,
+    "wait_3.finished": 5.0,
+    "human_2.started": 7.0,
+    "human_2.finished": 9.0,
+    "open_part_2.started": 4.0,
+    "open_part_2.finished": 6.0,
+    "run_to_4.started": 5.0,
+    "run_to_4.finished": 7.0,
+    "human_2.arrived": 7.0,
+    "run_to_4.arrived": 7.0,
+    "turn_to_face_6.started": 6.0,
+    "turn_to_face_6.finished": 6.6,
+    "react_5.started": 7.0,
+    "react_5.finished": 9.0,
+    "gesture_7.started": 6.6,
+    "gesture_7.finished": 8.0
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "walk_to_1",
+        "actor_id": "human_1",
+        "function": "walk_to",
+        "start_time": 0.0,
+        "end_time": 4.0,
+        "duration": 4.0,
+        "params": {
+          "target": "Car1:door_fl_stand",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_1.started": 0.0,
+          "walk_to_1.finished": 4.0,
+          "human_1.started": 0.0,
+          "human_1.finished": 4.0,
+          "human_1.arrived": 4.0,
+          "walk_to_1.arrived": 4.0
+        }
+      },
+      {
+        "beat_id": "open_part_2",
+        "actor_id": "human_1",
+        "function": "open_part",
+        "start_time": 4.0,
+        "end_time": 6.0,
+        "duration": 2.0,
+        "params": {
+          "part": "Car1:door_fl",
+          "at_time": 4.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "open_part_2.started": 4.0,
+          "open_part_2.finished": 6.0,
+          "human_1.started": 4.0,
+          "human_1.finished": 6.0
+        }
+      },
+      {
+        "beat_id": "turn_to_face_6",
+        "actor_id": "human_1",
+        "function": "turn_to_face",
+        "start_time": 6.0,
+        "end_time": 6.6,
+        "duration": 0.6,
+        "params": {
+          "target": "human_2",
+          "at_time": 7.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "turn_to_face_6.started": 6.0,
+          "turn_to_face_6.finished": 6.6,
+          "human_1.started": 6.0,
+          "human_1.finished": 6.6
+        }
+      },
+      {
+        "beat_id": "gesture_7",
+        "actor_id": "human_1",
+        "function": "gesture",
+        "start_time": 6.6,
+        "end_time": 8.0,
+        "duration": 1.4,
+        "params": {
+          "move": "acknowledging",
+          "target": null,
+          "at_time": 7.6
+        },
+        "is_idle_fill": false,
+        "events": {
+          "gesture_7.started": 6.6,
+          "gesture_7.finished": 8.0,
+          "human_1.started": 6.6,
+          "human_1.finished": 8.0
+        }
+      },
+      {
+        "beat_id": "idle_human_1_800",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 8.0,
+        "end_time": 9.5,
+        "duration": 1.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "wait_3",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 5.0,
+        "duration": 5.0,
+        "params": {
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "wait_3.started": 0.0,
+          "wait_3.finished": 5.0,
+          "human_2.started": 0.0,
+          "human_2.finished": 5.0
+        }
+      },
+      {
+        "beat_id": "run_to_4",
+        "actor_id": "human_2",
+        "function": "run_to",
+        "start_time": 5.0,
+        "end_time": 7.0,
+        "duration": 2.0,
+        "params": {
+          "target": "beside(human_1, left, 1.4)",
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "run_to_4.started": 5.0,
+          "run_to_4.finished": 7.0,
+          "human_2.started": 5.0,
+          "human_2.finished": 7.0,
+          "human_2.arrived": 7.0,
+          "run_to_4.arrived": 7.0
+        }
+      },
+      {
+        "beat_id": "react_5",
+        "actor_id": "human_2",
+        "function": "react",
+        "start_time": 7.0,
+        "end_time": 9.0,
+        "duration": 2.0,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 7.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_5.started": 7.0,
+          "react_5.finished": 9.0,
+          "human_2.started": 7.0,
+          "human_2.finished": 9.0
+        }
+      },
+      {
+        "beat_id": "idle_human_2_900",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 9.0,
+        "end_time": 9.5,
+        "duration": 0.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

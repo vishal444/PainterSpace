@@ -1,0 +1,21 @@
+{
+    "configured": true,
+    "has_3d_editor_layout": true,
+    "prompt": "",
+    "scene_id": "scene_05",
+    "snapshots": [
+        {
+            "file": "scene_v1.usda",
+            "version": 1
+        },
+        {
+            "file": "scene_v2.usda",
+            "version": 2
+        },
+        {
+            "file": "scene_v3.usda",
+            "version": 3
+        }
+    ],
+    "stage": "scene.usda"
+}

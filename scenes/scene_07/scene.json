@@ -1,0 +1,14 @@
+{
+    "configured": true,
+    "has_3d_editor_layout": true,
+    "name": "Scene 7",
+    "prompt": "The shot starts with a man standing on the corner smoking, he sees a girl dancing, he walks to her talks a bit, and then they kiss.",
+    "scene_id": "scene_07",
+    "stage": "scene.usda",
+    "snapshots": [
+        {
+            "file": "scene_v1.usda",
+            "version": 1
+        }
+    ]
+}

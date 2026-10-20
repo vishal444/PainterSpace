@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "lint_passed": true,
+  "collision_passed": true,
+  "camera_passed": true,
+  "lint_warnings": [],
+  "collision_report": {
+    "ok": true,
+    "time_steps": 769,
+    "actors": [
+      "Driver_1",
+      "Driver_2"
+    ],
+    "assets": [
+      "OakTree",
+      "Red_Car",
+      "Black_Car"
+    ],
+    "unprotected_assets": [],
+    "violations": []
+  },
+  "camera_warnings": []
+}

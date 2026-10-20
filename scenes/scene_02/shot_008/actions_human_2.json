@@ -1,0 +1,50 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "run",
+      "start_s": 0.0,
+      "end_s": 2.5,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 0,
+      "end_frame": 60
+    },
+    {
+      "clip": "left_hook",
+      "start_s": 2.5,
+      "end_s": 4.0,
+      "speed": 1.0,
+      "blend_s": 0.15,
+      "start_frame": 60,
+      "end_frame": 96
+    },
+    {
+      "clip": "reaction",
+      "start_s": 4.0,
+      "end_s": 5.5,
+      "speed": 1.0,
+      "blend_s": 0.1,
+      "start_frame": 96,
+      "end_frame": 132
+    },
+    {
+      "clip": "kick_to_the_groin",
+      "start_s": 5.5,
+      "end_s": 7.0,
+      "speed": 1.0,
+      "blend_s": 0.15,
+      "start_frame": 132,
+      "end_frame": 168
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 7.0,
+      "end_s": 7.5,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 168,
+      "end_frame": 180
+    }
+  ]
+}

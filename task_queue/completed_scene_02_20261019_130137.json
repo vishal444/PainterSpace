@@ -1,0 +1,1405 @@
+{
+  "existing_scene_usda": "#usda 1.0\n(\n    defaultPrim = \"World\"\n    upAxis = \"Y\"\n    metersPerUnit = 1\n)\n\ndef Xform \"World\"\n{\n    def DomeLight \"BaseAmbient\"\n    {\n        color3f inputs:color = (0.35, 0.42, 0.55)\n        float inputs:intensity = 0.45\n    }\n    def DistantLight \"BaseKeyLight\"\n    {\n        color3f inputs:color = (0.95, 0.88, 0.78)\n        float inputs:intensity = 1.6\n        float angle = 0.53\n        float3 xformOp:rotateXYZ = (-35, -25, 0)\n        uniform token[] xformOpOrder = [\"xformOp:rotateXYZ\"]\n    }\n    def Xform \"Ground\"\n    {\n        double3 xformOp:translate = (0, -0.04, 0)\n        float3 xformOp:scale = (24, 0.08, 24)\n        uniform token[] xformOpOrder = [\"xformOp:translate\", \"xformOp:scale\"]\n        def Cube \"Floor\"\n        {\n            double size = 1\n            color3f[] primvars:displayColor = [(0.16, 0.20, 0.24)] (\n                interpolation = \"constant\"\n            )\n        }\n    }\n}\n",
+  "has_existing_stage": true,
+  "instructions": "Author the stage in OpenUSD USDA ASCII format. Use tools/bake_shot_animations.py for locomotion character animations, align facing direction, and save to target_stage. PainterSpace will live-reload automatically upon file save.",
+  "manifest_summary": {
+    "assets": [
+      {
+        "aliases": [
+          "environments.downtown_art_deco_tower"
+        ],
+        "bounds_m": [
+          76,
+          205.7,
+          70
+        ],
+        "bounds_max": [
+          38,
+          205.68,
+          35
+        ],
+        "bounds_min": [
+          -38,
+          -0.02,
+          -35
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "environment.downtown_tower",
+        "path": "assets/usdc_assets/environments/downtown_art_deco_tower.usdc",
+        "pivot": "Street base center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "environment",
+          "building",
+          "city"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "aliases": [
+          "environments.grand_harbour"
+        ],
+        "bounds_m": [
+          300,
+          54.7,
+          250
+        ],
+        "bounds_max": [
+          150,
+          54,
+          180
+        ],
+        "bounds_min": [
+          -150,
+          -0.7,
+          -70
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "environment.grand_harbour",
+        "path": "assets/usdc_assets/environments/grand_harbour.usdc",
+        "pivot": "Harbour center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "environment",
+          "harbour",
+          "waterfront"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "aliases": [
+          "environments.ocean_horizon"
+        ],
+        "bounds_m": [
+          300,
+          1.51,
+          300
+        ],
+        "bounds_max": [
+          150,
+          0.869,
+          150
+        ],
+        "bounds_min": [
+          -150,
+          -0.637,
+          -150
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "environment.ocean_horizon",
+        "path": "assets/usdc_assets/environments/ocean_horizon.usdc",
+        "pivot": "Water surface center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "environment",
+          "ocean",
+          "water"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "aliases": [
+          "environments.residential_avenue"
+        ],
+        "bounds_m": [
+          310,
+          48.02,
+          89.03
+        ],
+        "bounds_max": [
+          155,
+          48,
+          44.2
+        ],
+        "bounds_min": [
+          -155,
+          -0.02,
+          -44.835
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "environment.residential_avenue",
+        "path": "assets/usdc_assets/environments/residential_avenue.usdc",
+        "pivot": "Avenue center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "environment",
+          "building",
+          "avenue",
+          "street"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "aliases": [
+          "environments.residential_intersection"
+        ],
+        "bounds_m": [
+          180,
+          39.32,
+          180
+        ],
+        "bounds_max": [
+          90,
+          39.3,
+          90
+        ],
+        "bounds_min": [
+          -90,
+          -0.02,
+          -90
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "environment.residential_intersection",
+        "path": "assets/usdc_assets/environments/residential_intersection.usdc",
+        "pivot": "Intersection center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "environment",
+          "building",
+          "intersection",
+          "street"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "aliases": [
+          "environments.residential_neighborhood"
+        ],
+        "bounds_m": [
+          82,
+          53.82,
+          60
+        ],
+        "bounds_max": [
+          41,
+          53.8,
+          30
+        ],
+        "bounds_min": [
+          -41,
+          -0.02,
+          -30
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "environment.residential_neighborhood",
+        "path": "assets/usdc_assets/environments/residential_neighborhood.usdc",
+        "pivot": "Street base center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "environment",
+          "building",
+          "neighborhood",
+          "street"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "aliases": [
+          "humans.human"
+        ],
+        "bounds_m": [
+          1.805,
+          1.809,
+          0.321
+        ],
+        "bounds_max": [
+          0.903,
+          1.809,
+          0.16
+        ],
+        "bounds_min": [
+          -0.903,
+          0,
+          -0.16
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "character.human",
+        "notes": [
+          "character facing detected from the feet: -Y (original axes)"
+        ],
+        "path": "assets/usdc_assets/humans/human.norm.usda",
+        "pivot": "Feet at origin (y=0), facing -Z",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/humans/human.usdc",
+        "tags": [
+          "character",
+          "human",
+          "rigged",
+          "animated"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "door_fl_stand": {
+            "facing_deg": 90,
+            "note": "beside the door, clear of its full swing",
+            "part": "door_fl",
+            "pos": [
+              -1.53,
+              0,
+              -1.431
+            ]
+          },
+          "door_fr_stand": {
+            "facing_deg": 270,
+            "note": "beside the door, clear of its full swing",
+            "part": "door_fr",
+            "pos": [
+              1.53,
+              0,
+              -1.431
+            ]
+          },
+          "door_rl_stand": {
+            "facing_deg": 90,
+            "note": "beside the door, clear of its full swing",
+            "part": "door_rl",
+            "pos": [
+              -1.53,
+              0,
+              1.136
+            ]
+          },
+          "door_rr_stand": {
+            "facing_deg": 270,
+            "note": "beside the door, clear of its full swing",
+            "part": "door_rr",
+            "pos": [
+              1.53,
+              0,
+              1.266
+            ]
+          },
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              0,
+              0,
+              3.32
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              0,
+              0,
+              -3.311
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -1.941,
+              0,
+              0.004
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              1.941,
+              0,
+              0.004
+            ]
+          }
+        },
+        "bounds_m": [
+          2.082,
+          1.47,
+          4.831
+        ],
+        "bounds_max": [
+          1.041,
+          1.47,
+          2.42
+        ],
+        "bounds_min": [
+          -1.041,
+          0,
+          -2.411
+        ],
+        "default_prim": "Car",
+        "forward_axis": "-Z",
+        "id": "cars.car1",
+        "notes": [
+          "part 'steering_wheel': no limits in the asset; assumed 0..70 deg, both directions"
+        ],
+        "parts": {
+          "door_fl": {
+            "axis": "Y",
+            "axis_vec": [
+              0,
+              1,
+              0
+            ],
+            "hinge": [
+              -0.8666,
+              0,
+              -0.914
+            ],
+            "kind": "door",
+            "max_deg": 65,
+            "min_deg": 0,
+            "open_sign": -1,
+            "prim": "Doors/Door_FL"
+          },
+          "door_fr": {
+            "axis": "Y",
+            "axis_vec": [
+              0,
+              1,
+              0
+            ],
+            "hinge": [
+              0.8666,
+              0,
+              -0.914
+            ],
+            "kind": "door",
+            "max_deg": 65,
+            "min_deg": 0,
+            "open_sign": 1,
+            "prim": "Doors/Door_FR"
+          },
+          "door_rl": {
+            "axis": "Y",
+            "axis_vec": [
+              0,
+              1,
+              0
+            ],
+            "hinge": [
+              -0.8665,
+              0,
+              0.914
+            ],
+            "kind": "door",
+            "max_deg": 65,
+            "min_deg": 0,
+            "open_sign": 1,
+            "prim": "Doors/Door_RL"
+          },
+          "door_rr": {
+            "axis": "Y",
+            "axis_vec": [
+              0,
+              1,
+              0
+            ],
+            "hinge": [
+              0.8665,
+              0,
+              0.914
+            ],
+            "kind": "door",
+            "max_deg": 65,
+            "min_deg": 0,
+            "open_sign": -1,
+            "prim": "Doors/Door_RR"
+          },
+          "hood": {
+            "axis": "X",
+            "axis_vec": [
+              1,
+              0,
+              0
+            ],
+            "hinge": [
+              0,
+              0.93,
+              -0.92
+            ],
+            "kind": "hood",
+            "max_deg": 55,
+            "min_deg": 0,
+            "open_sign": 1,
+            "prim": "Hood"
+          },
+          "steering_wheel": {
+            "axis": "Z",
+            "axis_vec": [
+              0,
+              0,
+              1
+            ],
+            "collide": false,
+            "hinge": [
+              -0.36,
+              0.93,
+              -0.5
+            ],
+            "limits_unverified": true,
+            "max_deg": 70,
+            "min_deg": 0,
+            "prim": "Interior/SteeringWheel"
+          },
+          "trunk": {
+            "axis": "X",
+            "axis_vec": [
+              1,
+              0,
+              0
+            ],
+            "hinge": [
+              0,
+              0.97,
+              1.5
+            ],
+            "kind": "trunk",
+            "max_deg": 55,
+            "min_deg": 0,
+            "open_sign": -1,
+            "prim": "Trunk"
+          }
+        },
+        "path": "assets/usdc_assets/cars/car1.usdc",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "tags": [
+          "vehicle",
+          "car",
+          "car1"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {
+          "doors": [
+            "closed",
+            "open"
+          ],
+          "hood": [
+            "closed",
+            "open"
+          ],
+          "paint": [
+            "black",
+            "blue",
+            "green",
+            "red",
+            "silver",
+            "white"
+          ],
+          "trunk": [
+            "closed",
+            "open"
+          ]
+        }
+      },
+      {
+        "anchors": {
+          "door_l_stand": {
+            "facing_deg": 90,
+            "note": "beside the door, clear of its full swing",
+            "part": "door_l",
+            "pos": [
+              -1.524,
+              0,
+              -1.217
+            ]
+          },
+          "door_r_stand": {
+            "facing_deg": 270,
+            "note": "beside the door, clear of its full swing",
+            "part": "door_r",
+            "pos": [
+              1.524,
+              0,
+              -1.217
+            ]
+          },
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              0,
+              0,
+              2.64
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              0,
+              0,
+              -2.63
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -1.988,
+              0,
+              0.005
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              1.988,
+              0,
+              0.005
+            ]
+          }
+        },
+        "bounds_m": [
+          2.177,
+          1.714,
+          3.459
+        ],
+        "bounds_max": [
+          1.088,
+          1.714,
+          1.73
+        ],
+        "bounds_min": [
+          -1.088,
+          0,
+          -1.73
+        ],
+        "default_prim": "root",
+        "forward_axis": "-Z",
+        "id": "cars.car2",
+        "notes": [
+          "deactivated Blender helpers: Camera, Cube, Light, env_light"
+        ],
+        "parts": {
+          "door_l": {
+            "axis": "Z",
+            "axis_vec": [
+              0,
+              1,
+              0
+            ],
+            "hinge": [
+              -0.914,
+              0.6813,
+              -0.7
+            ],
+            "max_deg": 70,
+            "min_deg": 0,
+            "prim": "car_body/door_l"
+          },
+          "door_r": {
+            "axis": "Z",
+            "axis_vec": [
+              0,
+              1,
+              0
+            ],
+            "hinge": [
+              0.914,
+              0.6813,
+              -0.7
+            ],
+            "max_deg": 70,
+            "min_deg": 0,
+            "prim": "car_body/door_r"
+          }
+        },
+        "path": "assets/usdc_assets/cars/car2.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/cars/car2.usdc",
+        "tags": [
+          "vehicle",
+          "car",
+          "car2"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              -0.097,
+              0,
+              0.994
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              -0.097,
+              0,
+              -1.366
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -1.287,
+              0,
+              -0.186
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              1.093,
+              0,
+              -0.186
+            ]
+          }
+        },
+        "bounds_m": [
+          3.11,
+          8.686,
+          3.62
+        ],
+        "bounds_max": [
+          1.555,
+          8.686,
+          1.81
+        ],
+        "bounds_min": [
+          -1.555,
+          0,
+          -1.81
+        ],
+        "default_prim": "Birch",
+        "forward_axis": "-Z",
+        "id": "trees.birch_tree",
+        "notes": [],
+        "path": "assets/usdc_assets/trees/birch_tree.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/trees/birch_tree.usdc",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "birch"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              -0.042,
+              0,
+              1.258
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              -0.042,
+              0,
+              -1.102
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -1.232,
+              0,
+              0.078
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              1.148,
+              0,
+              0.078
+            ]
+          }
+        },
+        "bounds_m": [
+          3.186,
+          8.681,
+          3.174
+        ],
+        "bounds_max": [
+          1.593,
+          8.681,
+          1.587
+        ],
+        "bounds_min": [
+          -1.593,
+          0,
+          -1.587
+        ],
+        "default_prim": "Birch",
+        "forward_axis": "-Z",
+        "id": "trees.birch_tree_lush",
+        "notes": [],
+        "path": "assets/usdc_assets/trees/birch_tree_lush.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/trees/birch_tree_lush.usdc",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "birch",
+          "lush"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              0.992,
+              0,
+              1.195
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              0.992,
+              0,
+              -3.509
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -1.507,
+              0,
+              -1.157
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              3.49,
+              0,
+              -1.157
+            ]
+          }
+        },
+        "bounds_m": [
+          5.858,
+          7.827,
+          6.458
+        ],
+        "bounds_max": [
+          2.929,
+          7.827,
+          3.229
+        ],
+        "bounds_min": [
+          -2.929,
+          0,
+          -3.229
+        ],
+        "default_prim": "Tree",
+        "forward_axis": "-Z",
+        "id": "trees.oak_tree",
+        "notes": [],
+        "path": "assets/usdc_assets/trees/oak_tree.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/trees/oak_tree.usdc",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "oak"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              -1.352,
+              0,
+              0.939
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              -1.352,
+              0,
+              -1.722
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -3.636,
+              0,
+              -0.392
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              0.932,
+              0,
+              -0.392
+            ]
+          }
+        },
+        "bounds_m": [
+          6.787,
+          8.263,
+          6.666
+        ],
+        "bounds_max": [
+          3.394,
+          8.263,
+          3.333
+        ],
+        "bounds_min": [
+          -3.394,
+          0,
+          -3.333
+        ],
+        "default_prim": "Tree",
+        "forward_axis": "-Z",
+        "id": "trees.oak_tree_lush",
+        "notes": [],
+        "path": "assets/usdc_assets/trees/oak_tree_lush.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/trees/oak_tree_lush.usdc",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "oak",
+          "lush"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              0.048,
+              0,
+              3.548
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              0.048,
+              0,
+              -3.827
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -3.718,
+              0,
+              -0.14
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              3.813,
+              0,
+              -0.14
+            ]
+          }
+        },
+        "bounds_m": [
+          6.228,
+          9.005,
+          5.952
+        ],
+        "bounds_max": [
+          3.114,
+          9.005,
+          2.976
+        ],
+        "bounds_min": [
+          -3.114,
+          0,
+          -2.976
+        ],
+        "default_prim": "Pine",
+        "forward_axis": "-Z",
+        "id": "trees.pine_tree",
+        "notes": [],
+        "path": "assets/usdc_assets/trees/pine_tree.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/trees/pine_tree.usdc",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "pine"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      },
+      {
+        "anchors": {
+          "stand_back": {
+            "facing_deg": 0,
+            "pos": [
+              -0.026,
+              0,
+              3.866
+            ]
+          },
+          "stand_front": {
+            "facing_deg": 180,
+            "pos": [
+              -0.026,
+              0,
+              -3.834
+            ]
+          },
+          "stand_left": {
+            "facing_deg": 90,
+            "pos": [
+              -3.81,
+              0,
+              0.016
+            ]
+          },
+          "stand_right": {
+            "facing_deg": 270,
+            "pos": [
+              3.757,
+              0,
+              0.016
+            ]
+          }
+        },
+        "bounds_m": [
+          6.302,
+          9.005,
+          6.096
+        ],
+        "bounds_max": [
+          3.151,
+          9.005,
+          3.048
+        ],
+        "bounds_min": [
+          -3.151,
+          0,
+          -3.048
+        ],
+        "default_prim": "Pine",
+        "forward_axis": "-Z",
+        "id": "trees.pine_tree_lush",
+        "notes": [],
+        "path": "assets/usdc_assets/trees/pine_tree_lush.norm.usda",
+        "pivot": "Base center at origin (y=0)",
+        "source_format": "USDC",
+        "source_path": "assets/usdc_assets/trees/pine_tree_lush.usdc",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "pine",
+          "lush"
+        ],
+        "units": "meters",
+        "up_axis": "Y",
+        "usd_reference_ready": true,
+        "variants": {}
+      }
+    ],
+    "clips": {
+      "acknowledging": {
+        "file": "assets/usdc_assets/humans/acknowledging.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "arm_stretching": {
+        "file": "assets/usdc_assets/humans/arm_stretching.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "boxing_block": {
+        "file": "assets/usdc_assets/humans/boxing_block.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "breakdance_freeze_var_3": {
+        "file": "assets/usdc_assets/humans/breakdance_freeze_var_3.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "brutal_assassination": {
+        "file": "assets/usdc_assets/humans/brutal_assassination.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "chapa_giratoria": {
+        "file": "assets/usdc_assets/humans/chapa_giratoria.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "cheering": {
+        "file": "assets/usdc_assets/humans/cheering.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "clapping": {
+        "file": "assets/usdc_assets/humans/clapping.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "climbing": {
+        "file": "assets/usdc_assets/humans/climbing.usdc",
+        "loop": false,
+        "stride_speed_mps": 0.6,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "crawling": {
+        "file": "assets/usdc_assets/humans/crawling.usdc",
+        "loop": true,
+        "stride_speed_mps": 0.8,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "crouch_to_stand": {
+        "file": "assets/usdc_assets/humans/crouch_to_stand.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "defeat_expression": {
+        "file": "assets/usdc_assets/humans/defeat_expression.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "dodging_right": {
+        "file": "assets/usdc_assets/humans/dodging_right.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "elbow_punch": {
+        "file": "assets/usdc_assets/humans/elbow_punch.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "falling": {
+        "file": "assets/usdc_assets/humans/falling.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "floating": {
+        "file": "assets/usdc_assets/humans/floating.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "head_hit_during_fight": {
+        "file": "assets/usdc_assets/humans/head_hit_during_fight.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "jogging_with_box": {
+        "file": "assets/usdc_assets/humans/jogging_with_box.usdc",
+        "loop": true,
+        "stride_speed_mps": 2.2,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "jump": {
+        "file": "assets/usdc_assets/humans/jump.usdc",
+        "loop": false,
+        "stride_speed_mps": 2.4,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "jumping_down": {
+        "file": "assets/usdc_assets/humans/jumping_down.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "kick_to_the_groin": {
+        "file": "assets/usdc_assets/humans/kick_to_the_groin.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "kiss": {
+        "file": "assets/usdc_assets/humans/kiss.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "kneeling_down": {
+        "file": "assets/usdc_assets/humans/kneeling_down.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "left_hook": {
+        "file": "assets/usdc_assets/humans/left_hook.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "macaco_side": {
+        "file": "assets/usdc_assets/humans/macaco_side.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "martelo_2": {
+        "file": "assets/usdc_assets/humans/martelo_2.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "nervously_look_around": {
+        "file": "assets/usdc_assets/humans/nervously_look_around.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "opening_door_inwards": {
+        "file": "assets/usdc_assets/humans/opening_door_inwards.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "playing_drums": {
+        "file": "assets/usdc_assets/humans/playing_drums.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "pointing_forward": {
+        "file": "assets/usdc_assets/humans/pointing_forward.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "praying": {
+        "file": "assets/usdc_assets/humans/praying.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "pulling_lever": {
+        "file": "assets/usdc_assets/humans/pulling_lever.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "reaction": {
+        "file": "assets/usdc_assets/humans/reaction.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "run": {
+        "file": "assets/usdc_assets/humans/run.usdc",
+        "loop": true,
+        "stride_speed_mps": 4.2,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "sad_walk_arc_right": {
+        "file": "assets/usdc_assets/humans/sad_walk_arc_right.usdc",
+        "loop": false,
+        "stride_speed_mps": 1.2,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "silly_dancing": {
+        "file": "assets/usdc_assets/humans/silly_dancing.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "singing": {
+        "file": "assets/usdc_assets/humans/singing.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "sitting": {
+        "file": "assets/usdc_assets/humans/sitting.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "sitting_clap": {
+        "file": "assets/usdc_assets/humans/sitting_clap.usdc",
+        "loop": true,
+        "stride_speed_mps": 0
+      },
+      "slow_jog_backwards": {
+        "file": "assets/usdc_assets/humans/slow_jog_backwards.usdc",
+        "loop": true,
+        "stride_speed_mps": 1.8,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "soccer_tripping_down": {
+        "file": "assets/usdc_assets/humans/soccer_tripping_down.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "spooked": {
+        "file": "assets/usdc_assets/humans/spooked.usdc",
+        "loop": false,
+        "stride_speed_mps": 0
+      },
+      "start_walking": {
+        "file": "assets/usdc_assets/humans/start_walking.usdc",
+        "loop": false,
+        "stride_speed_mps": 1.2,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "swimming": {
+        "file": "assets/usdc_assets/humans/swimming.usdc",
+        "loop": true,
+        "stride_speed_mps": 1,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      },
+      "walk": {
+        "file": "assets/usdc_assets/humans/walk.usdc",
+        "loop": true,
+        "stride_speed_mps": 1.4,
+        "strip_root_axes": [
+          0,
+          2
+        ],
+        "strip_root_motion": true
+      }
+    },
+    "forward_axis": "-Z",
+    "schema_version": "1.0",
+    "units": "meters",
+    "up_axis": "Y"
+  },
+  "prompt": "A quiet street, late afternoon. A red sedan (Car1) is parked at the curb, facing away from the camera's left side.\n\nTwo people, kept clearly distinct: \"Driver\" (human 1, dark jacket) and \"Runner\" (human 2, light jacket).\n\n0-4 s: Driver walks in from the left along the sidewalk toward Car1 and stops beside the driver-side (left front) door, facing it.\n4-6 s: Driver opens the driver door. The door swings outward on its hinge as he reaches for it, using the door-opening animation.\n5-7 s: Runner sprints in from far down the street toward Driver, taking a route that keeps clear of the car and the open door.\n7-9 s: Runner stops a conversational distance from Driver, startled and out of breath. Driver turns to look and gives a small nod of acknowledgment.\n\nCamera: a wide three-quarter view from the front left, slowly pushing in to a medium shot of both people by the end. Both people and the car stay in frame the whole time.\n\nRules: nobody passes through the car, the open door, or each other. Everyone faces the direction they are moving. The car stays parked.",
+  "provider": "gemini_coding_agent",
+  "scene_stage": "scenes/scene_02/scene.usda",
+  "stage_type": "scene",
+  "status": "completed",
+  "target_stage": "scenes/scene_02/scene.usda",
+  "task_id": "scene_02_20261019_130137",
+  "world_state": {
+    "camera": null,
+    "camera_view": [],
+    "environment": [
+      {
+        "asset": null,
+        "bounds_max": [
+          12,
+          0,
+          12
+        ],
+        "bounds_min": [
+          -12,
+          -0.08,
+          -12
+        ],
+        "id": "Ground",
+        "top_y": 0
+      }
+    ],
+    "free_space": [],
+    "generated_by": "tools/world_state.py",
+    "groups": [],
+    "objects": [],
+    "omitted": null,
+    "overlaps": [],
+    "relations": [],
+    "schema_version": "1.0",
+    "source": {
+      "fps": 24,
+      "frame": 0,
+      "frame_range": null,
+      "label": "scene_02 baseline",
+      "stage": "scenes/scene_02/scene.usda",
+      "time_s": 0
+    },
+    "warnings": [],
+    "world": {
+      "east": "+X",
+      "ground_y": 0,
+      "north": "-Z",
+      "units": "m",
+      "up": "Y"
+    },
+    "zones": []
+  },
+  "world_state_images": [
+    "scenes/scene_02/world_state_topdown.png"
+  ],
+  "completed_stage": "/Users/vishaljose/PainterSpace/scenes/scene_02/shot_001/shot.usda"
+}

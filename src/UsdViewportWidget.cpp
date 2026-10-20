@@ -22,6 +22,7 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/tokens.h"
+#include "pxr/usd/sdf/copyUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,7 +35,6 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/basisCurves.h"
-#include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/cone.h"
 #include "pxr/usd/usdGeom/cube.h"
@@ -73,6 +73,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QProcess>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSaveFile>
@@ -82,6 +83,9 @@
 #include <QVBoxLayout>
 #include <QOpenGLContext>
 #include <QWheelEvent>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <algorithm>
 #include <chrono>
@@ -298,6 +302,65 @@ struct UsdViewportWidget::Impl {
             worldBoundCache.clear();
         } else {
             worldBoundCache.remove(primPath);
+        }
+    }
+
+    struct ColliderBox {
+        GfVec3d center;
+        GfVec3d size;
+    };
+    mutable QHash<QString, QVector<ColliderBox>> manifestColliders;
+    mutable bool manifestCollidersLoaded = false;
+
+    void loadManifestCollidersIfNeeded() const {
+        if (manifestCollidersLoaded || !stage) return;
+        manifestCollidersLoaded = true;
+        manifestColliders.clear();
+
+        std::string stagePath = stage->GetRootLayer()->GetRealPath();
+        if (stagePath.empty()) stagePath = stage->GetRootLayer()->GetIdentifier();
+        QDir curDir(QFileInfo(QString::fromStdString(stagePath)).absoluteDir());
+        QString manifestPath;
+        for (int i = 0; i < 5; ++i) {
+            if (QFileInfo::exists(curDir.filePath("manifest.json"))) {
+                manifestPath = curDir.filePath("manifest.json");
+                break;
+            }
+            if (!curDir.cdUp()) break;
+        }
+        if (manifestPath.isEmpty()) return;
+
+        QFile f(manifestPath);
+        if (!f.open(QIODevice::ReadOnly)) return;
+        QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+        if (!doc.isObject()) return;
+        QJsonObject root = doc.object();
+        QJsonArray assets = root.value("assets").toArray();
+        for (const QJsonValue& val : assets) {
+            QJsonObject a = val.toObject();
+            QString id = a.value("id").toString();
+            QJsonObject col = a.value("collision").toObject();
+            QJsonArray shapes = col.value("shapes").toArray();
+            if (shapes.isEmpty()) continue;
+            QVector<ColliderBox> boxes;
+            for (const QJsonValue& sVal : shapes) {
+                QJsonObject s = sVal.toObject();
+                QJsonArray cArr = s.value("center").toArray();
+                QJsonArray szArr = s.value("size").toArray();
+                if (cArr.size() == 3 && szArr.size() == 3) {
+                    boxes.push_back({
+                        GfVec3d(cArr[0].toDouble(), cArr[1].toDouble(), cArr[2].toDouble()),
+                        GfVec3d(szArr[0].toDouble(), szArr[1].toDouble(), szArr[2].toDouble())
+                    });
+                }
+            }
+            if (!boxes.isEmpty()) {
+                manifestColliders.insert(id, boxes);
+                QString p = a.value("path").toString();
+                if (!p.isEmpty()) {
+                    manifestColliders.insert(QFileInfo(p).completeBaseName(), boxes);
+                }
+            }
         }
     }
 
@@ -546,6 +609,8 @@ bool UsdViewportWidget::openStage(const QString& stagePath, bool isSceneStage) {
 
     // Recreate engine for the newly opened stage
     myImpl->engine.reset();
+    myImpl->manifestCollidersLoaded = false;
+    myImpl->manifestColliders.clear();
 
     // Read stage timing metadata
     const double startTc = myImpl->stage->HasAuthoredTimeCodeRange() ? myImpl->stage->GetStartTimeCode() : 0.0;
@@ -649,6 +714,173 @@ QString UsdViewportWidget::userEditsLayerPath() const { return myImpl->userEdits
 bool UsdViewportWidget::hasStage() const { return static_cast<bool>(myImpl->stage); }
 bool UsdViewportWidget::isSceneStage() const { return myImpl->isSceneStage; }
 
+int UsdViewportWidget::snapshotSceneForExistingShots(QString* snapshotFileName) {
+    if (myImpl->stagePath.isEmpty()) return 0;
+    const QFileInfo sceneInfo(myImpl->stagePath);
+    const QDir sceneDir = sceneInfo.dir();
+
+    const QStringList shotDirs = sceneDir.entryList(QStringList() << QStringLiteral("shot_*"), QDir::Dirs, QDir::Name);
+    QStringList shotsToRetarget;
+
+    for (const QString& sDirName : shotDirs) {
+        const QString shotUsdaPath = sceneDir.filePath(QStringLiteral("%1/shot.usda").arg(sDirName));
+        if (!QFileInfo::exists(shotUsdaPath)) continue;
+
+        QFile file(shotUsdaPath);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            const QString content = QString::fromUtf8(file.readAll());
+            if (content.contains(QStringLiteral("@../scene.usda@")) || content.contains(QStringLiteral("\"../scene.usda\""))) {
+                shotsToRetarget.append(shotUsdaPath);
+            }
+        }
+    }
+
+    if (shotsToRetarget.isEmpty()) {
+        return 0;
+    }
+
+    int nextVersion = 1;
+    while (sceneDir.exists(QStringLiteral("scene_v%1.usda").arg(nextVersion))) {
+        nextVersion++;
+    }
+
+    const QString snapName = QStringLiteral("scene_v%1.usda").arg(nextVersion);
+    const QString snapPath = sceneDir.filePath(snapName);
+
+    if (!QFile::copy(sceneInfo.absoluteFilePath(), snapPath)) {
+        qWarning() << "Failed to copy scene.usda to" << snapPath;
+        return 0;
+    }
+
+    const QString newSublayer = QStringLiteral("@../%1@").arg(snapName);
+    for (const QString& shotPath : shotsToRetarget) {
+        QFile file(shotPath);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QString content = QString::fromUtf8(file.readAll());
+            file.close();
+
+            content.replace(QStringLiteral("@../scene.usda@"), newSublayer);
+            content.replace(QStringLiteral("\"../scene.usda\""), QStringLiteral("\"../%1\"").arg(snapName));
+
+            QSaveFile out(shotPath);
+            if (out.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                out.write(content.toUtf8());
+                out.commit();
+            }
+        }
+    }
+
+    if (snapshotFileName) {
+        *snapshotFileName = snapName;
+    }
+    return nextVersion;
+}
+
+bool UsdViewportWidget::saveSceneEdits(QString* errorMsg) {
+    if (!myImpl->stage || !myImpl->userEditsLayer) {
+        if (errorMsg) *errorMsg = QStringLiteral("No active stage or user edits layer");
+        return false;
+    }
+    if (!myImpl->isSceneStage) {
+        if (errorMsg) *errorMsg = QStringLiteral("Current stage is not the main scene");
+        return false;
+    }
+
+    // Save pending changes to user_edits.usda first
+    myImpl->userEditsLayer->Save();
+
+    const QFileInfo sceneInfo(myImpl->stagePath);
+    const QDir sceneDir = sceneInfo.dir();
+
+    // Prefer tools/scene_manager.py for complete pipeline (snapshot, merge, reset, world_state, scene.json)
+    const QString projectRoot = QDir::currentPath();
+    const QString sceneManagerScript = QDir(projectRoot).filePath(QStringLiteral("tools/scene_manager.py"));
+    bool pythonSuccess = false;
+
+    if (QFileInfo::exists(sceneManagerScript)) {
+        QProcess proc;
+        QString pythonBin = QDir(projectRoot).filePath(QStringLiteral(".venv/bin/python"));
+        if (!QFileInfo::exists(pythonBin)) {
+            pythonBin = QStringLiteral("python3");
+        }
+        proc.start(pythonBin, QStringList() << sceneManagerScript << QStringLiteral("save") << sceneDir.absolutePath());
+        if (proc.waitForFinished(15000) && proc.exitCode() == 0) {
+            pythonSuccess = true;
+        } else {
+            qWarning() << "scene_manager.py failed or timed out:" << proc.readAllStandardError();
+        }
+    }
+
+    if (!pythonSuccess) {
+        // Native fallback
+        QString snapFile;
+        snapshotSceneForExistingShots(&snapFile);
+
+        SdfLayerHandle rootLayer = myImpl->stage->GetRootLayer();
+        if (!rootLayer) {
+            if (errorMsg) *errorMsg = QStringLiteral("Could not access stage root layer");
+            return false;
+        }
+
+        SdfPrimSpecHandle worldSpec = myImpl->userEditsLayer->GetPrimAtPath(SdfPath("/World"));
+        if (worldSpec) {
+            auto mergePrim = [&](auto& self, const SdfPrimSpecHandle& srcPrim) -> void {
+                const SdfPath p = srcPrim->GetPath();
+                SdfPrimSpecHandle dstPrim = rootLayer->GetPrimAtPath(p);
+                if (!dstPrim) {
+                    const SdfPath parent = p.GetParentPath();
+                    if (!rootLayer->GetPrimAtPath(parent)) {
+                        SdfCreatePrimInLayer(rootLayer, parent);
+                    }
+                    SdfCreatePrimInLayer(rootLayer, p);
+                    SdfCopySpec(myImpl->userEditsLayer, p, rootLayer, p);
+                    return;
+                }
+                for (const SdfPropertySpecHandle& prop : srcPrim->GetProperties()) {
+                    SdfCopySpec(myImpl->userEditsLayer, prop->GetPath(), rootLayer, prop->GetPath());
+                }
+                if (srcPrim->HasInfo(SdfFieldKeys->CustomData)) {
+                    dstPrim->SetInfo(SdfFieldKeys->CustomData, srcPrim->GetInfo(SdfFieldKeys->CustomData));
+                }
+                if (srcPrim->HasInfo(SdfFieldKeys->Active)) {
+                    dstPrim->SetInfo(SdfFieldKeys->Active, srcPrim->GetInfo(SdfFieldKeys->Active));
+                }
+                for (const SdfPrimSpecHandle& child : srcPrim->GetNameChildren()) {
+                    self(self, child);
+                }
+            };
+            for (const SdfPrimSpecHandle& child : worldSpec->GetNameChildren()) {
+                mergePrim(mergePrim, child);
+            }
+        }
+
+        rootLayer->Save();
+
+        const std::string emptyTemplate =
+            "#usda 1.0\n(\n    doc = \"PainterSpace manual user edits layer\"\n)\n\nover \"World\"\n{\n}\n";
+        myImpl->userEditsLayer->ImportFromString(emptyTemplate);
+        myImpl->userEditsLayer->Save();
+    }
+
+    // Refresh stage in viewport
+    myImpl->suppressWatcherReload = true;
+    myImpl->userEditsLayer->Reload();
+    myImpl->stage->Reload();
+    myImpl->undoStack.clear();
+    myImpl->redoStack.clear();
+    std::string exported;
+    myImpl->userEditsLayer->ExportToString(&exported);
+    myImpl->undoStack.append(QString::fromStdString(exported));
+    myImpl->suppressWatcherReload = false;
+    myImpl->invalidateBound(QString());
+    myImpl->hydraDirty = true;
+    updateOverlayUi();
+    update();
+    emit stageChanged();
+    emit userEditsChanged(0);
+    return true;
+}
+
 void UsdViewportWidget::setPlaying(bool playing) {
     if (myImpl->playing == playing) return;
     myImpl->playing = playing;
@@ -742,6 +974,31 @@ QVector<UsdPrimItem> UsdViewportWidget::primList() const {
         VtValue assetIdVal = child.GetCustomDataByKey(TfToken("asset_id"));
         if (assetIdVal.IsHolding<std::string>()) {
             item.assetId = QString::fromStdString(assetIdVal.UncheckedGet<std::string>());
+        }
+
+        VtValue actorIdVal = child.GetCustomDataByKey(TfToken("actor_id"));
+        if (actorIdVal.IsHolding<std::string>()) {
+            item.actorId = QString::fromStdString(actorIdVal.UncheckedGet<std::string>());
+        }
+
+        VtValue labelVal = child.GetCustomDataByKey(TfToken("label"));
+        if (labelVal.IsHolding<std::string>()) {
+            item.actorLabel = QString::fromStdString(labelVal.UncheckedGet<std::string>());
+        }
+
+        VtValue appVarVal = child.GetCustomDataByKey(TfToken("appearance_variant"));
+        if (appVarVal.IsHolding<std::string>()) {
+            item.appearanceVariant = QString::fromStdString(appVarVal.UncheckedGet<std::string>());
+        }
+
+        VtValue tintVal = child.GetCustomDataByKey(TfToken("tint_rgb"));
+        if (tintVal.IsHolding<GfVec3f>()) {
+            GfVec3f rgb = tintVal.UncheckedGet<GfVec3f>();
+            item.identityColor = QColor::fromRgbF(rgb[0], rgb[1], rgb[2]);
+        } else {
+            const QString colorKey = !item.actorId.isEmpty() ? item.actorId : item.name;
+            const int h = qAbs(qHash(colorKey)) % 360;
+            item.identityColor = QColor::fromHsv(h, 175, 230);
         }
 
         UsdGeomImageable img(child);
@@ -1798,6 +2055,50 @@ bool UsdViewportWidget::tryCpuRayPick(const QPointF& screenPt, QString& outHitPr
             continue;
         }
 
+        myImpl->loadManifestCollidersIfNeeded();
+
+        // Check if child matches an ingested asset with collider boxes
+        QString assetId;
+        VtValue assetIdVal = child.GetCustomDataByKey(TfToken("asset_id"));
+        if (assetIdVal.IsHolding<std::string>()) {
+            assetId = QString::fromStdString(assetIdVal.UncheckedGet<std::string>());
+        }
+        if (assetId.isEmpty()) {
+            assetId = QString::fromStdString(nameStr);
+        }
+
+        QVector<Impl::ColliderBox> colliders = myImpl->manifestColliders.value(assetId);
+        if (colliders.isEmpty()) {
+            colliders = myImpl->manifestColliders.value(assetId.toLower());
+        }
+        if (colliders.isEmpty()) {
+            for (const UsdPrim& sub : child.GetChildren()) {
+                VtValue subAssetId = sub.GetCustomDataByKey(TfToken("asset_id"));
+                if (subAssetId.IsHolding<std::string>()) {
+                    colliders = myImpl->manifestColliders.value(QString::fromStdString(subAssetId.UncheckedGet<std::string>()));
+                    if (!colliders.isEmpty()) break;
+                }
+            }
+        }
+
+        if (!colliders.isEmpty()) {
+            UsdGeomXformable xf(child);
+            GfMatrix4d l2w = xf ? xf.ComputeLocalToWorldTransform(time) : GfMatrix4d(1.0);
+            for (const auto& box : colliders) {
+                GfRange3d localRng(box.center - box.size * 0.5, box.center + box.size * 0.5);
+                GfBBox3d obb(localRng, l2w);
+                double dMin = 0.0, dMax = 0.0;
+                if (ray.Intersect(obb, &dMin, &dMax)) {
+                    const double hitDist = (dMin >= 0.0) ? dMin : ((dMax >= 0.0) ? dMax : -1.0);
+                    if (hitDist >= 0.0 && hitDist < closestDist) {
+                        closestDist = hitDist;
+                        bestPrimPath = child.GetPath();
+                    }
+                }
+            }
+            continue;
+        }
+
         const GfBBox3d bbox = myImpl->cachedWorldBound(child);
         const GfRange3d range = bbox.ComputeAlignedRange();
         if (range.IsEmpty()) continue;
@@ -1959,6 +2260,97 @@ int UsdViewportWidget::hitTestGizmoAxis(const QPointF& screenPt) const {
     return -1;
 }
 
+bool UsdViewportWidget::renameActorLabel(const QString& primPath, const QString& newLabel) {
+    if (!myImpl->stage || primPath.isEmpty() || newLabel.trimmed().isEmpty()) return false;
+    UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(primPath.toStdString()));
+    if (!prim) return false;
+
+    pushUndoSnapshot();
+    myImpl->suppressWatcherReload = true;
+    if (myImpl->userEditsLayer) {
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+    }
+    prim.SetCustomDataByKey(TfToken("label"), VtValue(newLabel.trimmed().toStdString()));
+    if (myImpl->userEditsLayer) {
+        myImpl->userEditsLayer->Save();
+    }
+    myImpl->suppressWatcherReload = false;
+    myImpl->hydraDirty = true;
+    update();
+    emit stageChanged();
+    return true;
+}
+
+void UsdViewportWidget::drawActorNameTags(QPainter& painter, const QMatrix4x4& viewProj) const {
+    if (!myImpl->stage) return;
+    const QVector<UsdPrimItem> items = primList();
+    if (items.isEmpty()) return;
+
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    const QString selected = selectedPrimPath();
+
+    for (const UsdPrimItem& item : items) {
+        if (item.actorId.isEmpty() && item.actorLabel.isEmpty()) continue;
+
+        UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(item.path.toStdString()));
+        if (!prim || !item.visible) continue;
+
+        GfBBox3d bbox = myImpl->cachedWorldBound(prim);
+        GfRange3d range = bbox.ComputeAlignedRange();
+        QVector3D topCenter;
+        if (!range.IsEmpty()) {
+            const GfVec3d mx = range.GetMax();
+            const GfVec3d mn = range.GetMin();
+            topCenter = QVector3D(float((mn[0] + mx[0]) * 0.5), float(mx[1] + 0.25), float((mn[2] + mx[2]) * 0.5));
+        } else {
+            UsdGeomXformable xf(prim);
+            GfMatrix4d xfMat = xf ? xf.ComputeLocalToWorldTransform(UsdTimeCode(myImpl->currentFrame)) : GfMatrix4d(1.0);
+            GfVec3d tr = xfMat.ExtractTranslation();
+            topCenter = QVector3D(float(tr[0]), float(tr[1] + 1.85), float(tr[2]));
+        }
+
+        bool inFront = false;
+        QPointF screenPt = projectWorldToScreen(topCenter, viewProj, &inFront);
+        if (!inFront || screenPt.x() < -50 || screenPt.x() > width() + 50 ||
+            screenPt.y() < -50 || screenPt.y() > height() + 50) {
+            continue;
+        }
+
+        const bool isSelected = (item.path == selected);
+        const QString displayName = item.actorLabel.isEmpty() ? item.actorId : item.actorLabel;
+
+        QFont font = painter.font();
+        font.setPointSize(11);
+        font.setBold(isSelected);
+        painter.setFont(font);
+
+        QFontMetrics fm(font);
+        const int textW = fm.horizontalAdvance(displayName);
+        const int pillW = textW + 28;
+        const int pillH = 22;
+        const QRectF pillRect(screenPt.x() - pillW / 2.0, screenPt.y() - pillH, pillW, pillH);
+
+        // Background pill
+        painter.setPen(QPen(isSelected ? QColor("#ffffff") : item.identityColor, isSelected ? 2.0 : 1.2));
+        painter.setBrush(QColor(22, 27, 34, 215));
+        painter.drawRoundedRect(pillRect, 6.0, 6.0);
+
+        // Color dot
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(item.identityColor);
+        painter.drawEllipse(QPointF(pillRect.left() + 9, pillRect.center().y()), 4.0, 4.0);
+
+        // Text
+        painter.setPen(isSelected ? QColor("#ffffff") : QColor("#e6edf3"));
+        painter.drawText(QRectF(pillRect.left() + 18, pillRect.top(), textW + 4, pillH),
+                         Qt::AlignVCenter | Qt::AlignLeft, displayName);
+    }
+
+    painter.restore();
+}
+
 void UsdViewportWidget::drawOrientationGizmo(QPainter& painter) const {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -1967,22 +2359,6 @@ void UsdViewportWidget::drawOrientationGizmo(QPainter& painter) const {
     painter.setBrush(QColor(21, 25, 30, 200));
     painter.setPen(QPen(QColor(52, 62, 75), 1.0));
     painter.drawRoundedRect(gizmoRect, 10.0, 10.0);
-
-    // Top badge showing OpenUSD + Hydra Storm Metal status
-    const QRectF hydraBadge(12.0, 12.0, 290.0, 26.0);
-    painter.setBrush(QColor(21, 25, 30, 210));
-    painter.setPen(QPen(QColor(65, 99, 130), 1.0));
-    painter.drawRoundedRect(hydraBadge, 6.0, 6.0);
-    painter.setPen(QColor("#8ad0f5"));
-    QFont f = painter.font();
-    f.setPixelSize(11);
-    f.setBold(true);
-    painter.setFont(f);
-    const QString camMode = myImpl->useShotCam ? QStringLiteral("ShotCam") : QStringLiteral("Free Orbit");
-    painter.drawText(hydraBadge.adjusted(10, 0, -10, 0), Qt::AlignVCenter | Qt::AlignLeft,
-                     QString("OpenUSD Hydra Storm (Metal) • %1 • %2 ms")
-                         .arg(camMode)
-                         .arg(myImpl->lastRenderMs, 0, 'f', 1));
 
     const QPointF center = gizmoRect.center();
     const QMatrix4x4 view = currentViewMatrix();
@@ -2009,7 +2385,7 @@ void UsdViewportWidget::drawStatusBanner(QPainter& painter) const {
     if (myImpl->statusBannerText.isEmpty()) return;
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
-    const QRectF bannerRect(12.0, 44.0, std::min(560.0, width() - 120.0), 30.0);
+    const QRectF bannerRect(12.0, 12.0, std::min(560.0, width() - 120.0), 28.0);
     if (myImpl->statusBannerError) {
         painter.setBrush(QColor(95, 32, 32, 230));
         painter.setPen(QPen(QColor("#e38e83"), 1.2));
@@ -2047,6 +2423,7 @@ void UsdViewportWidget::paintEvent(QPaintEvent*) {
 
     drawGridOverlay(painter, vp);
     drawSelectionAndGizmoOverlay(painter, vp);
+    drawActorNameTags(painter, vp);
     drawOrientationGizmo(painter);
     drawStatusBanner(painter);
 }

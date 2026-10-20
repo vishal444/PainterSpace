@@ -1,0 +1,948 @@
+{
+  "total_duration_s": 16.0,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "drive_to_1",
+      "actor_id": "car_1",
+      "function": "drive_to",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "duration": 3.5,
+      "params": {
+        "target": "roadway.stop_mark",
+        "speed": "normal",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_to_1.started": 0.0,
+        "drive_to_1.finished": 3.5,
+        "car_1.started": 0.0,
+        "car_1.finished": 3.5,
+        "car_1.arrived": 3.5,
+        "drive_to_1.arrived": 3.5,
+        "car_1.stopped": 3.5,
+        "drive_to_1.stopped": 3.5
+      }
+    },
+    {
+      "beat_id": "drive_to_2",
+      "actor_id": "car_2",
+      "function": "drive_to",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "duration": 3.5,
+      "params": {
+        "target": "roadway.north_stop",
+        "speed": "normal",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_to_2.started": 0.0,
+        "drive_to_2.finished": 3.5,
+        "car_2.started": 0.0,
+        "car_2.finished": 3.5,
+        "car_2.arrived": 3.5,
+        "drive_to_2.arrived": 3.5,
+        "car_2.stopped": 3.5,
+        "drive_to_2.stopped": 3.5
+      }
+    },
+    {
+      "beat_id": "drive_3",
+      "actor_id": "human_1",
+      "function": "drive",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "duration": 3.5,
+      "params": {
+        "target": "car_1:driver_seat",
+        "vehicle": "car_1",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_3.started": 0.0,
+        "drive_3.finished": 3.5,
+        "human_1.started": 0.0,
+        "human_1.finished": 3.5
+      }
+    },
+    {
+      "beat_id": "drive_4",
+      "actor_id": "human_2",
+      "function": "drive",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "duration": 3.5,
+      "params": {
+        "target": "car_2:driver_seat",
+        "vehicle": "car_2",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_4.started": 0.0,
+        "drive_4.finished": 3.5,
+        "human_2.started": 0.0,
+        "human_2.finished": 3.5
+      }
+    },
+    {
+      "beat_id": "idle_car_1_350",
+      "actor_id": "car_1",
+      "function": "wait",
+      "start_time": 3.5,
+      "end_time": 16.0,
+      "duration": 12.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_car_2_350",
+      "actor_id": "car_2",
+      "function": "wait",
+      "start_time": 3.5,
+      "end_time": 16.0,
+      "duration": 12.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "exit_vehicle_5",
+      "actor_id": "human_1",
+      "function": "exit_vehicle",
+      "start_time": 3.5,
+      "end_time": 5.0,
+      "duration": 1.5,
+      "params": {
+        "door_part": "door_fl",
+        "at_time": 3.5,
+        "vehicle": "car_1",
+        "target": "car_1:door_fl_stand",
+        "part": "car_1:door_fl"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "exit_vehicle_5.started": 3.5,
+        "exit_vehicle_5.finished": 5.0,
+        "human_1.started": 3.5,
+        "human_1.finished": 5.0
+      }
+    },
+    {
+      "beat_id": "exit_vehicle_6",
+      "actor_id": "human_2",
+      "function": "exit_vehicle",
+      "start_time": 3.5,
+      "end_time": 5.0,
+      "duration": 1.5,
+      "params": {
+        "door_part": "door_fl",
+        "at_time": 3.5,
+        "vehicle": "car_2",
+        "target": "car_2:door_fl_stand",
+        "part": "car_2:door_fl"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "exit_vehicle_6.started": 3.5,
+        "exit_vehicle_6.finished": 5.0,
+        "human_2.started": 3.5,
+        "human_2.finished": 5.0
+      }
+    },
+    {
+      "beat_id": "walk_to_7",
+      "actor_id": "human_1",
+      "function": "walk_to",
+      "start_time": 5.0,
+      "end_time": 6.5,
+      "duration": 1.5,
+      "params": {
+        "target": "roadway.clear_south",
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_7.started": 5.0,
+        "walk_to_7.finished": 6.5,
+        "human_1.started": 5.0,
+        "human_1.finished": 6.5,
+        "human_1.arrived": 6.5,
+        "walk_to_7.arrived": 6.5
+      }
+    },
+    {
+      "beat_id": "walk_to_8",
+      "actor_id": "human_2",
+      "function": "walk_to",
+      "start_time": 5.0,
+      "end_time": 6.5,
+      "duration": 1.5,
+      "params": {
+        "target": "roadway.clear_north",
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_8.started": 5.0,
+        "walk_to_8.finished": 6.5,
+        "human_2.started": 5.0,
+        "human_2.finished": 6.5,
+        "human_2.arrived": 6.5,
+        "walk_to_8.arrived": 6.5
+      }
+    },
+    {
+      "beat_id": "walk_to_9",
+      "actor_id": "human_1",
+      "function": "walk_to",
+      "start_time": 6.5,
+      "end_time": 8.0,
+      "duration": 1.5,
+      "params": {
+        "target": "roadway.center_south",
+        "at_time": 6.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_9.started": 6.5,
+        "walk_to_9.finished": 8.0,
+        "human_1.started": 6.5,
+        "human_1.finished": 8.0,
+        "human_1.arrived": 8.0,
+        "walk_to_9.arrived": 8.0
+      }
+    },
+    {
+      "beat_id": "walk_to_10",
+      "actor_id": "human_2",
+      "function": "walk_to",
+      "start_time": 6.5,
+      "end_time": 8.0,
+      "duration": 1.5,
+      "params": {
+        "target": "roadway.center_north",
+        "at_time": 6.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_10.started": 6.5,
+        "walk_to_10.finished": 8.0,
+        "human_2.started": 6.5,
+        "human_2.finished": 8.0,
+        "human_2.arrived": 8.0,
+        "walk_to_10.arrived": 8.0
+      }
+    },
+    {
+      "beat_id": "argue_11",
+      "actor_id": "human_1",
+      "function": "argue",
+      "start_time": 8.0,
+      "end_time": 11.0,
+      "duration": 3.0,
+      "params": {
+        "actors": [
+          "human_1",
+          "human_2"
+        ],
+        "center": null,
+        "intensity": "heated",
+        "at_time": 8.0,
+        "for_duration": 1.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "argue_11.started": 8.0,
+        "argue_11.finished": 11.0,
+        "human_1.started": 8.0,
+        "human_1.finished": 11.0
+      }
+    },
+    {
+      "beat_id": "argue_12",
+      "actor_id": "human_2",
+      "function": "argue",
+      "start_time": 8.0,
+      "end_time": 11.0,
+      "duration": 3.0,
+      "params": {
+        "actors": [
+          "human_1",
+          "human_2"
+        ],
+        "center": null,
+        "intensity": "heated",
+        "at_time": 8.0,
+        "for_duration": 1.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "argue_12.started": 8.0,
+        "argue_12.finished": 11.0,
+        "human_2.started": 8.0,
+        "human_2.finished": 11.0
+      }
+    },
+    {
+      "beat_id": "attack_13",
+      "actor_id": "human_1",
+      "function": "attack",
+      "start_time": 11.0,
+      "end_time": 12.5,
+      "duration": 1.5,
+      "params": {
+        "target": "human_2",
+        "moves": [
+          "left_hook"
+        ],
+        "at_time": 9.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_13.started": 11.0,
+        "attack_13.finished": 12.5,
+        "human_1.started": 11.0,
+        "human_1.finished": 12.5
+      }
+    },
+    {
+      "beat_id": "react_14",
+      "actor_id": "human_2",
+      "function": "react",
+      "start_time": 11.0,
+      "end_time": 12.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 9.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_14.started": 11.0,
+        "react_14.finished": 12.5,
+        "human_2.started": 11.0,
+        "human_2.finished": 12.5
+      }
+    },
+    {
+      "beat_id": "react_16",
+      "actor_id": "human_1",
+      "function": "react",
+      "start_time": 12.5,
+      "end_time": 14.0,
+      "duration": 1.5,
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 11.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_16.started": 12.5,
+        "react_16.finished": 14.0,
+        "human_1.started": 12.5,
+        "human_1.finished": 14.0
+      }
+    },
+    {
+      "beat_id": "attack_15",
+      "actor_id": "human_2",
+      "function": "attack",
+      "start_time": 12.5,
+      "end_time": 14.0,
+      "duration": 1.5,
+      "params": {
+        "target": "human_1",
+        "moves": [
+          "elbow_punch"
+        ],
+        "at_time": 11.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_15.started": 12.5,
+        "attack_15.finished": 14.0,
+        "human_2.started": 12.5,
+        "human_2.finished": 14.0
+      }
+    },
+    {
+      "beat_id": "attack_17",
+      "actor_id": "human_1",
+      "function": "attack",
+      "start_time": 14.0,
+      "end_time": 15.5,
+      "duration": 1.5,
+      "params": {
+        "target": "human_2",
+        "moves": [
+          "kick_to_the_groin"
+        ],
+        "at_time": 12.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_17.started": 14.0,
+        "attack_17.finished": 15.5,
+        "human_1.started": 14.0,
+        "human_1.finished": 15.5
+      }
+    },
+    {
+      "beat_id": "react_18",
+      "actor_id": "human_2",
+      "function": "react",
+      "start_time": 14.0,
+      "end_time": 15.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 12.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_18.started": 14.0,
+        "react_18.finished": 15.5,
+        "human_2.started": 14.0,
+        "human_2.finished": 15.5
+      }
+    },
+    {
+      "beat_id": "idle_human_1_1550",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 15.5,
+      "end_time": 16.0,
+      "duration": 0.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_2_1550",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 15.5,
+      "end_time": 16.0,
+      "duration": 0.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "drive_to_1.started": 0.0,
+    "drive_to_1.finished": 3.5,
+    "car_1.started": 0.0,
+    "car_1.finished": 3.5,
+    "car_1.arrived": 3.5,
+    "drive_to_1.arrived": 3.5,
+    "car_1.stopped": 3.5,
+    "drive_to_1.stopped": 3.5,
+    "drive_to_2.started": 0.0,
+    "drive_to_2.finished": 3.5,
+    "car_2.started": 0.0,
+    "car_2.finished": 3.5,
+    "car_2.arrived": 3.5,
+    "drive_to_2.arrived": 3.5,
+    "car_2.stopped": 3.5,
+    "drive_to_2.stopped": 3.5,
+    "drive_3.started": 0.0,
+    "drive_3.finished": 3.5,
+    "human_1.started": 14.0,
+    "human_1.finished": 15.5,
+    "drive_4.started": 0.0,
+    "drive_4.finished": 3.5,
+    "human_2.started": 14.0,
+    "human_2.finished": 15.5,
+    "exit_vehicle_5.started": 3.5,
+    "exit_vehicle_5.finished": 5.0,
+    "exit_vehicle_6.started": 3.5,
+    "exit_vehicle_6.finished": 5.0,
+    "walk_to_7.started": 5.0,
+    "walk_to_7.finished": 6.5,
+    "human_1.arrived": 8.0,
+    "walk_to_7.arrived": 6.5,
+    "walk_to_8.started": 5.0,
+    "walk_to_8.finished": 6.5,
+    "human_2.arrived": 8.0,
+    "walk_to_8.arrived": 6.5,
+    "walk_to_9.started": 6.5,
+    "walk_to_9.finished": 8.0,
+    "walk_to_9.arrived": 8.0,
+    "walk_to_10.started": 6.5,
+    "walk_to_10.finished": 8.0,
+    "walk_to_10.arrived": 8.0,
+    "argue_11.started": 8.0,
+    "argue_11.finished": 11.0,
+    "argue_12.started": 8.0,
+    "argue_12.finished": 11.0,
+    "attack_13.started": 11.0,
+    "attack_13.finished": 12.5,
+    "react_14.started": 11.0,
+    "react_14.finished": 12.5,
+    "react_16.started": 12.5,
+    "react_16.finished": 14.0,
+    "attack_15.started": 12.5,
+    "attack_15.finished": 14.0,
+    "attack_17.started": 14.0,
+    "attack_17.finished": 15.5,
+    "react_18.started": 14.0,
+    "react_18.finished": 15.5
+  },
+  "actor_schedules": {
+    "car_1": [
+      {
+        "beat_id": "drive_to_1",
+        "actor_id": "car_1",
+        "function": "drive_to",
+        "start_time": 0.0,
+        "end_time": 3.5,
+        "duration": 3.5,
+        "params": {
+          "target": "roadway.stop_mark",
+          "speed": "normal",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_to_1.started": 0.0,
+          "drive_to_1.finished": 3.5,
+          "car_1.started": 0.0,
+          "car_1.finished": 3.5,
+          "car_1.arrived": 3.5,
+          "drive_to_1.arrived": 3.5,
+          "car_1.stopped": 3.5,
+          "drive_to_1.stopped": 3.5
+        }
+      },
+      {
+        "beat_id": "idle_car_1_350",
+        "actor_id": "car_1",
+        "function": "wait",
+        "start_time": 3.5,
+        "end_time": 16.0,
+        "duration": 12.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "car_2": [
+      {
+        "beat_id": "drive_to_2",
+        "actor_id": "car_2",
+        "function": "drive_to",
+        "start_time": 0.0,
+        "end_time": 3.5,
+        "duration": 3.5,
+        "params": {
+          "target": "roadway.north_stop",
+          "speed": "normal",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_to_2.started": 0.0,
+          "drive_to_2.finished": 3.5,
+          "car_2.started": 0.0,
+          "car_2.finished": 3.5,
+          "car_2.arrived": 3.5,
+          "drive_to_2.arrived": 3.5,
+          "car_2.stopped": 3.5,
+          "drive_to_2.stopped": 3.5
+        }
+      },
+      {
+        "beat_id": "idle_car_2_350",
+        "actor_id": "car_2",
+        "function": "wait",
+        "start_time": 3.5,
+        "end_time": 16.0,
+        "duration": 12.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_1": [
+      {
+        "beat_id": "drive_3",
+        "actor_id": "human_1",
+        "function": "drive",
+        "start_time": 0.0,
+        "end_time": 3.5,
+        "duration": 3.5,
+        "params": {
+          "target": "car_1:driver_seat",
+          "vehicle": "car_1",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_3.started": 0.0,
+          "drive_3.finished": 3.5,
+          "human_1.started": 0.0,
+          "human_1.finished": 3.5
+        }
+      },
+      {
+        "beat_id": "exit_vehicle_5",
+        "actor_id": "human_1",
+        "function": "exit_vehicle",
+        "start_time": 3.5,
+        "end_time": 5.0,
+        "duration": 1.5,
+        "params": {
+          "door_part": "door_fl",
+          "at_time": 3.5,
+          "vehicle": "car_1",
+          "target": "car_1:door_fl_stand",
+          "part": "car_1:door_fl"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "exit_vehicle_5.started": 3.5,
+          "exit_vehicle_5.finished": 5.0,
+          "human_1.started": 3.5,
+          "human_1.finished": 5.0
+        }
+      },
+      {
+        "beat_id": "walk_to_7",
+        "actor_id": "human_1",
+        "function": "walk_to",
+        "start_time": 5.0,
+        "end_time": 6.5,
+        "duration": 1.5,
+        "params": {
+          "target": "roadway.clear_south",
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_7.started": 5.0,
+          "walk_to_7.finished": 6.5,
+          "human_1.started": 5.0,
+          "human_1.finished": 6.5,
+          "human_1.arrived": 6.5,
+          "walk_to_7.arrived": 6.5
+        }
+      },
+      {
+        "beat_id": "walk_to_9",
+        "actor_id": "human_1",
+        "function": "walk_to",
+        "start_time": 6.5,
+        "end_time": 8.0,
+        "duration": 1.5,
+        "params": {
+          "target": "roadway.center_south",
+          "at_time": 6.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_9.started": 6.5,
+          "walk_to_9.finished": 8.0,
+          "human_1.started": 6.5,
+          "human_1.finished": 8.0,
+          "human_1.arrived": 8.0,
+          "walk_to_9.arrived": 8.0
+        }
+      },
+      {
+        "beat_id": "argue_11",
+        "actor_id": "human_1",
+        "function": "argue",
+        "start_time": 8.0,
+        "end_time": 11.0,
+        "duration": 3.0,
+        "params": {
+          "actors": [
+            "human_1",
+            "human_2"
+          ],
+          "center": null,
+          "intensity": "heated",
+          "at_time": 8.0,
+          "for_duration": 1.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "argue_11.started": 8.0,
+          "argue_11.finished": 11.0,
+          "human_1.started": 8.0,
+          "human_1.finished": 11.0
+        }
+      },
+      {
+        "beat_id": "attack_13",
+        "actor_id": "human_1",
+        "function": "attack",
+        "start_time": 11.0,
+        "end_time": 12.5,
+        "duration": 1.5,
+        "params": {
+          "target": "human_2",
+          "moves": [
+            "left_hook"
+          ],
+          "at_time": 9.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_13.started": 11.0,
+          "attack_13.finished": 12.5,
+          "human_1.started": 11.0,
+          "human_1.finished": 12.5
+        }
+      },
+      {
+        "beat_id": "react_16",
+        "actor_id": "human_1",
+        "function": "react",
+        "start_time": 12.5,
+        "end_time": 14.0,
+        "duration": 1.5,
+        "params": {
+          "mood": "hit_reaction",
+          "look_at": null,
+          "at_time": 11.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_16.started": 12.5,
+          "react_16.finished": 14.0,
+          "human_1.started": 12.5,
+          "human_1.finished": 14.0
+        }
+      },
+      {
+        "beat_id": "attack_17",
+        "actor_id": "human_1",
+        "function": "attack",
+        "start_time": 14.0,
+        "end_time": 15.5,
+        "duration": 1.5,
+        "params": {
+          "target": "human_2",
+          "moves": [
+            "kick_to_the_groin"
+          ],
+          "at_time": 12.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_17.started": 14.0,
+          "attack_17.finished": 15.5,
+          "human_1.started": 14.0,
+          "human_1.finished": 15.5
+        }
+      },
+      {
+        "beat_id": "idle_human_1_1550",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 15.5,
+        "end_time": 16.0,
+        "duration": 0.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "drive_4",
+        "actor_id": "human_2",
+        "function": "drive",
+        "start_time": 0.0,
+        "end_time": 3.5,
+        "duration": 3.5,
+        "params": {
+          "target": "car_2:driver_seat",
+          "vehicle": "car_2",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_4.started": 0.0,
+          "drive_4.finished": 3.5,
+          "human_2.started": 0.0,
+          "human_2.finished": 3.5
+        }
+      },
+      {
+        "beat_id": "exit_vehicle_6",
+        "actor_id": "human_2",
+        "function": "exit_vehicle",
+        "start_time": 3.5,
+        "end_time": 5.0,
+        "duration": 1.5,
+        "params": {
+          "door_part": "door_fl",
+          "at_time": 3.5,
+          "vehicle": "car_2",
+          "target": "car_2:door_fl_stand",
+          "part": "car_2:door_fl"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "exit_vehicle_6.started": 3.5,
+          "exit_vehicle_6.finished": 5.0,
+          "human_2.started": 3.5,
+          "human_2.finished": 5.0
+        }
+      },
+      {
+        "beat_id": "walk_to_8",
+        "actor_id": "human_2",
+        "function": "walk_to",
+        "start_time": 5.0,
+        "end_time": 6.5,
+        "duration": 1.5,
+        "params": {
+          "target": "roadway.clear_north",
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_8.started": 5.0,
+          "walk_to_8.finished": 6.5,
+          "human_2.started": 5.0,
+          "human_2.finished": 6.5,
+          "human_2.arrived": 6.5,
+          "walk_to_8.arrived": 6.5
+        }
+      },
+      {
+        "beat_id": "walk_to_10",
+        "actor_id": "human_2",
+        "function": "walk_to",
+        "start_time": 6.5,
+        "end_time": 8.0,
+        "duration": 1.5,
+        "params": {
+          "target": "roadway.center_north",
+          "at_time": 6.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_10.started": 6.5,
+          "walk_to_10.finished": 8.0,
+          "human_2.started": 6.5,
+          "human_2.finished": 8.0,
+          "human_2.arrived": 8.0,
+          "walk_to_10.arrived": 8.0
+        }
+      },
+      {
+        "beat_id": "argue_12",
+        "actor_id": "human_2",
+        "function": "argue",
+        "start_time": 8.0,
+        "end_time": 11.0,
+        "duration": 3.0,
+        "params": {
+          "actors": [
+            "human_1",
+            "human_2"
+          ],
+          "center": null,
+          "intensity": "heated",
+          "at_time": 8.0,
+          "for_duration": 1.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "argue_12.started": 8.0,
+          "argue_12.finished": 11.0,
+          "human_2.started": 8.0,
+          "human_2.finished": 11.0
+        }
+      },
+      {
+        "beat_id": "react_14",
+        "actor_id": "human_2",
+        "function": "react",
+        "start_time": 11.0,
+        "end_time": 12.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "hit_reaction",
+          "look_at": null,
+          "at_time": 9.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_14.started": 11.0,
+          "react_14.finished": 12.5,
+          "human_2.started": 11.0,
+          "human_2.finished": 12.5
+        }
+      },
+      {
+        "beat_id": "attack_15",
+        "actor_id": "human_2",
+        "function": "attack",
+        "start_time": 12.5,
+        "end_time": 14.0,
+        "duration": 1.5,
+        "params": {
+          "target": "human_1",
+          "moves": [
+            "elbow_punch"
+          ],
+          "at_time": 11.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_15.started": 12.5,
+          "attack_15.finished": 14.0,
+          "human_2.started": 12.5,
+          "human_2.finished": 14.0
+        }
+      },
+      {
+        "beat_id": "react_18",
+        "actor_id": "human_2",
+        "function": "react",
+        "start_time": 14.0,
+        "end_time": 15.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "reaction",
+          "look_at": null,
+          "at_time": 12.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_18.started": 14.0,
+          "react_18.finished": 15.5,
+          "human_2.started": 14.0,
+          "human_2.finished": 15.5
+        }
+      },
+      {
+        "beat_id": "idle_human_2_1550",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 15.5,
+        "end_time": 16.0,
+        "duration": 0.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

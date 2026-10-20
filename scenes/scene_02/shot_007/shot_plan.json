@@ -1,0 +1,172 @@
+{
+  "schema_version": "1.0",
+  "prompt": "The street is filled with different type of cars. A man does parkour running in the traffic jumping off cars, running through cars etc.",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "car_1",
+      "asset_id": "cars.car1",
+      "label": "Sedan1",
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.8,
+        0.0,
+        -4.5
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "car_2",
+      "asset_id": "cars.car2",
+      "label": "Coupe2",
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "car_3",
+      "asset_id": "cars.car1",
+      "label": "Sedan3",
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.8,
+        0.0,
+        7.5
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.male",
+      "label": "Parkour_Runner",
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.5,
+        0.0,
+        6.5
+      ],
+      "facing_deg": 0.0
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "run_to_1",
+      "function": "run_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "Coupe2:stand_front",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 2.0
+      }
+    },
+    {
+      "beat_id": "jump_on_2",
+      "function": "jump_on",
+      "actor_id": "human_1",
+      "params": {
+        "target": "Coupe2:hood",
+        "at_time": 2.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.2
+      }
+    },
+    {
+      "beat_id": "jump_down_3",
+      "function": "jump_down",
+      "actor_id": "human_1",
+      "params": {
+        "target": "beside(Coupe2, left, 1.2)",
+        "at_time": 3.2
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.0
+      }
+    },
+    {
+      "beat_id": "run_to_4",
+      "function": "run_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "Sedan1:stand_front",
+        "at_time": 4.2
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.8
+      }
+    },
+    {
+      "beat_id": "jump_on_5",
+      "function": "jump_on",
+      "actor_id": "human_1",
+      "params": {
+        "target": "Sedan1:hood",
+        "at_time": 6.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.2
+      }
+    }
+  ],
+  "camera": {
+    "style": "medium",
+    "actors": [
+      "human_1",
+      "car_1",
+      "car_2"
+    ],
+    "vantage": "front",
+    "move": "track_with"
+  }
+}

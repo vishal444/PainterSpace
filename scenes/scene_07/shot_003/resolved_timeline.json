@@ -1,0 +1,138 @@
+{
+  "total_duration_s": 6.5,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "dance_1",
+      "actor_id": "human_1",
+      "function": "dance",
+      "start_time": 0.0,
+      "end_time": 6.5,
+      "duration": 6.5,
+      "params": {
+        "style": "freestyle"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "dance_1.started": 0.0,
+        "dance_1.finished": 3.0,
+        "human_1.started": 0.0,
+        "human_1.finished": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_2",
+      "actor_id": "human_2",
+      "function": "walk_to",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {
+        "target": "in_front_of(Girl, 1.2)"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_2.started": 0.0,
+        "walk_to_2.finished": 3.0,
+        "human_2.started": 0.0,
+        "human_2.finished": 3.0,
+        "human_2.arrived": 3.0,
+        "walk_to_2.arrived": 3.0
+      }
+    },
+    {
+      "beat_id": "dance_3",
+      "actor_id": "human_2",
+      "function": "dance",
+      "start_time": 3.0,
+      "end_time": 6.5,
+      "duration": 3.5,
+      "params": {
+        "style": "hiphop"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "dance_3.started": 3.0,
+        "dance_3.finished": 6.0,
+        "human_2.started": 3.0,
+        "human_2.finished": 6.0
+      }
+    }
+  ],
+  "events": {
+    "dance_1.started": 0.0,
+    "dance_1.finished": 3.0,
+    "human_1.started": 0.0,
+    "human_1.finished": 3.0,
+    "walk_to_2.started": 0.0,
+    "walk_to_2.finished": 3.0,
+    "human_2.started": 3.0,
+    "human_2.finished": 6.0,
+    "human_2.arrived": 3.0,
+    "walk_to_2.arrived": 3.0,
+    "dance_3.started": 3.0,
+    "dance_3.finished": 6.0
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "dance_1",
+        "actor_id": "human_1",
+        "function": "dance",
+        "start_time": 0.0,
+        "end_time": 6.5,
+        "duration": 6.5,
+        "params": {
+          "style": "freestyle"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "dance_1.started": 0.0,
+          "dance_1.finished": 3.0,
+          "human_1.started": 0.0,
+          "human_1.finished": 3.0
+        }
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "walk_to_2",
+        "actor_id": "human_2",
+        "function": "walk_to",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {
+          "target": "in_front_of(Girl, 1.2)"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_2.started": 0.0,
+          "walk_to_2.finished": 3.0,
+          "human_2.started": 0.0,
+          "human_2.finished": 3.0,
+          "human_2.arrived": 3.0,
+          "walk_to_2.arrived": 3.0
+        }
+      },
+      {
+        "beat_id": "dance_3",
+        "actor_id": "human_2",
+        "function": "dance",
+        "start_time": 3.0,
+        "end_time": 6.5,
+        "duration": 3.5,
+        "params": {
+          "style": "hiphop"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "dance_3.started": 3.0,
+          "dance_3.finished": 6.0,
+          "human_2.started": 3.0,
+          "human_2.finished": 6.0
+        }
+      }
+    ]
+  }
+}

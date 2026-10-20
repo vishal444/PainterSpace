@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 #include <QDialog>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QComboBox>
 #include <QCheckBox>
@@ -292,9 +293,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     backToScenes->setCursor(Qt::PointingHandCursor);
     connect(backToScenes, &QPushButton::clicked, this, &MainWindow::showStoryboardScenes);
     bookHeader->addWidget(backToScenes);
-    QPushButton* editSceneButton = new QPushButton("✎  Edit Scene Input", myBookPage);
+    QPushButton* editSceneButton = new QPushButton("✎  Edit Main Scene", myBookPage);
     editSceneButton->setObjectName("quietButton");
     editSceneButton->setCursor(Qt::PointingHandCursor);
+    editSceneButton->setToolTip("Edit the shared main scene (scene.usda). Saved edits reflect on new shots while keeping existing shots frozen.");
     connect(editSceneButton, &QPushButton::clicked, this, [this]() {
         if (myCurrentScene >= 0) openSceneSetup(myCurrentScene);
     });
@@ -340,7 +342,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     QHBoxLayout* editorHeader = new QHBoxLayout();
     editorHeader->setSpacing(10);
-    myEditorBackButton = new QPushButton("← Scenes", myEditorPage);
+    myEditorBackButton = new QPushButton("← Shots", myEditorPage);
     myEditorBackButton->setObjectName("quietButton");
     myEditorBackButton->setCursor(Qt::PointingHandCursor);
     connect(myEditorBackButton, &QPushButton::clicked, this, [this]() {
@@ -348,16 +350,21 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size()) {
                 if (myScenePrompt) myStoryboardScenes[myCurrentScene].prompt = myScenePrompt->toPlainText().trimmed();
             }
-            showStoryboardScenes();
+            if (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size() && myStoryboardScenes.at(myCurrentScene).configured) {
+                showStoryboardBook();
+            } else {
+                showStoryboardScenes();
+            }
         } else {
             showStoryboardBook();
         }
     });
     editorHeader->addWidget(myEditorBackButton);
 
-    myEditorEditSceneButton = new QPushButton("✎  Scene Input", myEditorPage);
+    myEditorEditSceneButton = new QPushButton("✎  Edit Main Scene", myEditorPage);
     myEditorEditSceneButton->setObjectName("quietButton");
     myEditorEditSceneButton->setCursor(Qt::PointingHandCursor);
+    myEditorEditSceneButton->setToolTip("Open and edit the shared main scene (scene.usda)");
     connect(myEditorEditSceneButton, &QPushButton::clicked, this, [this]() {
         if (myCurrentScene >= 0) {
             if (myCurrentPanel >= 0 && myCurrentPanel < storyboardPanels().size()) {
@@ -368,41 +375,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     });
     editorHeader->addWidget(myEditorEditSceneButton);
 
-    myEditorTitle = new QLabel("Scene 1 — Describe Scene", myEditorPage);
-    myEditorTitle->setObjectName("appTitle");
-    editorHeader->addWidget(myEditorTitle);
+    myEditorSaveSceneButton = new QPushButton("Save Scene", myEditorPage);
+    myEditorSaveSceneButton->setObjectName("quietButton");
+    myEditorSaveSceneButton->setCursor(Qt::PointingHandCursor);
+    myEditorSaveSceneButton->setToolTip("Save main scene edits to scene.usda");
+    connect(myEditorSaveSceneButton, &QPushButton::clicked, this, &MainWindow::saveCurrentSceneEdits);
+    editorHeader->addWidget(myEditorSaveSceneButton);
 
-    myEditorModeBadge = new QLabel("STEP 1 OF 2  •  SCENE INPUT (LLM PROMPT OR 3D EDITOR)", myEditorPage);
-    myEditorModeBadge->setStyleSheet("background: #273849; color: #8ad0f5; border: 1px solid #416382; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700;");
-    editorHeader->addWidget(myEditorModeBadge);
-    editorHeader->addStretch();
-
-    myCanvasStatus = new QLabel(myEditorPage);
-    myCanvasStatus->setObjectName("mutedText");
-    editorHeader->addWidget(myCanvasStatus);
-
-    QPushButton* resetCanvasButton = new QPushButton("Reset 3D view", myEditorPage);
-    resetCanvasButton->setObjectName("quietButton");
-    resetCanvasButton->setCursor(Qt::PointingHandCursor);
-    connect(resetCanvasButton, &QPushButton::clicked, this, &MainWindow::newConcept);
-    editorHeader->addWidget(resetCanvasButton);
-
-    myEditorPlayClipButton = new QPushButton("▶  Play Clip", myEditorPage);
-    myEditorPlayClipButton->setObjectName("primaryButton");
-    myEditorPlayClipButton->setCursor(Qt::PointingHandCursor);
-    myEditorPlayClipButton->setVisible(false);
-    connect(myEditorPlayClipButton, &QPushButton::clicked, this, [this]() {
-        if (myCurrentScene >= 0 && myCurrentPanel >= 0) {
-            const QString shotRelDir = QString("scenes/scene_%1/shot_%2")
-                .arg(myCurrentScene + 1, 2, 10, QChar('0'))
-                .arg(myCurrentPanel + 1, 3, 10, QChar('0'));
-            const QDir shotDir(QDir(painterSpaceProjectRoot()).filePath(shotRelDir));
-            playRenderedClipForShot(shotDir.absolutePath());
-        }
-    });
-    editorHeader->addWidget(myEditorPlayClipButton);
-
-    myEditorPrimaryActionButton = new QPushButton("Continue to Shots  →", myEditorPage);
+    myEditorPrimaryActionButton = new QPushButton("Save Shot", myEditorPage);
     myEditorPrimaryActionButton->setObjectName("renderButton");
     myEditorPrimaryActionButton->setCursor(Qt::PointingHandCursor);
     connect(myEditorPrimaryActionButton, &QPushButton::clicked, this, [this]() {
@@ -415,28 +395,26 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     editorHeader->addWidget(myEditorPrimaryActionButton);
     root->addLayout(editorHeader);
 
-    myPromptModeLabel = new QLabel("STEP 1 — DESCRIBE SCENE: Enter an LLM prompt below OR build the scene directly in the 3D editor (both options are open before moving into individual shots).", myEditorPage);
-    myPromptModeLabel->setObjectName("sectionLabel");
-    root->addWidget(myPromptModeLabel);
+    // Hidden status label to retain caller compatibility
+    myCanvasStatus = new QLabel(myEditorPage);
+    myCanvasStatus->setVisible(false);
 
     QHBoxLayout* promptRow = new QHBoxLayout();
     promptRow->setSpacing(10);
     myScenePrompt = new QPlainTextEdit(myEditorPage);
     myScenePrompt->setObjectName("storyboardScenePrompt");
-    myScenePrompt->setFixedHeight(72);
-    myScenePrompt->setPlaceholderText("Option 1 (LLM Prompt): Describe the scene setting, environment, lighting, and baseline objects… (Or use Option 2: build the scene in the 3D editor below)");
-    myScenePrompt->setStyleSheet("QPlainTextEdit { background: #10151a; color: #e7edf3; border: 1px solid #303945; border-radius: 7px; padding: 9px; }");
+    myScenePrompt->setFixedHeight(54);
+    myScenePrompt->setPlaceholderText("Describe this shot…");
+    myScenePrompt->setStyleSheet("QPlainTextEdit { background: #10151a; color: #e7edf3; border: 1px solid #303945; border-radius: 7px; padding: 8px 10px; font-size: 13px; }");
     promptRow->addWidget(myScenePrompt, 1);
-    myGenerateUsdButton = new QPushButton("✦  Generate Scene USD", myEditorPage);
+    myGenerateUsdButton = new QPushButton("✦  Generate Shot", myEditorPage);
     myGenerateUsdButton->setObjectName("primaryButton");
-    myGenerateUsdButton->setMinimumWidth(190);
+    myGenerateUsdButton->setMinimumWidth(180);
+    myGenerateUsdButton->setFixedHeight(54);
     myGenerateUsdButton->setCursor(Qt::PointingHandCursor);
     promptRow->addWidget(myGenerateUsdButton);
     connect(myGenerateUsdButton, &QPushButton::clicked, this, &MainWindow::generateUsdForCurrentPanel);
     root->addLayout(promptRow);
-    myPromptHintLabel = new QLabel("Both options are open: generate the scene from an LLM prompt, build/refine it in the 3D editor below, or combine both — then click 'Continue to Shots →'.", myEditorPage);
-    myPromptHintLabel->setObjectName("mutedText");
-    root->addWidget(myPromptHintLabel);
 
     QHBoxLayout* columns = new QHBoxLayout();
     columns->setSpacing(14);
@@ -589,6 +567,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(myUsdViewport, &UsdViewportWidget::userEditsChanged, this, [this](int) {
         syncLayers();
         updateSelectionPanel();
+        if (myCurrentPanel < 0) {
+            updateEditorModeUi();
+        }
     });
     connect(myUsdViewport, &UsdViewportWidget::statusMessageChanged, this, [this](const QString& msg) {
         if (myCanvasStatus) {
@@ -657,6 +638,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     }
     // The 3D editor opens from a scene or storyboard shot.
     myCanvasStatus->setText("USD Hydra Storm Viewport  •  Orbit with right-drag  •  Pick & move prims in user_edits.usda");
+
+    // Watch task_queue/llm_response.json so when the IDE LLM writes JSON function calls,
+    // PainterSpace automatically executes them and compiles/reloads the stage itself.
+    auto* llmResponseTimer = new QTimer(this);
+    llmResponseTimer->setInterval(750);
+    connect(llmResponseTimer, &QTimer::timeout, this, &MainWindow::pollAgentLlmResponse);
+    llmResponseTimer->start();
 }
 
 void MainWindow::loadProjectScenesFromDisk() {
@@ -669,7 +657,18 @@ void MainWindow::loadProjectScenesFromDisk() {
         myProjectTitle = QStringLiteral("Storyboard Project");
     }
 
-    for (int index = 0; index < 6; ++index) {
+    int maxScenes = 6;
+    const QDir scenesRootDir(QDir(projectRoot).filePath("scenes"));
+    if (scenesRootDir.exists()) {
+        const QStringList sceneDirs = scenesRootDir.entryList(QStringList() << "scene_*", QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString& d : sceneDirs) {
+            bool ok = false;
+            const int num = d.mid(6).toInt(&ok);
+            if (ok && num > maxScenes) maxScenes = num;
+        }
+    }
+
+    for (int index = 0; index < maxScenes; ++index) {
         StoryboardScene scene;
         scene.name = QString("Scene %1").arg(index + 1);
         scene.panels.resize(9);
@@ -686,12 +685,17 @@ void MainWindow::loadProjectScenesFromDisk() {
         }
         if (QFileInfo::exists(sceneJson)) {
             const QJsonObject meta = readJsonFile(sceneJson);
+            if (!meta.value("name").toString().trimmed().isEmpty()) {
+                scene.name = meta.value("name").toString().trimmed();
+            }
             scene.prompt = meta.value("prompt").toString().trimmed();
             const QJsonArray revisions = meta.value("revisions").toArray();
             if (!revisions.isEmpty()) {
                 scene.prompt = revisions.last().toString(scene.prompt).trimmed();
             }
-            if (!scene.prompt.isEmpty() || meta.value("configured").toBool()) {
+            if (meta.contains("configured")) {
+                scene.configured = meta.value("configured").toBool() || !scene.prompt.isEmpty();
+            } else if (!scene.prompt.isEmpty()) {
                 scene.configured = true;
             }
         }
@@ -768,11 +772,34 @@ void MainWindow::openStoryboardProject() {
 }
 
 void MainWindow::addStoryboardScene() {
+    const int newSceneIndex = myStoryboardScenes.size();
     StoryboardScene scene;
-    scene.name = QString("Scene %1").arg(myStoryboardScenes.size() + 1);
+    scene.name = QString("Scene %1").arg(newSceneIndex + 1);
     scene.configured = false;
     scene.loadFromDisk = false;
     scene.panels.resize(9);
+
+    // Persist the new scene directory and metadata on disk so it survives app restarts
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QString sceneId = QString("scene_%1").arg(newSceneIndex + 1, 2, 10, QChar('0'));
+    const QDir sceneDir(QDir(projectRoot).filePath(QString("scenes/%1").arg(sceneId)));
+    QDir().mkpath(sceneDir.absolutePath());
+    const QString sceneJsonPath = sceneDir.filePath("scene.json");
+    if (!QFileInfo::exists(sceneJsonPath)) {
+        const QJsonObject meta{
+            {"scene_id", sceneId},
+            {"name", scene.name},
+            {"stage", QStringLiteral("scene.usda")},
+            {"prompt", QString()},
+            {"configured", false}
+        };
+        QSaveFile out(sceneJsonPath);
+        if (out.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            out.write(QJsonDocument(meta).toJson(QJsonDocument::Indented));
+            out.commit();
+        }
+    }
+
     myStoryboardScenes.push_back(scene);
     rebuildStoryboardScenes();
 }
@@ -882,17 +909,35 @@ void MainWindow::confirmSceneSetupAndOpenShots() {
         return;
     }
 
-    scene.prompt = prompt;
-    scene.configured = true;
-    scene.loadFromDisk = true;
+    if (myScenePrompt) {
+        scene.prompt = prompt;
+    }
+
+    saveCurrentSceneEdits();
+    showStoryboardBook();
+}
+
+void MainWindow::saveCurrentSceneEdits() {
+    if (myCurrentScene < 0 || myCurrentScene >= myStoryboardScenes.size() || !myUsdViewport) return;
+    StoryboardScene& scene = myStoryboardScenes[myCurrentScene];
+
+    if (myScenePrompt) {
+        scene.prompt = myScenePrompt->toPlainText().trimmed();
+    }
+
+    QString errorMsg;
+    QString snapshotFile;
+    const int snapVer = myUsdViewport->snapshotSceneForExistingShots(&snapshotFile);
+    const bool ok = myUsdViewport->saveSceneEdits(&errorMsg);
+    if (!ok) {
+        QMessageBox::warning(this, "Save Scene Edits", QString("Could not save scene edits:\n%1").arg(errorMsg));
+        return;
+    }
 
     const QString sceneStagePath = ensureSceneStageFile(myCurrentScene);
-    scene.usdStagePath = sceneStagePath;
     const QDir sceneDir = QFileInfo(sceneStagePath).dir();
 
-    const QImage renderedView = myUsdViewport
-        ? myUsdViewport->renderCurrentView()
-        : QImage();
+    const QImage renderedView = myUsdViewport->renderCurrentView();
     if (!renderedView.isNull()) {
         scene.render = renderedView;
         renderedView.save(sceneDir.filePath("thumbnail.jpg"), "JPG", 90);
@@ -904,9 +949,17 @@ void MainWindow::confirmSceneSetupAndOpenShots() {
         QJsonObject meta = readJsonFile(sceneJsonPath);
         meta["scene_id"] = QString("scene_%1").arg(myCurrentScene + 1, 2, 10, QChar('0'));
         meta["stage"] = QStringLiteral("scene.usda");
-        meta["prompt"] = prompt;
+        meta["prompt"] = scene.prompt;
         meta["configured"] = true;
-        meta["has_3d_editor_layout"] = has3dEditorInput;
+        meta["has_3d_editor_layout"] = true;
+        if (snapVer > 0) {
+            QJsonArray snapshots = meta.value("snapshots").toArray();
+            QJsonObject snapObj;
+            snapObj["version"] = snapVer;
+            snapObj["file"] = snapshotFile;
+            snapshots.append(snapObj);
+            meta["snapshots"] = snapshots;
+        }
         QSaveFile metaOut(sceneJsonPath);
         if (metaOut.open(QIODevice::WriteOnly | QIODevice::Text)) {
             metaOut.write(QJsonDocument(meta).toJson(QJsonDocument::Indented));
@@ -914,88 +967,107 @@ void MainWindow::confirmSceneSetupAndOpenShots() {
         }
     }
 
-    showStoryboardBook();
+    // Rebuild world state so future shot planning knows the updated layout
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QString worldStateScript = QDir(projectRoot).filePath("tools/world_state.py");
+    if (QFileInfo::exists(worldStateScript)) {
+        QProcess proc;
+        QString pythonBin = QDir(projectRoot).filePath(".venv/bin/python");
+        if (!QFileInfo::exists(pythonBin)) pythonBin = QStringLiteral("python3");
+        proc.start(pythonBin, QStringList() << worldStateScript << "build" << sceneStagePath);
+        proc.waitForFinished(10000);
+    }
+
+    scene.configured = true;
+    scene.loadFromDisk = true;
+    scene.usdStagePath = sceneStagePath;
+
+    rebuildStoryboardScenes();
+    rebuildStoryboardBook();
+    updateEditorModeUi();
+
+    QString statusMsg = QStringLiteral("✓ Main scene edits saved to scene.usda!");
+    if (snapVer > 0) {
+        statusMsg += QString(" Existing shots frozen on %1; all new shots inherit this scene.").arg(snapshotFile);
+    } else {
+        statusMsg += QStringLiteral(" All new shots inherit this scene.");
+    }
+    myUsdViewport->setGenerationStatus(statusMsg, false, false);
+    if (myCanvasStatus) {
+        myCanvasStatus->setText(statusMsg);
+    }
+    syncLayers();
+    updateSelectionPanel();
 }
 
 void MainWindow::updateEditorModeUi() {
     const bool isSceneMode = (myCurrentPanel < 0);
-    const QString sceneName = (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size())
-        ? myStoryboardScenes.at(myCurrentScene).name
-        : QStringLiteral("Scene");
+    const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty();
+    const bool isConfigured = (myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size() && myStoryboardScenes.at(myCurrentScene).configured);
 
     if (isSceneMode) {
-        if (myEditorBackButton) myEditorBackButton->setText("← Scenes");
+        if (myEditorBackButton) {
+            myEditorBackButton->setText(isConfigured ? "← Shots" : "← Scenes");
+            myEditorBackButton->setToolTip(isConfigured ? "Return to shots grid" : "Return to scenes grid");
+        }
         if (myEditorEditSceneButton) myEditorEditSceneButton->setVisible(false);
-        if (myEditorTitle) myEditorTitle->setText(QString("%1 — Describe Scene").arg(sceneName));
-        if (myEditorModeBadge) {
-            myEditorModeBadge->setText("STEP 1 OF 2  •  SCENE INPUT (LLM PROMPT OR USD 3D EDITOR)");
-            myEditorModeBadge->setStyleSheet("background: #273849; color: #8ad0f5; border: 1px solid #416382; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700;");
+        if (myEditorTitle) myEditorTitle->setVisible(false);
+        if (myEditorModeBadge) myEditorModeBadge->setVisible(false);
+        if (myPromptModeLabel) myPromptModeLabel->setVisible(false);
+        if (myPromptHintLabel) myPromptHintLabel->setVisible(false);
+        if (myEditorPlayClipButton) myEditorPlayClipButton->setVisible(false);
+
+        const int editsCount = (myUsdViewport ? myUsdViewport->userEditedPrimCount() : 0);
+
+        if (myEditorSaveSceneButton) {
+            myEditorSaveSceneButton->setVisible(true);
+            if (editsCount > 0) {
+                myEditorSaveSceneButton->setText(QString("Save Scene (%1)").arg(editsCount));
+            } else {
+                myEditorSaveSceneButton->setText(QStringLiteral("Save Scene"));
+            }
         }
+
         if (myEditorPrimaryActionButton) {
-            myEditorPrimaryActionButton->setText("Continue to Shots  →");
-        }
-        if (myPromptModeLabel) {
-            myPromptModeLabel->setText("STEP 1 — SCENE DESCRIPTION: Provide scene input via LLM prompt (below) OR build the scene directly in the USD 3D editor (both options are open).");
+            if (isConfigured) {
+                myEditorPrimaryActionButton->setText(editsCount > 0 ? "Save & Return to Shots  →" : "Return to Shots  →");
+            } else {
+                myEditorPrimaryActionButton->setText(editsCount > 0 ? QString("Save Scene & Open Shots (%1)  →").arg(editsCount) : "Save Scene & Open Shots  →");
+            }
         }
         if (myScenePrompt) {
-            myScenePrompt->setPlaceholderText("Option 1 (LLM Prompt): Describe the scene environment, setting, lighting, and baseline objects… (Or use Option 2: build the scene in the USD 3D editor below)");
+            myScenePrompt->setPlaceholderText("Describe scene setting, lighting, and baseline objects…");
         }
-        const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty();
         if (myGenerateUsdButton) {
-            myGenerateUsdButton->setText(agentMode ? "✦  Queue Scene for Gemini" : "✦  Generate Scene USD");
-            myGenerateUsdButton->setToolTip(agentMode ? "Queue scene description for the Gemini Coding Agent in VS Code chat" : "Generate scene USD via LLM");
-        }
-        if (myPromptHintLabel) {
-            myPromptHintLabel->setText(agentMode
-                ? "Agent Bridge active: describe the scene and click 'Queue Scene for Gemini' to route the prompt to VS Code."
-                : "Scene input comes first: describe the scene with an LLM prompt, arrange it in the USD 3D editor below, or combine both — then click 'Continue to Shots →'.");
-        }
-        if (myEditorPlayClipButton) {
-            myEditorPlayClipButton->setVisible(false);
+            myGenerateUsdButton->setText(agentMode ? "✦  Queue Scene" : "✦  Generate Scene");
+            myGenerateUsdButton->setToolTip(agentMode ? "Queue scene description for Gemini" : "Generate scene USD");
         }
     } else {
-        const QString shotName = (myCurrentPanel >= 0 && myCurrentPanel < storyboardPanels().size() &&
-                                  !storyboardPanels().at(myCurrentPanel).name.isEmpty())
-            ? storyboardPanels().at(myCurrentPanel).name
-            : QString("Shot %1").arg(myCurrentPanel + 1);
-        if (myEditorBackButton) myEditorBackButton->setText("← Shots");
-        if (myEditorEditSceneButton) myEditorEditSceneButton->setVisible(true);
-        if (myEditorTitle) myEditorTitle->setText(QString("%1  •  %2").arg(sceneName, shotName));
-        if (myEditorModeBadge) {
-            myEditorModeBadge->setText("STEP 2 OF 2  •  INDIVIDUAL SHOT (USD STAGE)");
-            myEditorModeBadge->setStyleSheet("background: #3d2e1e; color: #f0c47a; border: 1px solid #6e5232; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700;");
+        if (myEditorBackButton) {
+            myEditorBackButton->setText("← Shots");
+            myEditorBackButton->setToolTip("Return to shots grid");
+        }
+        if (myEditorSaveSceneButton) myEditorSaveSceneButton->setVisible(false);
+        if (myEditorTitle) myEditorTitle->setVisible(false);
+        if (myEditorModeBadge) myEditorModeBadge->setVisible(false);
+        if (myPromptModeLabel) myPromptModeLabel->setVisible(false);
+        if (myPromptHintLabel) myPromptHintLabel->setVisible(false);
+        if (myEditorPlayClipButton) myEditorPlayClipButton->setVisible(false);
+
+        if (myEditorEditSceneButton) {
+            myEditorEditSceneButton->setVisible(true);
+            myEditorEditSceneButton->setText("✎  Edit Main Scene");
+            myEditorEditSceneButton->setToolTip("Open and edit the shared main scene (scene.usda)");
         }
         if (myEditorPrimaryActionButton) {
-            myEditorPrimaryActionButton->setText("Save / Render Shot  →");
+            myEditorPrimaryActionButton->setText("Save Shot");
         }
-        if (myPromptModeLabel) {
-            myPromptModeLabel->setText(QString("STEP 2 — INDIVIDUAL SHOT (%1): Describe this shot's action/camera via LLM prompt OR edit in the USD 3D viewport below.").arg(shotName));
-        }
-        const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty();
         if (myScenePrompt) {
-            myScenePrompt->setPlaceholderText(agentMode
-                ? "Describe this shot for Gemini Coding Agent (e.g. character actions, multi-action locomotion, camera motion, atmosphere)…"
-                : "Describe this shot as a cinematic moment (camera framing, character movement, action) or edit in the USD 3D viewport below…");
+            myScenePrompt->setPlaceholderText("Describe this shot (actions, camera, atmosphere)…");
         }
         if (myGenerateUsdButton) {
-            myGenerateUsdButton->setText(agentMode ? "✦  Queue Shot for Gemini" : "✦  Generate Shot USD");
-            myGenerateUsdButton->setToolTip(agentMode ? "Queue shot prompt for the Gemini Coding Agent in VS Code chat" : "Generate shot USD via LLM");
-        }
-        if (myPromptHintLabel) {
-            myPromptHintLabel->setText(agentMode
-                ? "Agent Bridge active: click 'Queue Shot for Gemini' then ask Gemini in VS Code: 'Generate the queued shot'."
-                : "Composed USD stage (user_edits.usda over shot.usda over scene.usda). Manual edits stay in user_edits.usda and survive LLM regeneration.");
-        }
-        if (myEditorPlayClipButton) {
-            const QString shotRelDir = QString("scenes/scene_%1/shot_%2")
-                .arg(myCurrentScene + 1, 2, 10, QChar('0'))
-                .arg(myCurrentPanel + 1, 3, 10, QChar('0'));
-            const QDir shotDir(QDir(painterSpaceProjectRoot()).filePath(shotRelDir));
-            const QString videoPath = shotDir.filePath("video.mp4");
-            const QString framesDir = shotDir.filePath("frames");
-            const bool hasClip = QFileInfo::exists(videoPath) ||
-                (QDir(framesDir).exists() && !QDir(framesDir).entryList(QStringList() << "frame.*.png", QDir::Files).isEmpty());
-            myEditorPlayClipButton->setVisible(hasClip);
+            myGenerateUsdButton->setText(agentMode ? "✦  Queue Shot" : "✦  Generate Shot");
+            myGenerateUsdButton->setToolTip(agentMode ? "Queue shot prompt for Gemini" : "Generate shot USD");
         }
     }
 }
@@ -1262,6 +1334,20 @@ void MainWindow::rebuildStoryboardScenes() {
         }
         connect(open, &QPushButton::clicked, this, [this, index]() { openStoryboardScene(index); });
         cardLayout->addWidget(open, 1);
+
+        if (scene.configured) {
+            QHBoxLayout* cardActionRow = new QHBoxLayout();
+            cardActionRow->setContentsMargins(0, 4, 0, 0);
+            QPushButton* editMainSceneBtn = new QPushButton("✎  Edit Main Scene", card);
+            editMainSceneBtn->setObjectName("quietButton");
+            editMainSceneBtn->setCursor(Qt::PointingHandCursor);
+            editMainSceneBtn->setToolTip("Open and edit the shared main scene (scene.usda) in 3D");
+            connect(editMainSceneBtn, &QPushButton::clicked, this, [this, index]() { openSceneSetup(index); });
+            cardActionRow->addWidget(editMainSceneBtn);
+            cardActionRow->addStretch();
+            cardLayout->addLayout(cardActionRow);
+        }
+
         myScenesGrid->addWidget(card, index / 3, index % 3);
     }
 }
@@ -1335,6 +1421,10 @@ void MainWindow::populateAssetEntries() {
         if (!p.isEmpty()) {
             manifestByPath.insert(p, obj);
         }
+        const QString sp = obj.value("source_path").toString();
+        if (!sp.isEmpty()) {
+            manifestByPath.insert(sp, obj);
+        }
     }
 
     QTimer* assetRescanTimer = findChild<QTimer*>(QStringLiteral("assetRescanTimer"), Qt::FindDirectChildrenOnly);
@@ -1366,19 +1456,35 @@ void MainWindow::populateAssetEntries() {
             if (!assetDirWatcher->directories().contains(catDir.absolutePath())) {
                 assetDirWatcher->addPath(catDir.absolutePath());
             }
-            const QStringList usdFiles = catDir.entryList(QStringList() << "*.usdc" << "*.usda", QDir::Files, QDir::Name);
-            if (usdFiles.isEmpty()) continue;
+            const QStringList subCatDirs = catDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
+            for (const QString& scd : subCatDirs) {
+                const QString scPath = catDir.filePath(scd);
+                if (!assetDirWatcher->directories().contains(scPath)) {
+                    assetDirWatcher->addPath(scPath);
+                }
+            }
 
             const QString categoryName = folderToCategoryName(subdir);
             QSet<QString> seenStems;
 
-            for (const QString& file : usdFiles) {
+            QDirIterator it(catDir.absolutePath(), QStringList() << QStringLiteral("*.usdc") << QStringLiteral("*.usda"), QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                it.next();
+                const QString absFilePath = it.filePath();
+                const QString relPath = QDir(projectRoot).relativeFilePath(absFilePath);
+                const QString file = it.fileName();
                 const QString ext = file.endsWith(".usdc", Qt::CaseInsensitive) ? QStringLiteral(".usdc") : QStringLiteral(".usda");
                 QString stem = file;
                 stem.chop(ext.length());
 
-                // Skip standalone wind-simulation demo scenes (e.g. *_wind_demo.usda, 19–292 MB ASCII time-sampled stages)
-                if (ext == ".usda" && (stem.contains("_demo", Qt::CaseInsensitive) || stem.endsWith("demo", Qt::CaseInsensitive))) {
+                // Skip standalone wind-simulation demo scenes, normalization wrappers, and backups
+                if (ext == ".usda" && (stem.endsWith(".norm", Qt::CaseInsensitive) || stem.contains("_demo", Qt::CaseInsensitive) || stem.endsWith("demo", Qt::CaseInsensitive))) {
+                    continue;
+                }
+                if (stem.contains("backup", Qt::CaseInsensitive) || file.endsWith(".bak", Qt::CaseInsensitive)) {
+                    continue;
+                }
+                if (file.compare(QStringLiteral("detailed_car.usdc"), Qt::CaseInsensitive) == 0) {
                     continue;
                 }
 
@@ -1389,21 +1495,29 @@ void MainWindow::populateAssetEntries() {
 
                 // Format display name
                 QString displayName = stem;
-                displayName.replace('_', ' ');
-                displayName.replace('-', ' ');
-                const QStringList words = displayName.split(' ', Qt::SkipEmptyParts);
-                QStringList capWords;
-                for (const QString& w : words) {
-                    if (!w.isEmpty()) {
-                        QString c = w;
-                        c[0] = c[0].toUpper();
-                        capWords.append(c);
+                if (stem == QStringLiteral("male")) {
+                    displayName = QStringLiteral("Male (Bryan)");
+                } else if (stem == QStringLiteral("female")) {
+                    displayName = QStringLiteral("Female (Sofie)");
+                } else if (stem == QStringLiteral("human")) {
+                    displayName = QStringLiteral("Human (Bryan)");
+                } else {
+                    displayName.replace('_', ' ');
+                    displayName.replace('-', ' ');
+                    const QStringList words = displayName.split(' ', Qt::SkipEmptyParts);
+                    QStringList capWords;
+                    for (const QString& w : words) {
+                        if (!w.isEmpty()) {
+                            QString c = w;
+                            c[0] = c[0].toUpper();
+                            capWords.append(c);
+                        }
                     }
+                    displayName = capWords.join(' ');
                 }
-                displayName = capWords.join(' ');
 
                 // Clean prim base name
-                QString primBase = capWords.join(QString());
+                QString primBase = displayName;
                 primBase.replace(QRegularExpression("[^A-Za-z0-9_]"), "");
                 if (primBase.isEmpty()) primBase = "Asset";
 
@@ -1411,11 +1525,19 @@ void MainWindow::populateAssetEntries() {
                 entry.name = displayName;
                 entry.category = categoryName;
                 entry.id = QString("%1.%2").arg(subdir, stem);
-                entry.path = QString("assets/usdc_assets/%1/%2").arg(subdir, file);
+                entry.path = relPath;
                 entry.basePrimName = primBase;
                 entry.forwardAxis = (subdir == "humans" || subdir == "cars") ? QStringLiteral("+Z") : QStringLiteral("-Z");
                 if (manifestByPath.contains(entry.path)) {
                     const QJsonObject mEntry = manifestByPath.value(entry.path);
+                    const QString mId = mEntry.value("id").toString();
+                    if (!mId.isEmpty()) {
+                        entry.id = mId;
+                    }
+                    const QString mPath = mEntry.value("path").toString();
+                    if (!mPath.isEmpty()) {
+                        entry.path = mPath;
+                    }
                     const QString mFwd = mEntry.value("forward_axis").toString();
                     if (!mFwd.isEmpty() && mFwd != QStringLiteral("unknown")) {
                         entry.forwardAxis = mFwd;
@@ -1632,8 +1754,14 @@ void MainWindow::syncLayers() {
     const QString selectedPath = myUsdViewport->selectedPrimPath();
     for (int i = 0; i < entries.size(); ++i) {
         const UsdPrimItem& e = entries.at(i);
-        const QString indent(qMax(0, (e.depth - 1) * 2), QChar(' '));
-        QString label = indent + e.name + QString(" (%1)").arg(e.typeName);
+        QString label;
+        if (!e.actorId.isEmpty() || !e.actorLabel.isEmpty()) {
+            const QString actorName = !e.actorLabel.isEmpty() ? e.actorLabel : e.actorId;
+            label = QStringLiteral("👤 %1 [%2]").arg(actorName, e.actorId.isEmpty() ? e.name : e.actorId);
+        } else {
+            const QString indent(qMax(0, (e.depth - 1) * 2), QChar(' '));
+            label = indent + e.name + QString(" (%1)").arg(e.typeName);
+        }
         if (e.hasUserEdit) {
             label += QStringLiteral("  • [edited]");
         }
@@ -1641,7 +1769,9 @@ void MainWindow::syncLayers() {
         item->setData(Qt::UserRole, e.path);
         item->setToolTip(e.path + (e.assetId.isEmpty() ? QString() : QString("  [asset_id=%1]").arg(e.assetId)));
         item->setCheckState(e.visible ? Qt::Checked : Qt::Unchecked);
-        if (e.hasUserEdit) {
+        if (!e.actorId.isEmpty()) {
+            item->setForeground(e.identityColor);
+        } else if (e.hasUserEdit) {
             item->setForeground(QColor("#8ad0f5"));
         }
         if (e.path == selectedPath) {
@@ -1854,17 +1984,18 @@ void MainWindow::generateUsdForCurrentPanel() {
                 if (sceneIndex >= 0 && sceneIndex < myStoryboardScenes.size()) {
                     myStoryboardScenes[sceneIndex].prompt = prompt;
                 }
-                myCanvasStatus->setText("Prompt queued for Gemini Coding Agent! In VS Code chat, say: 'Generate the queued scene'");
+                myCanvasStatus->setText("Prompt queued in task_queue/pending_request.json • Waiting for LLM JSON in task_queue/llm_response.json…");
                 if (myUsdViewport) {
-                    myUsdViewport->setGenerationStatus("Prompt dispatched to Gemini Coding Agent in VS Code chat!", false, false);
+                    myUsdViewport->setGenerationStatus("Waiting for IDE LLM JSON response (task_queue/llm_response.json)…", false, false);
                 }
-                QMessageBox::information(this, "Prompt Queued for Gemini Agent",
-                    QString("Your scene prompt has been queued for the Gemini Coding Agent in VS Code!\n\n"
+                QMessageBox::information(this, "Prompt Queued for IDE LLM Endpoint",
+                    QString("Your scene prompt has been queued in task_queue/pending_request.json!\n\n"
                             "Target: %1\n"
                             "Prompt: \"%2\"\n\n"
-                            "In your VS Code chat with Gemini, say:\n"
-                            "  \"Generate the queued scene\"\n\n"
-                            "The agent will author the USD stage, and PainterSpace will live-reload automatically.")
+                            "In VS Code chat, tell the assistant:\n"
+                            "  \"Respond to the queued task\"\n\n"
+                            "The chatbot will ONLY write the JSON tool calls to task_queue/llm_response.json, "
+                            "and PainterSpace will automatically execute the function calls and compile the USD stage itself.")
                         .arg(relativeStagePath, prompt));
                 return;
             }
@@ -1960,17 +2091,18 @@ void MainWindow::generateUsdForCurrentPanel() {
             if (panelIndex >= 0 && panelIndex < storyboardPanels().size() && storyboardPanels().at(panelIndex).active) {
                 storyboardPanels()[panelIndex].prompt = prompt;
             }
-            myCanvasStatus->setText("Prompt queued for Gemini Coding Agent! In VS Code chat, say: 'Generate the queued shot'");
+            myCanvasStatus->setText("Prompt queued in task_queue/pending_request.json • Waiting for LLM JSON in task_queue/llm_response.json…");
             if (myUsdViewport) {
-                myUsdViewport->setGenerationStatus("Prompt dispatched to Gemini Coding Agent in VS Code chat!", false, false);
+                myUsdViewport->setGenerationStatus("Waiting for IDE LLM JSON response (task_queue/llm_response.json)…", false, false);
             }
-            QMessageBox::information(this, "Prompt Queued for Gemini Agent",
-                QString("Your shot prompt has been queued for the Gemini Coding Agent in VS Code!\n\n"
+            QMessageBox::information(this, "Prompt Queued for IDE LLM Endpoint",
+                QString("Your shot prompt has been queued in task_queue/pending_request.json!\n\n"
                         "Target: %1\n"
                         "Prompt: \"%2\"\n\n"
-                        "In your VS Code chat with Gemini, say:\n"
-                        "  \"Generate the queued shot\"\n\n"
-                        "The agent will author the USD stage, bind animations, and PainterSpace will live-reload automatically.")
+                        "In VS Code chat, tell the assistant:\n"
+                        "  \"Respond to the queued task\"\n\n"
+                        "The chatbot will ONLY write the JSON tool calls to task_queue/llm_response.json, "
+                        "and PainterSpace will automatically execute the function calls, validate collisions, and compile the USD stage itself.")
                     .arg(relativeStagePath, prompt));
             return;
         }
@@ -2022,6 +2154,111 @@ void MainWindow::generateUsdForCurrentPanel() {
         process->deleteLater();
     });
     process->start(QCoreApplication::applicationFilePath(), {"--generate-usda", prompt, relativeStagePath});
+}
+
+void MainWindow::pollAgentLlmResponse() {
+    if (myUsdGenerationProcess) return;
+
+    const QString projectRoot = painterSpaceProjectRoot();
+    const QDir rootDir(projectRoot);
+    const QString responsePath = rootDir.filePath("task_queue/llm_response.json");
+    if (!QFileInfo::exists(responsePath)) return;
+
+    // Ensure the JSON file has finished being written and is valid JSON
+    QFile respFile(responsePath);
+    if (!respFile.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+    const QByteArray rawBytes = respFile.readAll().trimmed();
+    respFile.close();
+    if (rawBytes.isEmpty()) return;
+
+    QJsonParseError parseErr;
+    const QJsonDocument doc = QJsonDocument::fromJson(rawBytes, &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || (!doc.isObject() && !doc.isArray())) {
+        return;
+    }
+
+    const QString pendingPath = rootDir.filePath("task_queue/pending_request.json");
+    const QJsonObject pendingTask = readJsonFile(pendingPath);
+    const QString relativeStagePath = pendingTask.value("target_stage").toString();
+    if (relativeStagePath.isEmpty()) return;
+
+    const QString stagePath = rootDir.absoluteFilePath(relativeStagePath);
+    const QString prompt = pendingTask.value("prompt").toString();
+    const bool isSceneStage = relativeStagePath.endsWith("scene.usda");
+
+    const QString pythonBin = worldStatePythonFor(projectRoot);
+    const QString compileScript = rootDir.filePath("tools/shot_library/compile_shot.py");
+    if (pythonBin.isEmpty() || !QFileInfo::exists(compileScript)) return;
+
+    myCanvasStatus->setText(QString("Executing LLM JSON function calls for %1…").arg(relativeStagePath));
+    if (myUsdViewport) {
+        myUsdViewport->setGenerationStatus(
+            QString("Executing LLM JSON tool calls & compiling %1…").arg(relativeStagePath), false, true);
+    }
+    if (myGenerateUsdButton) myGenerateUsdButton->setEnabled(false);
+
+    myUsdGenerationProcess = new QProcess(this);
+    myUsdGenerationProcess->setWorkingDirectory(projectRoot);
+    QProcess* process = myUsdGenerationProcess;
+    connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this, process, stagePath, relativeStagePath, prompt, isSceneStage, projectRoot](int exitCode, QProcess::ExitStatus exitStatus) {
+        if (myUsdGenerationProcess != process) return;
+        myUsdGenerationProcess = nullptr;
+        if (myGenerateUsdButton) myGenerateUsdButton->setEnabled(true);
+        if (myUsdViewport) myUsdViewport->setGenerationStatus(QString());
+        const QString output = QString::fromUtf8(process->readAllStandardOutput()).trimmed();
+        const QString errors = QString::fromUtf8(process->readAllStandardError()).trimmed();
+        process->deleteLater();
+
+        if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+            const QString valErrPath = QDir(projectRoot).filePath("task_queue/validation_error.json");
+            const QJsonObject valErr = readJsonFile(valErrPath);
+            const QString errMsg = !valErr.value("message").toString().isEmpty()
+                ? valErr.value("message").toString()
+                : (!errors.isEmpty() ? errors : output);
+            if (myUsdViewport) {
+                myUsdViewport->setGenerationStatus(
+                    "LLM JSON validation failed — diagnostic written to task_queue/pending_request.json", true, false);
+            }
+            myCanvasStatus->setText("LLM JSON execution/validation failed • Waiting for revised task_queue/llm_response.json");
+            QMessageBox::warning(this, "LLM Response Validation Failed",
+                QString("PainterSpace executed task_queue/llm_response.json, but validation failed:\n\n%1\n\n"
+                        "The structured diagnostic has been written to task_queue/pending_request.json "
+                        "(and task_queue/validation_error.json).\n"
+                        "Tell the IDE chatbot to revise task_queue/llm_response.json.")
+                    .arg(errMsg));
+            return;
+        }
+
+        if (myUsdViewport) {
+            if (myUsdViewport->stagePath() == stagePath) {
+                myUsdViewport->reloadStage();
+            } else {
+                myUsdViewport->openStage(stagePath, isSceneStage);
+            }
+            const QImage preview = myUsdViewport->renderCurrentView();
+            if (!preview.isNull()) {
+                preview.save(QFileInfo(stagePath).dir().filePath("thumbnail.jpg"), "JPG", 90);
+                if (isSceneStage && myCurrentScene >= 0 && myCurrentScene < myStoryboardScenes.size()) {
+                    myStoryboardScenes[myCurrentScene].render = preview;
+                    myStoryboardScenes[myCurrentScene].configured = true;
+                    myStoryboardScenes[myCurrentScene].usdStagePath = stagePath;
+                } else if (!isSceneStage && myCurrentScene >= 0 && myCurrentPanel >= 0 &&
+                           myCurrentPanel < storyboardPanels().size()) {
+                    storyboardPanels()[myCurrentPanel].render = preview;
+                    storyboardPanels()[myCurrentPanel].usdStagePath = stagePath;
+                    if (!prompt.isEmpty()) storyboardPanels()[myCurrentPanel].prompt = prompt;
+                    myLastEditedPanel = myCurrentPanel;
+                }
+            }
+            syncLayers();
+            updateSelectionPanel();
+        }
+        rebuildStoryboardScenes();
+        rebuildStoryboardBook();
+        myCanvasStatus->setText(QString("✓ PainterSpace executed LLM JSON tool calls & live-reloaded %1").arg(relativeStagePath));
+    });
+    process->start(pythonBin, {compileScript, QStringLiteral("--execute-llm-response"), responsePath});
 }
 
 void MainWindow::renderAndPlayUsdStageFile(const QString& stagePath, bool updateStoryboardPanel) {

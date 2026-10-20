@@ -1,0 +1,868 @@
+{
+  "total_duration_s": 7.0,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "idle_car_1_0",
+      "actor_id": "car_1",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_1_0",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_10_0",
+      "actor_id": "human_10",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "run_to_1",
+      "actor_id": "human_11",
+      "function": "run_to",
+      "start_time": 0.0,
+      "end_time": 2.0,
+      "duration": 2.0,
+      "params": {
+        "target": "in_front_of(human_8, 1.2)",
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "run_to_1.started": 0.0,
+        "run_to_1.finished": 2.0,
+        "human_11.started": 0.0,
+        "human_11.finished": 2.0,
+        "human_11.arrived": 2.0,
+        "run_to_1.arrived": 2.0
+      }
+    },
+    {
+      "beat_id": "idle_human_2_0",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_3_0",
+      "actor_id": "human_3",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_4_0",
+      "actor_id": "human_4",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_5_0",
+      "actor_id": "human_5",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_6_0",
+      "actor_id": "human_6",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 7.0,
+      "duration": 7.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "react_4",
+      "actor_id": "human_7",
+      "function": "react",
+      "start_time": 0.0,
+      "end_time": 1.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 2.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_4.started": 0.0,
+        "react_4.finished": 1.5,
+        "human_7.started": 0.0,
+        "human_7.finished": 1.5
+      }
+    },
+    {
+      "beat_id": "react_3",
+      "actor_id": "human_8",
+      "function": "react",
+      "start_time": 0.0,
+      "end_time": 1.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 2.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_3.started": 0.0,
+        "react_3.finished": 1.5,
+        "human_8.started": 0.0,
+        "human_8.finished": 1.5
+      }
+    },
+    {
+      "beat_id": "react_5",
+      "actor_id": "human_9",
+      "function": "react",
+      "start_time": 0.0,
+      "end_time": 1.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 2.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_5.started": 0.0,
+        "react_5.finished": 1.5,
+        "human_9.started": 0.0,
+        "human_9.finished": 1.5
+      }
+    },
+    {
+      "beat_id": "react_8",
+      "actor_id": "human_7",
+      "function": "react",
+      "start_time": 1.5,
+      "end_time": 3.0,
+      "duration": 1.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_8.started": 1.5,
+        "react_8.finished": 3.0,
+        "human_7.started": 1.5,
+        "human_7.finished": 3.0
+      }
+    },
+    {
+      "beat_id": "attack_6",
+      "actor_id": "human_8",
+      "function": "attack",
+      "start_time": 1.5,
+      "end_time": 3.0,
+      "duration": 1.5,
+      "params": {
+        "target": "human_11",
+        "moves": [
+          "elbow_punch"
+        ],
+        "at_time": 3.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_6.started": 1.5,
+        "attack_6.finished": 3.0,
+        "human_8.started": 1.5,
+        "human_8.finished": 3.0
+      }
+    },
+    {
+      "beat_id": "react_9",
+      "actor_id": "human_9",
+      "function": "react",
+      "start_time": 1.5,
+      "end_time": 3.0,
+      "duration": 1.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_9.started": 1.5,
+        "react_9.finished": 3.0,
+        "human_9.started": 1.5,
+        "human_9.finished": 3.0
+      }
+    },
+    {
+      "beat_id": "attack_2",
+      "actor_id": "human_11",
+      "function": "attack",
+      "start_time": 2.0,
+      "end_time": 3.5,
+      "duration": 1.5,
+      "params": {
+        "target": "human_8",
+        "moves": [
+          "left_hook"
+        ],
+        "at_time": 2.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_2.started": 2.0,
+        "attack_2.finished": 3.5,
+        "human_11.started": 2.0,
+        "human_11.finished": 3.5
+      }
+    },
+    {
+      "beat_id": "react_12",
+      "actor_id": "human_7",
+      "function": "react",
+      "start_time": 3.0,
+      "end_time": 4.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_12.started": 3.0,
+        "react_12.finished": 4.5,
+        "human_7.started": 3.0,
+        "human_7.finished": 4.5
+      }
+    },
+    {
+      "beat_id": "react_11",
+      "actor_id": "human_8",
+      "function": "react",
+      "start_time": 3.0,
+      "end_time": 4.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_11.started": 3.0,
+        "react_11.finished": 4.5,
+        "human_8.started": 3.0,
+        "human_8.finished": 4.5
+      }
+    },
+    {
+      "beat_id": "react_13",
+      "actor_id": "human_9",
+      "function": "react",
+      "start_time": 3.0,
+      "end_time": 4.5,
+      "duration": 1.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_13.started": 3.0,
+        "react_13.finished": 4.5,
+        "human_9.started": 3.0,
+        "human_9.finished": 4.5
+      }
+    },
+    {
+      "beat_id": "react_7",
+      "actor_id": "human_11",
+      "function": "react",
+      "start_time": 3.5,
+      "end_time": 5.0,
+      "duration": 1.5,
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_7.started": 3.5,
+        "react_7.finished": 5.0,
+        "human_11.started": 3.5,
+        "human_11.finished": 5.0
+      }
+    },
+    {
+      "beat_id": "idle_human_7_450",
+      "actor_id": "human_7",
+      "function": "wait",
+      "start_time": 4.5,
+      "end_time": 7.0,
+      "duration": 2.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_8_450",
+      "actor_id": "human_8",
+      "function": "wait",
+      "start_time": 4.5,
+      "end_time": 7.0,
+      "duration": 2.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_9_450",
+      "actor_id": "human_9",
+      "function": "wait",
+      "start_time": 4.5,
+      "end_time": 7.0,
+      "duration": 2.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "attack_10",
+      "actor_id": "human_11",
+      "function": "attack",
+      "start_time": 5.0,
+      "end_time": 6.5,
+      "duration": 1.5,
+      "params": {
+        "target": "human_8",
+        "moves": [
+          "kick_to_the_groin"
+        ],
+        "at_time": 5.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "attack_10.started": 5.0,
+        "attack_10.finished": 6.5,
+        "human_11.started": 5.0,
+        "human_11.finished": 6.5
+      }
+    },
+    {
+      "beat_id": "idle_human_11_650",
+      "actor_id": "human_11",
+      "function": "wait",
+      "start_time": 6.5,
+      "end_time": 7.0,
+      "duration": 0.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "run_to_1.started": 0.0,
+    "run_to_1.finished": 2.0,
+    "human_11.started": 5.0,
+    "human_11.finished": 6.5,
+    "human_11.arrived": 2.0,
+    "run_to_1.arrived": 2.0,
+    "react_3.started": 0.0,
+    "react_3.finished": 1.5,
+    "human_8.started": 3.0,
+    "human_8.finished": 4.5,
+    "react_4.started": 0.0,
+    "react_4.finished": 1.5,
+    "human_7.started": 3.0,
+    "human_7.finished": 4.5,
+    "react_5.started": 0.0,
+    "react_5.finished": 1.5,
+    "human_9.started": 3.0,
+    "human_9.finished": 4.5,
+    "attack_2.started": 2.0,
+    "attack_2.finished": 3.5,
+    "attack_6.started": 1.5,
+    "attack_6.finished": 3.0,
+    "react_8.started": 1.5,
+    "react_8.finished": 3.0,
+    "react_9.started": 1.5,
+    "react_9.finished": 3.0,
+    "react_7.started": 3.5,
+    "react_7.finished": 5.0,
+    "react_11.started": 3.0,
+    "react_11.finished": 4.5,
+    "react_12.started": 3.0,
+    "react_12.finished": 4.5,
+    "react_13.started": 3.0,
+    "react_13.finished": 4.5,
+    "attack_10.started": 5.0,
+    "attack_10.finished": 6.5
+  },
+  "actor_schedules": {
+    "car_1": [
+      {
+        "beat_id": "idle_car_1_0",
+        "actor_id": "car_1",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_1": [
+      {
+        "beat_id": "idle_human_1_0",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "idle_human_2_0",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_3": [
+      {
+        "beat_id": "idle_human_3_0",
+        "actor_id": "human_3",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_4": [
+      {
+        "beat_id": "idle_human_4_0",
+        "actor_id": "human_4",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_5": [
+      {
+        "beat_id": "idle_human_5_0",
+        "actor_id": "human_5",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_6": [
+      {
+        "beat_id": "idle_human_6_0",
+        "actor_id": "human_6",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_7": [
+      {
+        "beat_id": "react_4",
+        "actor_id": "human_7",
+        "function": "react",
+        "start_time": 0.0,
+        "end_time": 1.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 2.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_4.started": 0.0,
+          "react_4.finished": 1.5,
+          "human_7.started": 0.0,
+          "human_7.finished": 1.5
+        }
+      },
+      {
+        "beat_id": "react_8",
+        "actor_id": "human_7",
+        "function": "react",
+        "start_time": 1.5,
+        "end_time": 3.0,
+        "duration": 1.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 3.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_8.started": 1.5,
+          "react_8.finished": 3.0,
+          "human_7.started": 1.5,
+          "human_7.finished": 3.0
+        }
+      },
+      {
+        "beat_id": "react_12",
+        "actor_id": "human_7",
+        "function": "react",
+        "start_time": 3.0,
+        "end_time": 4.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_12.started": 3.0,
+          "react_12.finished": 4.5,
+          "human_7.started": 3.0,
+          "human_7.finished": 4.5
+        }
+      },
+      {
+        "beat_id": "idle_human_7_450",
+        "actor_id": "human_7",
+        "function": "wait",
+        "start_time": 4.5,
+        "end_time": 7.0,
+        "duration": 2.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_8": [
+      {
+        "beat_id": "react_3",
+        "actor_id": "human_8",
+        "function": "react",
+        "start_time": 0.0,
+        "end_time": 1.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "hit_reaction",
+          "look_at": null,
+          "at_time": 2.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_3.started": 0.0,
+          "react_3.finished": 1.5,
+          "human_8.started": 0.0,
+          "human_8.finished": 1.5
+        }
+      },
+      {
+        "beat_id": "attack_6",
+        "actor_id": "human_8",
+        "function": "attack",
+        "start_time": 1.5,
+        "end_time": 3.0,
+        "duration": 1.5,
+        "params": {
+          "target": "human_11",
+          "moves": [
+            "elbow_punch"
+          ],
+          "at_time": 3.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_6.started": 1.5,
+          "attack_6.finished": 3.0,
+          "human_8.started": 1.5,
+          "human_8.finished": 3.0
+        }
+      },
+      {
+        "beat_id": "react_11",
+        "actor_id": "human_8",
+        "function": "react",
+        "start_time": 3.0,
+        "end_time": 4.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "reaction",
+          "look_at": null,
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_11.started": 3.0,
+          "react_11.finished": 4.5,
+          "human_8.started": 3.0,
+          "human_8.finished": 4.5
+        }
+      },
+      {
+        "beat_id": "idle_human_8_450",
+        "actor_id": "human_8",
+        "function": "wait",
+        "start_time": 4.5,
+        "end_time": 7.0,
+        "duration": 2.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_9": [
+      {
+        "beat_id": "react_5",
+        "actor_id": "human_9",
+        "function": "react",
+        "start_time": 0.0,
+        "end_time": 1.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 2.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_5.started": 0.0,
+          "react_5.finished": 1.5,
+          "human_9.started": 0.0,
+          "human_9.finished": 1.5
+        }
+      },
+      {
+        "beat_id": "react_9",
+        "actor_id": "human_9",
+        "function": "react",
+        "start_time": 1.5,
+        "end_time": 3.0,
+        "duration": 1.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 3.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_9.started": 1.5,
+          "react_9.finished": 3.0,
+          "human_9.started": 1.5,
+          "human_9.finished": 3.0
+        }
+      },
+      {
+        "beat_id": "react_13",
+        "actor_id": "human_9",
+        "function": "react",
+        "start_time": 3.0,
+        "end_time": 4.5,
+        "duration": 1.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_13.started": 3.0,
+          "react_13.finished": 4.5,
+          "human_9.started": 3.0,
+          "human_9.finished": 4.5
+        }
+      },
+      {
+        "beat_id": "idle_human_9_450",
+        "actor_id": "human_9",
+        "function": "wait",
+        "start_time": 4.5,
+        "end_time": 7.0,
+        "duration": 2.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_10": [
+      {
+        "beat_id": "idle_human_10_0",
+        "actor_id": "human_10",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 7.0,
+        "duration": 7.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_11": [
+      {
+        "beat_id": "run_to_1",
+        "actor_id": "human_11",
+        "function": "run_to",
+        "start_time": 0.0,
+        "end_time": 2.0,
+        "duration": 2.0,
+        "params": {
+          "target": "in_front_of(human_8, 1.2)",
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "run_to_1.started": 0.0,
+          "run_to_1.finished": 2.0,
+          "human_11.started": 0.0,
+          "human_11.finished": 2.0,
+          "human_11.arrived": 2.0,
+          "run_to_1.arrived": 2.0
+        }
+      },
+      {
+        "beat_id": "attack_2",
+        "actor_id": "human_11",
+        "function": "attack",
+        "start_time": 2.0,
+        "end_time": 3.5,
+        "duration": 1.5,
+        "params": {
+          "target": "human_8",
+          "moves": [
+            "left_hook"
+          ],
+          "at_time": 2.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_2.started": 2.0,
+          "attack_2.finished": 3.5,
+          "human_11.started": 2.0,
+          "human_11.finished": 3.5
+        }
+      },
+      {
+        "beat_id": "react_7",
+        "actor_id": "human_11",
+        "function": "react",
+        "start_time": 3.5,
+        "end_time": 5.0,
+        "duration": 1.5,
+        "params": {
+          "mood": "hit_reaction",
+          "look_at": null,
+          "at_time": 3.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_7.started": 3.5,
+          "react_7.finished": 5.0,
+          "human_11.started": 3.5,
+          "human_11.finished": 5.0
+        }
+      },
+      {
+        "beat_id": "attack_10",
+        "actor_id": "human_11",
+        "function": "attack",
+        "start_time": 5.0,
+        "end_time": 6.5,
+        "duration": 1.5,
+        "params": {
+          "target": "human_8",
+          "moves": [
+            "kick_to_the_groin"
+          ],
+          "at_time": 5.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "attack_10.started": 5.0,
+          "attack_10.finished": 6.5,
+          "human_11.started": 5.0,
+          "human_11.finished": 6.5
+        }
+      },
+      {
+        "beat_id": "idle_human_11_650",
+        "actor_id": "human_11",
+        "function": "wait",
+        "start_time": 6.5,
+        "end_time": 7.0,
+        "duration": 0.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

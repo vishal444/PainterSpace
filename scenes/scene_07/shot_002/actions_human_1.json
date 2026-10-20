@@ -1,0 +1,83 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "smoking",
+      "start_s": 0.0,
+      "end_s": 4.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 0,
+      "end_frame": 96
+    },
+    {
+      "clip": "pointing_forward",
+      "start_s": 4.0,
+      "end_s": 6.0,
+      "speed": 1.0,
+      "blend_s": 0.25,
+      "start_frame": 96,
+      "end_frame": 144
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 6.0,
+      "end_s": 8.0,
+      "speed": 1.0,
+      "blend_s": 0.25,
+      "start_frame": 144,
+      "end_frame": 192
+    },
+    {
+      "clip": "kiss",
+      "start_s": 8.0,
+      "end_s": 10.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 192,
+      "end_frame": 240
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 10.0,
+      "end_s": 10.2,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 240,
+      "end_frame": 245
+    },
+    {
+      "clip": "walk",
+      "start_s": 10.2,
+      "end_s": 13.2,
+      "speed": 0.722,
+      "blend_s": 0.2,
+      "start_frame": 245,
+      "end_frame": 317
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 13.2,
+      "end_s": 13.708,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 317,
+      "end_frame": 329
+    }
+  ],
+  "look_at_targets": [
+    {
+      "target_pos": [
+        2.503,
+        0.01,
+        5.747
+      ],
+      "target_actor": "",
+      "start_s": 8.0,
+      "end_s": 10.0,
+      "weight": 0.85,
+      "yaw_deg": -0.01,
+      "pitch_deg": 0.0
+    }
+  ]
+}

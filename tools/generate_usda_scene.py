@@ -24,7 +24,7 @@ from shutil import which
 MAX_STAGE_BYTES = 1_000_000
 MAX_PRIMS = 2_000
 MAX_FRAMES = 1_440
-RETRIES = 2
+RETRIES = 3
 PROMPT_VERSION = "2.0"
 
 DEFAULT_SCENE_USDA = """#usda 1.0
@@ -94,7 +94,13 @@ def manifest_prompt(path: Path, asset_root: Path) -> str:
         if candidate.suffix.lower() not in {".usd", ".usda", ".usdc"}:
             continue
         rel_to_assets = full.relative_to(resolved_asset_root).as_posix()
-        item_copy = dict(item)
+        item_copy = {k: v for k, v in item.items() if k not in ("collision", "normalization")}
+        if isinstance(item_copy.get("parts"), dict):
+            compact_parts = {}
+            for p_name, p_meta in item_copy["parts"].items():
+                if isinstance(p_meta, dict):
+                    compact_parts[p_name] = {pk: pv for pk, pv in p_meta.items() if pk != "collider_frame"}
+            item_copy["parts"] = compact_parts
         item_copy["shot_reference_path"] = f"../../../assets/{rel_to_assets}"
         allowed.append(item_copy)
     return json.dumps({"assets": allowed}, ensure_ascii=False, indent=2)
@@ -115,14 +121,17 @@ WORLD_STATE_INSTRUCTIONS = (
     "A WORLD STATE RECORD (JSON computed by code from the real USD stage and the user's 3D editor layout) describes "
     "what is in the scene right now; trust its numbers instead of estimating geometry. Meters, Y up, north = -Z, "
     "east = +X. position is the centre of an object's base. heading_deg: 0 = north (-Z), 90 = east (+X), clockwise from above. "
-    "For assets with forward_axis = '+Z' (humanoid characters such as human.usdc, and cars), facing heading_deg requires "
-    "authoring xformOp:rotateY = 180 - heading_deg (e.g. facing North -Z requires rotateY = 180). For assets with "
-    "forward_axis = '-Z' (buildings, static props), author xformOp:rotateY = -heading_deg. Always ensure characters traveling "
-    "along a path face their direction of motion so they walk/run forward instead of backwards. Keep all existing objects "
-    "with defined_in = \"shot\" (and the current ShotCam camera framing) from state_start.json / CURRENT SHOT LAYER at their listed "
-    "positions, headings, scales, and asset references unless the prompt asks to move, animate, or replace them. Use zones and "
-    "free_space for any new placement, avoid overlapping existing bounds, and fix relevant warnings. On every prim that references a "
-    "manifest asset add customData = { string asset_id = \"<id>\" }. "
+    "All normalized assets in the manifest (forward_axis = '-Z', including *.norm.usda wrappers for characters, cars, and trees) "
+    "face -Z with base at y = 0; author xformOp:rotateY = -heading_deg. Only if a legacy un-normalized asset has forward_axis = '+Z', "
+    "author xformOp:rotateY = 180 - heading_deg. Always ensure characters traveling along a path face their direction of motion. "
+    "SOLID OBJECTS & COLLISION PREVENTION: Characters, cars, doors, and tree trunks are solid 3D colliders validated at every frame. "
+    "Each object in state_start.json includes world-space `anchors` (e.g. `door_fl_stand`, `stand_front`, `stand_left`, `stand_right`) "
+    "that are guaranteed clear of solid colliders. To make a character walk/run to an object or position around obstacles automatically, "
+    "set navigation intent in the character prim's customData, e.g. `customData = { string asset_id = \"character.human\", string go_to = \"Car:door_fl_stand\" }` "
+    "(or `double2 go_to = (x, z)`), and if the shot requires touching a door or object add `string allow_contact = \"Car:door_fl\"`. "
+    "Keep all existing objects with defined_in = \"shot\" (and the current ShotCam camera framing) from state_start.json / CURRENT SHOT LAYER "
+    "at their listed positions, headings, scales, and asset references unless the prompt asks to move, animate, or replace them. "
+    "On every prim that references a manifest asset add customData = { string asset_id = \"<id>\" }. "
 )
 
 
@@ -237,7 +246,8 @@ def local_checks(stage: str, stage_dir: Path, asset_root: Path, start: int, end:
     if end < start or end - start + 1 > MAX_FRAMES:
         errors.append(f"frame range must contain 1 to {MAX_FRAMES} frames")
     resolved_assets = asset_root.resolve()
-    scene_dir = stage_dir.parent.resolve()
+    resolved_stage_dir = stage_dir.resolve()
+    scene_dir = resolved_stage_dir.parent
     for match in re.finditer(r"@([^@]+)@", stage):
         ref = match.group(1)
         candidate = Path(ref)
@@ -249,7 +259,8 @@ def local_checks(stage: str, stage_dir: Path, asset_root: Path, start: int, end:
         in_scene = resolved == (scene_dir / "scene.usda").resolve() or (
             scene_dir in resolved.parents and resolved.name == "shot.usda"
         )
-        if not in_assets and not in_scene:
+        in_shot_dir = resolved.parent == resolved_stage_dir and candidate.suffix.lower() in {".usd", ".usda", ".usdc"}
+        if not in_assets and not in_scene and not in_shot_dir:
             errors.append(f"reference escapes project assets and scene layer: {ref}")
         elif candidate.suffix.lower() not in {".usd", ".usda", ".usdc"}:
             errors.append(f"only USD references are allowed: {ref}")
@@ -285,6 +296,50 @@ def run_validator(tool: str, stage_path: Path, args: list[str]) -> str:
         return f"{tool} is not installed"
     result = subprocess.run([executable, *args, str(stage_path)], capture_output=True, text=True, timeout=60)
     return "" if result.returncode == 0 else (result.stderr or result.stdout or f"{tool} exited {result.returncode}").strip()
+
+
+def run_collision_validator(
+    stage_path: Path, manifest_path: Path, apply_intents: bool = True, repair: bool = False
+) -> tuple[bool, str, dict]:
+    """Run tools/collision/validate_collisions.py on stage_path.
+
+    Returns (ok, error_message, report_dict).
+    """
+    script = Path(__file__).resolve().parent / "collision" / "validate_collisions.py"
+    if not script.is_file():
+        return True, "", {}
+    resolved_manifest = manifest_path if manifest_path.is_file() else (Path(__file__).resolve().parent.parent / "manifest.json")
+    cmd = [world_state_python(), str(script), str(stage_path), "--manifest", str(resolved_manifest), "--json", "-"]
+    if apply_intents:
+        cmd.append("--apply-intents")
+    if repair:
+        cmd.append("--repair")
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, f"collision validator failed to run: {exc}", {}
+    report: dict = {}
+    if res.stdout.strip():
+        try:
+            report = json.loads(res.stdout)
+        except json.JSONDecodeError:
+            pass
+    if res.returncode == 0 and report.get("ok", True):
+        return True, "", report
+    violations = report.get("violations") or []
+    unprotected = report.get("unprotected_assets") or []
+    parts: list[str] = []
+    if unprotected:
+        parts.append("Unprotected assets missing collision shapes: " + ", ".join(str(u) for u in unprotected))
+    for v in violations:
+        parts.append(
+            f"COLLISION ({v.get('actor')} vs {v.get('object')} [{v.get('part')}] frames {v.get('frames')}, "
+            f"worst frame {v.get('worst_frame')}, depth {v.get('max_penetration_m')}m, "
+            f"push_out_m={v.get('push_out_m')}): {v.get('advice')}"
+        )
+    if not parts:
+        parts.append((res.stderr or res.stdout or f"validate_collisions exited {res.returncode}").strip())
+    return False, " | ".join(parts), report
 
 
 def parse_shot_order(shot_dir_name: str) -> int:
@@ -347,6 +402,30 @@ def write_shot_metadata(
     )
 
 
+def compile_via_shot_library(prompt: str, output_path: Path, scene_layer_path: Path, fps: int = 24) -> tuple[bool, dict]:
+    """Compile the shot deterministically via the Shot Function Library (LLMShotPlanner + ShotCompiler)."""
+    project_root = Path(__file__).resolve().parent.parent
+    shot_lib_dir = project_root / "tools" / "shot_library"
+    if str(shot_lib_dir) not in sys.path:
+        sys.path.insert(0, str(shot_lib_dir))
+    try:
+        from compiler import ShotCompiler
+        from function_catalog import FunctionCatalog
+        from llm_planner import LLMShotPlanner
+
+        compiler = ShotCompiler(project_root=project_root, fps=fps)
+        scene_data = compiler._read_scene_context(scene_layer_path)
+        catalog = FunctionCatalog(compiler.manifest, scene_data)
+        planner = LLMShotPlanner(catalog)
+        ok_plan, plan, _ = planner.plan_from_prompt(prompt)
+        if not ok_plan:
+            return False, {"error": "Planner failed to construct ShotPlan"}
+        ok_comp, report = compiler.compile(plan, output_path, scene_usda_path=scene_layer_path, validate=True)
+        return ok_comp, report
+    except Exception as exc:  # noqa: BLE001
+        return False, {"error": str(exc)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("prompt", help="plain-language cinematic moment or shot revision")
@@ -360,11 +439,10 @@ def main() -> int:
     parser.add_argument("--render-review-frame", action="store_true")
     parser.add_argument("--no-world-state-images", action="store_true",
                         help="send the world state record without the top-down map and camera images")
+    parser.add_argument("--legacy-raw-llm", action="store_true",
+                        help="bypass Shot Function Library compiler and request raw USDA directly from OpenAI")
     options = parser.parse_args()
 
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        parser.error("Set OPENAI_API_KEY in the environment; credentials are never read from project files")
     if options.fps < 1 or options.fps > 120 or options.frames < 1 or options.frames > MAX_FRAMES:
         parser.error("fps must be 1–120 and frames must be 1–1440")
     if options.output.name != "shot.usda":
@@ -378,6 +456,35 @@ def main() -> int:
     scene_layer_path = options.output.parent.parent / "scene.usda"
     if not scene_layer_path.is_file():
         scene_layer_path.write_text(DEFAULT_SCENE_USDA, encoding="utf-8")
+
+    # Primary Path: Deterministic Shot Function Library Compiler
+    if not options.legacy_raw_llm:
+        ok_lib, lib_report = compile_via_shot_library(
+            options.prompt, options.output, scene_layer_path, fps=options.fps
+        )
+        if ok_lib and options.output.is_file():
+            stage_text = options.output.read_text(encoding="utf-8")
+            metadata_path = options.metadata or (options.output.parent / "shot.json")
+            write_shot_metadata(
+                metadata_path,
+                options.output,
+                stage_text,
+                options.prompt,
+                options.fps,
+                options.frames,
+                options.model,
+                True,
+            )
+            print(f"Generated and validated {options.output} via Shot Function Library Compiler")
+            print(f"Wrote metadata {metadata_path}")
+            finalized = run_world_state("finalize-shot", options.output, images=not options.no_world_state_images)
+            if finalized:
+                print(f"Wrote world state {finalized['state']}")
+            return 0
+
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        parser.error("Set OPENAI_API_KEY in the environment; credentials are never read from project files")
     scene_layer_text = scene_layer_path.read_text(encoding="utf-8")
     existing_shot_text = options.output.read_text(encoding="utf-8") if options.output.is_file() else ""
 
@@ -421,6 +528,14 @@ def main() -> int:
             checker = which("usdchecker")
             if checker:
                 error = run_validator("usdchecker", options.output, [])
+        if not error:
+            ok_coll, coll_err, _ = run_collision_validator(
+                options.output, options.manifest, apply_intents=True, repair=(attempt == RETRIES)
+            )
+            if options.output.is_file():
+                stage = options.output.read_text(encoding="utf-8")
+            if not ok_coll:
+                error = coll_err
         if not error:
             validation_passed = True
             break

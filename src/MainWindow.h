@@ -59,6 +59,7 @@ private slots:
     void showStoryboardScenes();
     void openStoryboardScene(int sceneIndex);
     void openSceneSetup(int sceneIndex);
+    void saveCurrentSceneEdits();
     void confirmSceneSetupAndOpenShots();
     void showStoryboardBook();
     void startStoryboardPanel();
@@ -67,6 +68,7 @@ private slots:
     void deleteStoryboardPanel(int panelIndex);
     void generateUsdForCurrentPanel();
     void useUsdAssetInPrompt(const QString& assetPath);
+    void pollAgentLlmResponse();
 
 private:
     struct StoryboardPanel;
@@ -158,6 +160,7 @@ private:
     QLabel* myPromptModeLabel = nullptr;
     QLabel* myPromptHintLabel = nullptr;
     QPushButton* myEditorPlayClipButton = nullptr;
+    QPushButton* myEditorSaveSceneButton = nullptr;
     QPushButton* myEditorPrimaryActionButton = nullptr;
     QString myProjectTitle = QStringLiteral("Storyboard Project");
     QVector<StoryboardScene> myStoryboardScenes;

@@ -153,9 +153,12 @@ class Manifest:
         data = json.loads(path.read_text(encoding="utf-8"))
         assets_root = project_root / "assets"
         for item in data.get("assets", []):
-            asset_path = Path(item.get("path", ""))
-            full = project_root / asset_path if asset_path.parts[:1] == ("assets",) else assets_root / asset_path
-            self.by_file[os.path.realpath(full)] = item
+            for key in ("path", "source_path"):
+                rel_p = item.get(key, "")
+                if rel_p:
+                    asset_path = Path(rel_p)
+                    full = project_root / asset_path if asset_path.parts[:1] == ("assets",) else assets_root / asset_path
+                    self.by_file[os.path.realpath(full)] = item
             if item.get("id"):
                 self.by_id[item["id"]] = item
             for alias in item.get("aliases", []):
@@ -179,10 +182,16 @@ class Manifest:
             if referenced:
                 break
         if explicit:
-            entry = self.by_id.get(str(explicit))
+            aid = str(explicit)
+            entry = self.by_id.get(aid)
+            if not entry:
+                for key, cand in self.by_id.items():
+                    if aid.startswith(key + "."):
+                        entry = cand
+                        break
             if not entry and referenced and referenced in self.by_file:
                 entry = self.by_file[referenced]
-            return str(explicit), entry, referenced
+            return aid, entry, referenced
         if referenced and referenced in self.by_file:
             entry = self.by_file[referenced]
             return entry.get("id"), entry, referenced
@@ -542,9 +551,15 @@ class WorldStateBuilder:
                 continue
 
             pose = self.pose_of(prim)
-            forward = (entry or {}).get("forward_axis") or prim.GetCustomDataByKey("forward_axis")
-            if forward is None and not entry:
-                forward = "-Z"  # PainterSpace convention for authored primitives
+            is_norm = bool(prim.GetCustomDataByKey("painterspace_normalized")) or (
+                referenced and referenced.endswith(".norm.usda")
+            )
+            if is_norm:
+                forward = "-Z"
+            elif prim.GetCustomDataByKey("forward_axis"):
+                forward = str(prim.GetCustomDataByKey("forward_axis"))
+            else:
+                forward = (entry or {}).get("forward_axis") or "-Z"
             heading = geometry.heading(forward)
             tags = (entry or {}).get("tags") or []
             is_paint = role == "paint_summary" or prim.GetName() == "Paint"
@@ -574,6 +589,22 @@ class WorldStateBuilder:
             parts, part_boxes = self.parts_of(prim, entry)
             if parts:
                 record["parts"] = parts
+            if entry and entry.get("anchors"):
+                world_mat = self.xf_cache.GetLocalToWorldTransform(prim)
+                world_anchors = {}
+                for aname, aspec in entry["anchors"].items():
+                    apos = aspec.get("pos", [0, 0, 0])
+                    wp = world_mat.Transform(Gf.Vec3d(float(apos[0]), float(apos[1]), float(apos[2])))
+                    afacing = float(aspec.get("facing_deg", 0.0))
+                    arad = math.radians(afacing)
+                    v_dir = world_mat.TransformDir(Gf.Vec3d(math.sin(arad), 0.0, -math.cos(arad)))
+                    w_head = heading_of(v_dir[0], v_dir[2])
+                    world_anchors[aname] = {
+                        "pos": rvec([wp[0], wp[1], wp[2]]),
+                        "facing_deg": rnd(w_head if w_head is not None else afacing),
+                    }
+                if world_anchors:
+                    record["anchors"] = world_anchors
             if pose is not None:
                 record["pose"] = pose
             motion = self.motion_of(prim, geometry)
@@ -581,6 +612,8 @@ class WorldStateBuilder:
                 record["motion"] = motion
             record["_geometry"] = geometry
             record["_parts"] = part_boxes
+            record["_entry"] = entry
+            record["_prim"] = prim
             objects.append(record)
         return objects, environment
 
@@ -1035,7 +1068,27 @@ class WorldStateBuilder:
         for index, obj in enumerate(extras["objects"]):
             color = palette[index % len(palette)]
             outline = [px(p[0], p[2]) for p in obj["_geometry"].footprint]
-            draw.polygon(outline, fill=color + (120,), outline=color)
+            has_shapes = bool((obj.get("_entry") or {}).get("collision", {}).get("shapes"))
+            draw.polygon(outline, fill=color + (55 if has_shapes else 120,), outline=color)
+            if has_shapes and obj.get("_prim"):
+                try:
+                    sys.path.insert(0, str(Path(__file__).resolve().parent / "collision"))
+                    from colliders import SceneObject, world_groups
+                    sobj = SceneObject(obj["_prim"], obj["_entry"], "asset")
+                    for grp in world_groups(self.stage, sobj, self.time, self.xf_cache):
+                        for corners in grp.corners_world():
+                            xs, zs = corners[:, 0], corners[:, 2]
+                            draw.rectangle(
+                                [px(float(xs.min()), float(zs.min())), px(float(xs.max()), float(zs.max()))],
+                                fill=color + (165,),
+                                outline=color,
+                            )
+                except Exception:  # noqa: BLE001
+                    pass
+            for aname, aspec in (obj.get("anchors") or {}).items():
+                apos = aspec.get("pos", [0, 0, 0])
+                ax, az = px(apos[0], apos[2])
+                draw.ellipse([ax - 2, az - 2, ax + 2, az + 2], fill=(255, 255, 255, 210), outline=color)
             pos = obj["_geometry"].position
             center = px(pos[0], pos[2])
             heading = obj.get("heading_deg")

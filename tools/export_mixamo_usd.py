@@ -149,6 +149,40 @@ LOCOMOTION_CLIPS = {
 }
 
 
+def is_looping_clip(name: str) -> bool:
+    if name in LOOPING_CLIPS:
+        return True
+    lower = name.lower()
+    return any(k in lower for k in [
+        "idle", "walk", "run", "jog", "crawl", "swim", "dance", "dancing",
+        "sitting", "meeting", "listen", "float", "pray", "cheer", "clap",
+        "stretch", "sing", "bored", "sleep", "typing", "gaming", "smoking"
+    ])
+
+
+def get_locomotion_stride(name: str) -> float | None:
+    if name in LOCOMOTION_CLIPS:
+        return LOCOMOTION_CLIPS[name]
+    lower = name.lower()
+    if "fast_run" in lower or "sprint" in lower:
+        return 5.5
+    if "run" in lower:
+        return 4.0
+    if "jog" in lower:
+        return 2.5
+    if "sneak" in lower:
+        return 1.0
+    if "crawl" in lower:
+        return 0.8
+    if "climb" in lower:
+        return 0.6
+    if "stairs" in lower:
+        return 0.9
+    if "walk" in lower:
+        return 1.4
+    return None
+
+
 def is_skinless_fbx(path: Path) -> bool:
     if path.suffix.lower() != ".fbx":
         return False
@@ -164,13 +198,14 @@ def update_manifest(manifest_path: Path, output_dir: Path, clips: dict[str, Path
         existing = library.get(name, {})
         entry: dict[str, object] = dict(existing)
         entry["file"] = rel_file
-        entry["loop"] = name in LOOPING_CLIPS
+        entry["loop"] = is_looping_clip(name)
         if scale != 1.0:
             entry["translation_scale"] = scale
-        if name in LOCOMOTION_CLIPS:
+        stride = get_locomotion_stride(name)
+        if stride is not None:
             entry.setdefault("strip_root_motion", True)
             entry.setdefault("strip_root_axes", [0, 2])
-            entry.setdefault("stride_speed_mps", LOCOMOTION_CLIPS[name])
+            entry.setdefault("stride_speed_mps", stride)
         else:
             entry.setdefault("stride_speed_mps", 0.0)
         library[name] = entry
@@ -182,6 +217,7 @@ def main() -> None:
     parser.add_argument("--character", required=False, type=Path, help="the one Mixamo FBX downloaded With Skin")
     parser.add_argument("--clip", action="append", type=Path, default=[], help="a Mixamo FBX downloaded Without Skin")
     parser.add_argument("--all-clips", action="store_true", help="export every FBX clip in output directory")
+    parser.add_argument("--skip-existing", action="store_true", help="skip export if destination .usdc already exists")
     parser.add_argument("--output-dir", type=Path, default=Path("assets/usdc_assets/humans"), help="default: assets/usdc_assets/humans")
     parser.add_argument("--manifest", type=Path, help="update its top-level clips object")
     parser.add_argument("--fps", type=int, default=24)
@@ -228,29 +264,41 @@ def main() -> None:
         "clips": {}
     }
     for source in clip_sources:
-        armatures, meshes = import_fbx(source)
-        if meshes:
-            print(f"warning: {source.name} contains meshes; excluding them from clip export", file=sys.stderr)
-        start, end = action_range(armatures[0])
-        scene.render.fps = args.fps
-        scene.frame_start, scene.frame_end = start, end
         name = clip_name(source)
         if not name:
-            raise RuntimeError(f"Could not derive a clip name from {source.name}")
+            print(f"Warning: Could not derive clip name from {source.name}", file=sys.stderr)
+            continue
         output = output_dir / f"{name}.usdc"
-        # See skelroot_proxy: this is needed only because current Blender
-        # versions otherwise export invalid armature-only UsdSkel bindings.
-        proxy = skelroot_proxy(armatures[0])
-        export_usdc(output, armatures + [proxy], animation=True, meshes=True)
-        exported[name] = output
-        report["clips"][name] = {"source": str(source), "output": str(output), "frame_range": [start, end]}
+        if args.skip_existing and output.is_file() and output.stat().st_size > 0:
+            print(f"Skipping already exported clip: {name}")
+            exported[name] = output
+            continue
+
+        try:
+            armatures, meshes = import_fbx(source)
+            if not armatures:
+                print(f"Warning: {source.name} contains no armature; skipping", file=sys.stderr)
+                continue
+            if meshes:
+                print(f"warning: {source.name} contains meshes; excluding them from clip export", file=sys.stderr)
+            start, end = action_range(armatures[0])
+            scene.render.fps = args.fps
+            scene.frame_start, scene.frame_end = start, end
+            # See skelroot_proxy: this is needed only because current Blender
+            # versions otherwise export invalid armature-only UsdSkel bindings.
+            proxy = skelroot_proxy(armatures[0])
+            export_usdc(output, armatures + [proxy], animation=True, meshes=True)
+            exported[name] = output
+            report["clips"][name] = {"source": str(source), "output": str(output), "frame_range": [start, end]}
+            print(f"Exported clip {name}: {output}")
+        except Exception as err:
+            print(f"Error exporting {source.name}: {err}", file=sys.stderr)
 
     if args.manifest:
         update_manifest(args.manifest.resolve(), output_dir, exported, args.translation_scale)
     (output_dir / "mixamo_export_report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(f"Exported character: {character_output}")
-    for name, output in exported.items():
-        print(f"Exported clip {name}: {output}")
+    print(f"Total clips processed: {len(exported)}")
     print("Validate with: usdcat <file>.usdc | grep -E 'SkelAnimation|Skeleton|joints|timeSamples'")
 
 

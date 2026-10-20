@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    over "Car" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+        double3 xformOp:translate = (1.399999976158142, 0, -0.699999988079071)
+    }
+
+    def Xform "Car1" (
+        customData = {
+            string asset_id = "cars.car1"
+            string forward_axis = "+Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/cars/car1.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "OakTree" (
+        customData = {
+            string asset_id = "trees.oak_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/oak_tree.norm.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (-6.597109794616699, 0, -1.89532470703125)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+

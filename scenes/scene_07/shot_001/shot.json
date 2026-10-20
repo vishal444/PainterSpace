@@ -1,0 +1,52 @@
+{
+  "prompt": "The shot starts with a man standing on the corner smoking, he sees a girl dancing, he walks to her talks a bit, and then they kiss.",
+  "version": "1.0",
+  "scene_version": "scene_v1.usda",
+  "fps": 24,
+  "duration_s": 14.625,
+  "end_frame": 351,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "e02d0ec96c849319",
+  "actors": [
+    {
+      "actor_id": "human_1",
+      "label": "Man",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.25,
+          0.25,
+          0.28
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "smoker",
+          "casual"
+        ]
+      },
+      "prim_path": "/World/Man"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "Girl",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": [
+          "dancer",
+          "stylish"
+        ]
+      },
+      "prim_path": "/World/Girl"
+    }
+  ]
+}

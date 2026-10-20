@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0",
+  "prompt": "",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "car_1",
+      "asset_id": "cars.car1",
+      "label": "Car1_2",
+      "appearance": {
+        "color_variant": "obsidian",
+        "tint_rgb": [
+          0.18,
+          0.2,
+          0.24
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "Driver",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.25,
+          0.25,
+          0.28
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "position": [
+        -1.53,
+        0.0,
+        -1.43
+      ],
+      "facing_deg": 0.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.human",
+      "label": "Attacker",
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "position": [
+        -1.53,
+        0.0,
+        6.0
+      ],
+      "facing_deg": 180.0
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "run_to_1",
+      "function": "run_to",
+      "actor_id": "human_2",
+      "params": {
+        "target": "beside(human_1, front, 1.1)",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 2.5
+      }
+    },
+    {
+      "beat_id": "wait_2",
+      "function": "wait",
+      "actor_id": "human_1",
+      "params": {
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.0
+      }
+    },
+    {
+      "beat_id": "turn_to_face_3",
+      "function": "turn_to_face",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "at_time": 1.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 0.6
+      }
+    },
+    {
+      "beat_id": "attack_4",
+      "function": "attack",
+      "actor_id": "human_2",
+      "params": {
+        "target": "human_1",
+        "moves": [
+          "left_hook"
+        ],
+        "at_time": 2.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_5",
+      "function": "react",
+      "actor_id": "human_1",
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 2.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "attack_6",
+      "function": "attack",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "moves": [
+          "elbow_punch"
+        ],
+        "at_time": 4.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_7",
+      "function": "react",
+      "actor_id": "human_2",
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 4.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "attack_8",
+      "function": "attack",
+      "actor_id": "human_2",
+      "params": {
+        "target": "human_1",
+        "moves": [
+          "kick_to_the_groin"
+        ],
+        "at_time": 5.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_9",
+      "function": "react",
+      "actor_id": "human_1",
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 5.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    }
+  ],
+  "camera": {
+    "style": "three_quarter_front_left",
+    "actors": [
+      "human_2",
+      "human_1",
+      "car_1"
+    ],
+    "vantage": "front",
+    "move": "push_in"
+  }
+}

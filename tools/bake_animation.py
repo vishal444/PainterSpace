@@ -85,6 +85,123 @@ class Action:
     blend: float
 
 
+@dataclass
+class OverlayAction:
+    clip: Clip
+    start: float
+    end: float
+    speed: float
+    loop: bool
+    blend: float
+    weight: float
+
+
+UPPER_BODY_JOINT_WEIGHTS: dict[str, float] = {
+    "Spine": 0.35,
+    "Spine1": 0.65,
+    "Spine2": 0.90,
+    "Neck": 0.85,
+    "Head": 0.85,
+    "HeadTop_End": 0.85,
+    "LeftShoulder": 1.0,
+    "RightShoulder": 1.0,
+    "LeftArm": 1.0,
+    "RightArm": 1.0,
+    "LeftForeArm": 1.0,
+    "RightForeArm": 1.0,
+    "LeftHand": 1.0,
+    "RightHand": 1.0,
+}
+
+
+def _upper_body_mask_for_joints(joints: list[str]) -> list[float]:
+    mask: list[float] = []
+    for j in joints:
+        leaf = _leaf(j)
+        if leaf in UPPER_BODY_JOINT_WEIGHTS:
+            mask.append(UPPER_BODY_JOINT_WEIGHTS[leaf])
+        elif any(k in leaf for k in ("Thumb", "Index", "Middle", "Ring", "Pinky", "Hand", "Arm", "Shoulder")):
+            mask.append(1.0)
+        else:
+            mask.append(0.0)
+    return mask
+
+
+def blend_masked(base: Pose, overlay: Pose, joint_mask: list[float], envelope_weight: float) -> Pose:
+    w_env = max(0.0, min(1.0, envelope_weight))
+    w_env = w_env * w_env * (3.0 - 2.0 * w_env)
+    out_rot: list[Gf.Quatf] = []
+    for r_b, r_o, jm in zip(base.rotations, overlay.rotations, joint_mask):
+        w = w_env * jm
+        if w <= 1e-4:
+            out_rot.append(r_b)
+        else:
+            out_rot.append(Gf.Slerp(w, r_b, r_o))
+    return Pose(out_rot, list(base.translations), list(base.scales))
+
+
+def _quat_from_axis_angle_deg(axis: Gf.Vec3f, angle_deg: float) -> Gf.Quatf:
+    rot = Gf.Rotation(Gf.Vec3d(float(axis[0]), float(axis[1]), float(axis[2])), float(angle_deg))
+    q = rot.GetQuat()
+    imag = q.GetImaginary()
+    return Gf.Quatf(float(q.GetReal()), Gf.Vec3f(float(imag[0]), float(imag[1]), float(imag[2])))
+
+
+def apply_procedural_life_and_gaze(
+    pose: Pose,
+    joints: list[str],
+    time: float,
+    clip_name: str,
+    look_at_targets: list[dict[str, Any]],
+) -> Pose:
+    rotations = list(pose.rotations)
+
+    # 1. Subtle deterministic breathing on stationary/social clips so waiting actors never freeze
+    if clip_name in ("acknowledging", "idle", "wait"):
+        breath_phase = math.sin(2.0 * math.pi * 0.28 * time)
+        spine_q = _quat_from_axis_angle_deg(Gf.Vec3f(1.0, 0.0, 0.0), 0.75 * breath_phase)
+        shoulder_l_q = _quat_from_axis_angle_deg(Gf.Vec3f(0.0, 0.0, 1.0), 0.35 * breath_phase)
+        shoulder_r_q = _quat_from_axis_angle_deg(Gf.Vec3f(0.0, 0.0, 1.0), -0.35 * breath_phase)
+        for idx, j in enumerate(joints):
+            leaf = _leaf(j)
+            if leaf in ("Spine1", "Spine2"):
+                rotations[idx] = rotations[idx] * spine_q
+            elif leaf == "LeftShoulder":
+                rotations[idx] = rotations[idx] * shoulder_l_q
+            elif leaf == "RightShoulder":
+                rotations[idx] = rotations[idx] * shoulder_r_q
+
+    # 2. Procedural gaze IK (Spine2 / Neck / Head yaw & pitch toward active look_at_target)
+    for l_tgt in look_at_targets:
+        t0 = float(l_tgt.get("start_s", 0.0))
+        t1 = float(l_tgt.get("end_s", 0.0))
+        if t0 <= time <= t1:
+            yaw_deg = float(l_tgt.get("yaw_deg", 0.0))
+            pitch_deg = float(l_tgt.get("pitch_deg", 0.0))
+            weight = float(l_tgt.get("weight", 0.85))
+            if abs(yaw_deg) > 0.2 or abs(pitch_deg) > 0.2:
+                fade = min(1.0, (time - t0) / 0.25, (t1 - time) / 0.25) if (t1 - t0) > 0.5 else 1.0
+                eff_w = max(0.0, min(1.0, fade * weight))
+                clamped_yaw = max(-50.0, min(50.0, yaw_deg)) * eff_w
+                clamped_pitch = max(-22.0, min(22.0, pitch_deg)) * eff_w
+                for idx, j in enumerate(joints):
+                    leaf = _leaf(j)
+                    if leaf == "Spine2":
+                        q_y = _quat_from_axis_angle_deg(Gf.Vec3f(0.0, 1.0, 0.0), clamped_yaw * 0.15)
+                        rotations[idx] = rotations[idx] * q_y
+                    elif leaf == "Neck":
+                        q_y = _quat_from_axis_angle_deg(Gf.Vec3f(0.0, 1.0, 0.0), clamped_yaw * 0.35)
+                        q_p = _quat_from_axis_angle_deg(Gf.Vec3f(1.0, 0.0, 0.0), clamped_pitch * 0.40)
+                        rotations[idx] = rotations[idx] * q_y * q_p
+                    elif leaf == "Head":
+                        q_y = _quat_from_axis_angle_deg(Gf.Vec3f(0.0, 1.0, 0.0), clamped_yaw * 0.50)
+                        q_p = _quat_from_axis_angle_deg(Gf.Vec3f(1.0, 0.0, 0.0), clamped_pitch * 0.60)
+                        rotations[idx] = rotations[idx] * q_y * q_p
+            break
+
+    return Pose(rotations, list(pose.translations), list(pose.scales))
+
+
 def find_one(stage: Usd.Stage, schema: type) -> Any:
     found = [schema(prim) for prim in stage.Traverse() if prim.IsA(schema)]
     if not found:
@@ -248,7 +365,14 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
         if "file" not in options: raise BakeError(f"Clip '{name}' has no file")
         if name not in clips:
             clips[name] = load_clip(name, options, joints, root_index, manifest_path.parent)
-        loop = raw.get("loop", options.get("loop", False))
+        one_shot_clips = {
+            "falling_down", "knocked_out", "dying_backwards", "stand_up", "sit_to_stand",
+            "sitting_down", "entering_car", "exiting_car", "jumping_down", "jump_over_obstacle",
+            "backflip", "front_flip",
+        }
+        clip_dur_s = clips[name].duration / max(1.0, clips[name].tps)
+        default_loop = bool(options.get("loop", (name not in one_shot_clips and (end - start) > clip_dur_s * 1.05)))
+        loop = raw.get("loop", default_loop)
         if not isinstance(loop, bool): raise BakeError(f"Action '{name}' loop must be boolean")
         blend_s = raw.get("blend_s", 0.0)
         if not isinstance(blend_s, (int, float)) or blend_s < 0:
@@ -258,6 +382,35 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
     for earlier, later in zip(actions, actions[1:]):
         if later.start > earlier.end: warn(f"gap from {earlier.end:g}s to {later.start:g}s; holding pose")
         if later.start < earlier.end: warn(f"overlap at {later.start:g}s; later action wins")
+
+    raw_overlays = payload.get("overlay_actions", []) if isinstance(payload, dict) else []
+    overlays: list[OverlayAction] = []
+    if isinstance(raw_overlays, list):
+        for raw in raw_overlays:
+            if not isinstance(raw, dict):
+                continue
+            name = raw.get("clip")
+            if name not in library or not isinstance(library[name], dict):
+                continue
+            start, end = float(raw.get("start_s", 0.0)), float(raw.get("end_s", 0.0))
+            speed = float(raw.get("speed", 1.0))
+            if end <= start or speed <= 0:
+                continue
+            options = library[name]
+            if "file" not in options:
+                continue
+            if name not in clips:
+                clips[name] = load_clip(name, options, joints, root_index, manifest_path.parent)
+            loop = bool(raw.get("loop", options.get("loop", True)))
+            blend_s = max(0.0, float(raw.get("blend_s", 0.2)))
+            weight = max(0.0, min(1.0, float(raw.get("weight", 0.75))))
+            overlays.append(OverlayAction(clips[name], start, end, speed, loop, blend_s, weight))
+
+    look_at_targets = payload.get("look_at_targets", []) if isinstance(payload, dict) else []
+    if not isinstance(look_at_targets, list):
+        look_at_targets = []
+    upper_mask = _upper_body_mask_for_joints(joints)
+
     fps = fps or float(payload.get("fps", character_stage.GetTimeCodesPerSecond() or 24.0))
     if fps <= 0: raise BakeError("fps must be positive")
     duration = duration if duration is not None else float(payload.get("duration_s", max(a.end for a in actions)))
@@ -266,6 +419,8 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
     end_frame = int(math.ceil(duration * fps))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.exists():
+        output_path.unlink()
     stage = Usd.Stage.CreateNew(str(output_path))
     UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
     UsdGeom.SetStageMetersPerUnit(stage, 1.0)
@@ -277,19 +432,36 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
     animation.CreateJointsAttr(Vt.TokenArray(joints))
     rotation_attr, translation_attr, scale_attr = (animation.CreateRotationsAttr(), animation.CreateTranslationsAttr(), animation.CreateScalesAttr())
     held = fallback
+    active_clip_name = "idle"
     for frame in range(end_frame + 1):
         time = frame / fps
         index = action_at(actions, time)
         if index is not None:
             current = actions[index]
+            active_clip_name = current.clip.name
             pose = sample_clip(current.clip, time, current, fallback)
             if index and current.blend > 0 and time < current.start + current.blend:
                 previous = sample_clip(actions[index - 1].clip, time, actions[index - 1], fallback)
                 pose = blend(previous, pose, (time - current.start) / current.blend)
             held = pose
-        rotation_attr.Set(Vt.QuatfArray(held.rotations), frame)
-        translation_attr.Set(Vt.Vec3fArray(held.translations), frame)
-        scale_attr.Set(Vt.Vec3fArray(held.scales), frame)
+
+        out_pose = held
+        # Apply upper-body masked overlay actions
+        for ov in overlays:
+            if ov.start <= time <= ov.end:
+                ov_act = Action(ov.clip, ov.start, ov.end, ov.speed, ov.loop, ov.blend)
+                ov_pose = sample_clip(ov.clip, time, ov_act, fallback)
+                env = 1.0
+                if ov.blend > 0:
+                    env = min(1.0, (time - ov.start) / ov.blend, (ov.end - time) / ov.blend)
+                out_pose = blend_masked(out_pose, ov_pose, upper_mask, env * ov.weight)
+
+        # Apply procedural breathing micro-motion and gaze IK
+        out_pose = apply_procedural_life_and_gaze(out_pose, joints, time, active_clip_name, look_at_targets)
+
+        rotation_attr.Set(Vt.QuatfArray(out_pose.rotations), frame)
+        translation_attr.Set(Vt.Vec3fArray(out_pose.translations), frame)
+        scale_attr.Set(Vt.Vec3fArray(out_pose.scales), frame)
     stage.SetDefaultPrim(animation.GetPrim())
     stage.GetRootLayer().Save()
     return end_frame, fps

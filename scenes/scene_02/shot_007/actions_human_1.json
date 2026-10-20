@@ -1,0 +1,59 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "run",
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 0,
+      "end_frame": 48
+    },
+    {
+      "clip": "jump",
+      "start_s": 2.0,
+      "end_s": 3.2,
+      "speed": 1.0,
+      "blend_s": 0.1,
+      "start_frame": 48,
+      "end_frame": 77
+    },
+    {
+      "clip": "jump",
+      "start_s": 3.2,
+      "end_s": 4.2,
+      "speed": 1.0,
+      "blend_s": 0.1,
+      "start_frame": 77,
+      "end_frame": 101
+    },
+    {
+      "clip": "run",
+      "start_s": 4.2,
+      "end_s": 6.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 101,
+      "end_frame": 144
+    },
+    {
+      "clip": "jump",
+      "start_s": 6.0,
+      "end_s": 7.2,
+      "speed": 1.0,
+      "blend_s": 0.1,
+      "start_frame": 144,
+      "end_frame": 173
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 7.2,
+      "end_s": 7.708,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 173,
+      "end_frame": 185
+    }
+  ]
+}

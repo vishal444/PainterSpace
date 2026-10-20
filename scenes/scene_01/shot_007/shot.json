@@ -1,0 +1,215 @@
+{
+  "prompt": "",
+  "version": "1.0",
+  "fps": 24,
+  "duration_s": 7.0,
+  "end_frame": 168,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "aaa07734f967e932",
+  "actors": [
+    {
+      "actor_id": "car_1",
+      "label": "Car1",
+      "asset_id": "cars.car1",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "obsidian",
+        "tint_rgb": [
+          0.18,
+          0.2,
+          0.24
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Car1"
+    },
+    {
+      "actor_id": "human_1",
+      "label": "Standing_1",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_1"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "Standing_2",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_2"
+    },
+    {
+      "actor_id": "human_3",
+      "label": "Standing_3",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_3"
+    },
+    {
+      "actor_id": "human_4",
+      "label": "Standing_4",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_4"
+    },
+    {
+      "actor_id": "human_5",
+      "label": "Standing_5",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_5"
+    },
+    {
+      "actor_id": "human_6",
+      "label": "Standing_6",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_6"
+    },
+    {
+      "actor_id": "human_7",
+      "label": "Standing_7",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_7"
+    },
+    {
+      "actor_id": "human_8",
+      "label": "Standing_8",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_8"
+    },
+    {
+      "actor_id": "human_9",
+      "label": "Standing_9",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_9"
+    },
+    {
+      "actor_id": "human_10",
+      "label": "Standing_10",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Standing_10"
+    },
+    {
+      "actor_id": "human_11",
+      "label": "Attacker",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.15,
+          0.12
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/Attacker"
+    }
+  ]
+}

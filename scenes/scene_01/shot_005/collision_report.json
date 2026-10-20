@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "time_steps": 407,
+  "actors": [
+    "Hero"
+  ],
+  "assets": [
+    "Speeding_Car",
+    "Bridge",
+    "Car"
+  ],
+  "unprotected_assets": [],
+  "violations": []
+}

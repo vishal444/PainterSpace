@@ -1,0 +1,470 @@
+{
+  "schema_version": "1.0",
+  "prompt": "",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "car_1",
+      "asset_id": "cars.car1",
+      "label": "Car1",
+      "appearance": {
+        "color_variant": "obsidian",
+        "tint_rgb": [
+          0.18,
+          0.2,
+          0.24
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "Standing_1",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "position": [
+        -1.6,
+        0.0,
+        2.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.human",
+      "label": "Standing_2",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.8,
+        0.0,
+        2.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_3",
+      "asset_id": "character.human",
+      "label": "Standing_3",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_4",
+      "asset_id": "character.human",
+      "label": "Standing_4",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.8,
+        0.0,
+        2.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_5",
+      "asset_id": "character.human",
+      "label": "Standing_5",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        1.6,
+        0.0,
+        2.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_6",
+      "asset_id": "character.human",
+      "label": "Standing_6",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        -1.6,
+        0.0,
+        3.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_7",
+      "asset_id": "character.human",
+      "label": "Standing_7",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.8,
+        0.0,
+        3.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_8",
+      "asset_id": "character.human",
+      "label": "Standing_8",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.0,
+        0.0,
+        3.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_9",
+      "asset_id": "character.human",
+      "label": "Standing_9",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.8,
+        0.0,
+        3.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_10",
+      "asset_id": "character.human",
+      "label": "Standing_10",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": []
+      },
+      "position": [
+        1.6,
+        0.0,
+        3.0
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_11",
+      "asset_id": "character.human",
+      "label": "Attacker",
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.15,
+          0.12
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "position": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "facing_deg": 0.0
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "run_to_1",
+      "function": "run_to",
+      "actor_id": "human_11",
+      "params": {
+        "target": "in_front_of(human_8, 1.2)",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 2.0
+      }
+    },
+    {
+      "beat_id": "attack_2",
+      "function": "attack",
+      "actor_id": "human_11",
+      "params": {
+        "target": "human_8",
+        "moves": [
+          "left_hook"
+        ],
+        "at_time": 2.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_3",
+      "function": "react",
+      "actor_id": "human_8",
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 2.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_4",
+      "function": "react",
+      "actor_id": "human_7",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 2.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_5",
+      "function": "react",
+      "actor_id": "human_9",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 2.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "attack_6",
+      "function": "attack",
+      "actor_id": "human_8",
+      "params": {
+        "target": "human_11",
+        "moves": [
+          "elbow_punch"
+        ],
+        "at_time": 3.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_7",
+      "function": "react",
+      "actor_id": "human_11",
+      "params": {
+        "mood": "hit_reaction",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_8",
+      "function": "react",
+      "actor_id": "human_7",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_9",
+      "function": "react",
+      "actor_id": "human_9",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "attack_10",
+      "function": "attack",
+      "actor_id": "human_11",
+      "params": {
+        "target": "human_8",
+        "moves": [
+          "kick_to_the_groin"
+        ],
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_11",
+      "function": "react",
+      "actor_id": "human_8",
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_12",
+      "function": "react",
+      "actor_id": "human_7",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    },
+    {
+      "beat_id": "react_13",
+      "function": "react",
+      "actor_id": "human_9",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.5
+      }
+    }
+  ],
+  "camera": {
+    "style": "three_quarter_front_left",
+    "actors": [
+      "human_11",
+      "human_8",
+      "car_1"
+    ],
+    "vantage": "front",
+    "move": "push_in"
+  }
+}

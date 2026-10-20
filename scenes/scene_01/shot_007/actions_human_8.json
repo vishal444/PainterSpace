@@ -1,0 +1,41 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "reaction",
+      "start_s": 0.0,
+      "end_s": 1.5,
+      "speed": 1.0,
+      "blend_s": 0.1,
+      "start_frame": 0,
+      "end_frame": 36
+    },
+    {
+      "clip": "elbow_punch",
+      "start_s": 1.5,
+      "end_s": 3.0,
+      "speed": 1.0,
+      "blend_s": 0.15,
+      "start_frame": 36,
+      "end_frame": 72
+    },
+    {
+      "clip": "reaction",
+      "start_s": 3.0,
+      "end_s": 4.5,
+      "speed": 1.0,
+      "blend_s": 0.1,
+      "start_frame": 72,
+      "end_frame": 108
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 4.5,
+      "end_s": 7.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 108,
+      "end_frame": 168
+    }
+  ]
+}

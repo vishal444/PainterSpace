@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "time_steps": 361,
+  "actors": [
+    "Driver",
+    "Attacker"
+  ],
+  "assets": [
+    "Car1",
+    "Car1_2"
+  ],
+  "unprotected_assets": [],
+  "violations": []
+}

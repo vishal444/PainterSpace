@@ -15,6 +15,7 @@ Inspects every OpenUSD asset (.usdc, .usda, .usd) under assets/usdc_assets/:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -46,6 +47,40 @@ LOCOMOTION_CLIPS = {
     "jump": 2.4,
 }
 
+
+def is_looping_clip(name: str) -> bool:
+    if name in LOOPING_CLIPS:
+        return True
+    lower = name.lower()
+    return any(k in lower for k in [
+        "idle", "walk", "run", "jog", "crawl", "swim", "dance", "dancing",
+        "sitting", "meeting", "listen", "float", "pray", "cheer", "clap",
+        "stretch", "sing", "bored", "sleep", "typing", "gaming", "smoking"
+    ])
+
+
+def get_locomotion_stride(name: str) -> float | None:
+    if name in LOCOMOTION_CLIPS:
+        return LOCOMOTION_CLIPS[name]
+    lower = name.lower()
+    if "fast_run" in lower or "sprint" in lower:
+        return 5.5
+    if "run" in lower:
+        return 4.0
+    if "jog" in lower:
+        return 2.5
+    if "sneak" in lower:
+        return 1.0
+    if "crawl" in lower:
+        return 0.8
+    if "climb" in lower:
+        return 0.6
+    if "stairs" in lower:
+        return 0.9
+    if "walk" in lower:
+        return 1.4
+    return None
+
 CATEGORY_BASE_TAGS: dict[str, list[str]] = {
     "environments": ["environment"],
     "cars": ["vehicle", "car"],
@@ -68,9 +103,9 @@ def is_light(prim: Usd.Prim) -> bool:
 
 def is_demo_or_test_file(stem: str, ext: str) -> bool:
     lower = stem.lower()
-    if ext == ".usda" and ("_demo" in lower or lower.endswith("demo")):
+    if ext == ".usda" and (lower.endswith(".norm") or "_demo" in lower or lower.endswith("demo")):
         return True
-    if lower.startswith("anim_") or lower.endswith("_test"):
+    if lower.startswith("anim_") or lower.endswith("_test") or "backup" in lower or lower.endswith(".bak"):
         return True
     return False
 
@@ -308,6 +343,14 @@ def build_tags(subdir: str, stem: str, stage: Usd.Stage) -> list[str]:
     for tok in tokens:
         if tok not in stop_words and tok not in tags:
             tags.append(tok)
+    if "male" in tokens and "female" not in tokens:
+        for extra in ["male", "man"]:
+            if extra not in tags:
+                tags.append(extra)
+    elif "female" in tokens:
+        for extra in ["female", "woman"]:
+            if extra not in tags:
+                tags.append(extra)
 
     has_skel = any(p.IsA(UsdSkel.Root) or p.IsA(UsdSkel.Skeleton) for p in stage.Traverse())
     has_anim = any(p.IsA(UsdSkel.Animation) for p in stage.Traverse())
@@ -319,7 +362,7 @@ def build_tags(subdir: str, stem: str, stage: Usd.Stage) -> list[str]:
 
 
 def describe_pivot(bounds: Gf.Range3d, up_axis: str, subdir: str, has_skel: bool) -> str:
-    if has_skel and subdir in ("humans", "characters"):
+    if has_skel and (subdir in ("humans", "characters") or "human" in subdir):
         return "Armature root at origin; in Y-up stages with forward=-Z, rotateY = 180 to face North"
     if bounds.IsEmpty():
         return "Origin (0, 0, 0)"
@@ -349,11 +392,14 @@ def inspect_asset_file(
 
     rel_path = file_path.resolve().relative_to(project_root.resolve()).as_posix()
     stem = file_path.stem
-    canonical_id = f"{subdir}.{stem}"
+    if subdir in ("humans", "characters") and stem in ("male", "female", "human"):
+        canonical_id = f"character.{stem}"
+    else:
+        canonical_id = f"{subdir}.{stem}"
 
     up_axis = str(UsdGeom.GetStageUpAxis(stage) or "Y").upper()
     mpu = float(UsdGeom.GetStageMetersPerUnit(stage) or 1.0)
-    is_human = subdir in ("humans", "characters")
+    is_human = subdir in ("humans", "characters") or stem in ("human", "male", "female") or "human" in stem
     bounds = compute_stage_bounds(stage, is_human=is_human)
     if bounds.IsEmpty():
         return None
@@ -374,9 +420,13 @@ def inspect_asset_file(
     default_prim_name = default_prim.GetName() if (default_prim and default_prim.IsValid()) else None
     has_skel = any(p.IsA(UsdSkel.Root) or p.IsA(UsdSkel.Skeleton) for p in stage.Traverse())
 
+    file_bytes = file_path.read_bytes()
+    file_hash = hashlib.sha256(file_bytes).hexdigest()[:16]
+
     entry: dict[str, Any] = {}
     if existing_entry:
         entry.update(existing_entry)
+    entry["file_hash"] = file_hash
 
     entry["id"] = existing_entry.get("id", canonical_id) if existing_entry else canonical_id
     if entry["id"] != canonical_id:
@@ -385,37 +435,79 @@ def inspect_asset_file(
             aliases.append(canonical_id)
         entry["aliases"] = aliases
 
-    entry["path"] = rel_path
-    if default_prim_name:
-        entry["default_prim"] = default_prim_name
-    entry["source_format"] = file_path.suffix.lstrip(".").upper()
-    entry["usd_reference_ready"] = True
-    entry["tags"] = existing_entry.get("tags") if (existing_entry and existing_entry.get("tags")) else build_tags(subdir, stem, stage)
-    entry["units"] = "meters"
-    entry["up_axis"] = up_axis
-    entry["forward_axis"] = (
-        existing_entry.get("forward_axis")
-        if (existing_entry and existing_entry.get("forward_axis") not in (None, "", "unknown"))
-        else detect_forward_axis(stage, subdir, up_axis)
-    )
-    entry["bounds_m"] = (
-        existing_entry["bounds_m"]
-        if (existing_entry and existing_entry.get("bounds_m") and is_human)
-        else bounds_m
-    )
-    entry["pivot"] = (
-        existing_entry["pivot"]
-        if (existing_entry and existing_entry.get("pivot") and "unknown" not in str(existing_entry.get("pivot")).lower())
-        else describe_pivot(bounds, up_axis, subdir, has_skel)
+    # If this entry has already been normalized/ingested by tools/collision/ingest_asset.py
+    # and its target path exists on disk, preserve the ingested geometry, wrapper path, colliders, and anchors.
+    ingested_path = existing_entry.get("path") if existing_entry else None
+    is_ingested = bool(
+        existing_entry
+        and existing_entry.get("collision")
+        and ingested_path
+        and (project_root / ingested_path).is_file()
     )
 
-    detected_parts = detect_parts(stage, up_axis)
-    if detected_parts or (existing_entry and "parts" in existing_entry):
-        merged_parts = dict(detected_parts)
-        if existing_entry and isinstance(existing_entry.get("parts"), dict):
-            merged_parts.update(existing_entry["parts"])
-        if merged_parts:
-            entry["parts"] = merged_parts
+    if is_ingested and existing_entry is not None:
+        entry["path"] = existing_entry["path"]
+        if existing_entry.get("source_path"):
+            entry["source_path"] = existing_entry["source_path"]
+        entry["default_prim"] = existing_entry.get("default_prim") or default_prim_name
+        entry["source_format"] = existing_entry.get("source_format", file_path.suffix.lstrip(".").upper())
+        entry["usd_reference_ready"] = True
+        entry["tags"] = existing_entry.get("tags") or build_tags(subdir, stem, stage)
+        entry["units"] = existing_entry.get("units", "meters")
+        entry["up_axis"] = existing_entry.get("up_axis", "Y")
+        entry["forward_axis"] = existing_entry.get("forward_axis", "-Z")
+        entry["bounds_m"] = existing_entry.get("bounds_m", bounds_m)
+        if "bounds_min" in existing_entry:
+            entry["bounds_min"] = existing_entry["bounds_min"]
+        if "bounds_max" in existing_entry:
+            entry["bounds_max"] = existing_entry["bounds_max"]
+        entry["pivot"] = existing_entry.get("pivot") or describe_pivot(bounds, up_axis, subdir, has_skel)
+        if "parts" in existing_entry:
+            entry["parts"] = existing_entry["parts"]
+        if "collision" in existing_entry:
+            entry["collision"] = existing_entry["collision"]
+        if "anchors" in existing_entry:
+            entry["anchors"] = existing_entry["anchors"]
+        if "normalization" in existing_entry:
+            entry["normalization"] = existing_entry["normalization"]
+        if "notes" in existing_entry:
+            entry["notes"] = existing_entry["notes"]
+    else:
+        entry["path"] = rel_path
+        if default_prim_name:
+            entry["default_prim"] = default_prim_name
+        entry["source_format"] = file_path.suffix.lstrip(".").upper()
+        entry["usd_reference_ready"] = True
+        entry["tags"] = existing_entry.get("tags") if (existing_entry and existing_entry.get("tags")) else build_tags(subdir, stem, stage)
+        entry["units"] = "meters"
+        entry["up_axis"] = up_axis
+        entry["forward_axis"] = (
+            existing_entry.get("forward_axis")
+            if (existing_entry and existing_entry.get("forward_axis") not in (None, "", "unknown"))
+            else detect_forward_axis(stage, subdir, up_axis)
+        )
+        entry["bounds_m"] = (
+            existing_entry["bounds_m"]
+            if (existing_entry and existing_entry.get("bounds_m") and is_human)
+            else bounds_m
+        )
+        bmin_raw = bounds.GetMin()
+        bmax_raw = bounds.GetMax()
+        entry["bounds_min"] = [rnd(bmin_raw[0] * mpu, 3), rnd(bmin_raw[1] * mpu, 3), rnd(bmin_raw[2] * mpu, 3)]
+        entry["bounds_max"] = [rnd(bmax_raw[0] * mpu, 3), rnd(bmax_raw[1] * mpu, 3), rnd(bmax_raw[2] * mpu, 3)]
+        entry["pivot"] = (
+            existing_entry["pivot"]
+            if (existing_entry and existing_entry.get("pivot") and "unknown" not in str(existing_entry.get("pivot")).lower())
+            else describe_pivot(bounds, up_axis, subdir, has_skel)
+        )
+
+        detected_parts = detect_parts(stage, up_axis)
+        if detected_parts or (existing_entry and "parts" in existing_entry):
+            merged_parts = dict(detected_parts)
+            if existing_entry and isinstance(existing_entry.get("parts"), dict):
+                merged_parts.update(existing_entry["parts"])
+            if merged_parts:
+                entry["parts"] = merged_parts
 
     detected_variants = detect_variants(stage)
     if existing_entry and isinstance(existing_entry.get("variants"), dict):
@@ -459,12 +551,16 @@ def sync_manifest(project_root: Path | None = None, manifest_path: Path | None =
     by_rel_path: dict[str, dict[str, Any]] = {}
     by_id: dict[str, dict[str, Any]] = {}
     for item in existing_assets:
-        p = item.get("path", "")
-        if p:
-            norm = p if p.startswith("assets/") else f"assets/{p}"
-            by_rel_path[norm] = item
+        for key in ("path", "source_path"):
+            p = item.get(key, "")
+            if p:
+                norm = p if p.startswith("assets/") else f"assets/{p}"
+                by_rel_path[norm] = item
         if item.get("id"):
             by_id[item["id"]] = item
+        for alias in item.get("aliases", []) or []:
+            if alias:
+                by_id[str(alias)] = item
 
     # Remove stale clip entries whose files no longer exist on disk
     for clip_key in list(clips.keys()):
@@ -485,7 +581,7 @@ def sync_manifest(project_root: Path | None = None, manifest_path: Path | None =
         for cat_dir in subdirs:
             subdir = cat_dir.name
             usd_files = sorted(
-                f for f in cat_dir.iterdir()
+                f for f in cat_dir.rglob("*")
                 if f.is_file() and f.suffix.lower() in {".usdc", ".usda", ".usd"}
             )
             # Prefer .usdc when both .usdc and .usda exist for the same stem
@@ -498,6 +594,8 @@ def sync_manifest(project_root: Path | None = None, manifest_path: Path | None =
                     continue
                 if ext == ".usda" and stem in usdc_stems:
                     continue
+                if f.name == "detailed_car.usdc" and "car1" in usdc_stems:
+                    continue
 
                 rel_path = f.resolve().relative_to(project_root).as_posix()
                 stage = Usd.Stage.Open(str(f))
@@ -507,17 +605,34 @@ def sync_manifest(project_root: Path | None = None, manifest_path: Path | None =
                 if is_skinless_animation_clip(stage):
                     clip_entry = dict(clips.get(stem, {}))
                     clip_entry["file"] = rel_path
-                    clip_entry.setdefault("loop", stem in LOOPING_CLIPS)
-                    if stem in LOCOMOTION_CLIPS:
+                    clip_entry.setdefault("loop", is_looping_clip(stem))
+                    stride = get_locomotion_stride(stem)
+                    if stride is not None:
                         clip_entry.setdefault("strip_root_motion", True)
                         clip_entry.setdefault("strip_root_axes", [0, 2])
-                        clip_entry.setdefault("stride_speed_mps", LOCOMOTION_CLIPS[stem])
+                        clip_entry.setdefault("stride_speed_mps", stride)
                     else:
                         clip_entry.setdefault("stride_speed_mps", 0.0)
                     clips[stem] = clip_entry
                     continue
 
-                existing = by_rel_path.get(rel_path) or by_id.get(f"{subdir}.{stem}")
+                if rel_path in seen_paths:
+                    # Duplicate or symlink resolving to same underlying file: alias instead of duplicate
+                    for asset in synced_assets:
+                        if asset.get("path") == rel_path or asset.get("source_path") == rel_path:
+                            alias_id = f"{subdir}.{stem}"
+                            aliases = asset.setdefault("aliases", [])
+                            if alias_id not in aliases and alias_id != asset.get("id"):
+                                aliases.append(alias_id)
+                            break
+                    continue
+
+                existing = (
+                    by_rel_path.get(rel_path)
+                    or by_id.get(f"character.{stem}")
+                    or by_id.get(f"{subdir}.{stem}")
+                    or by_id.get(stem)
+                )
                 entry = inspect_asset_file(f, subdir, project_root, existing)
                 if entry is not None:
                     synced_assets.append(entry)

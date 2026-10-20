@@ -1,0 +1,408 @@
+{
+  "total_duration_s": 14.625,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "perform_activity_1",
+      "actor_id": "human_1",
+      "function": "perform_activity",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {
+        "activity": "smoke",
+        "target": null
+      },
+      "is_idle_fill": false,
+      "events": {
+        "perform_activity_1.started": 0.0,
+        "perform_activity_1.finished": 3.0,
+        "human_1.started": 0.0,
+        "human_1.finished": 3.0
+      }
+    },
+    {
+      "beat_id": "dance_2",
+      "actor_id": "human_2",
+      "function": "dance",
+      "start_time": 0.0,
+      "end_time": 7.5,
+      "duration": 7.5,
+      "params": {
+        "style": "groove"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "dance_2.started": 0.0,
+        "dance_2.finished": 7.5,
+        "human_2.started": 0.0,
+        "human_2.finished": 7.5
+      }
+    },
+    {
+      "beat_id": "idle_human_1_300",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 3.0,
+      "end_time": 3.2,
+      "duration": 0.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "approach_3",
+      "actor_id": "human_1",
+      "function": "approach",
+      "start_time": 3.2,
+      "end_time": 7.7,
+      "duration": 4.5,
+      "params": {
+        "target": "human_2",
+        "gap": "conversational",
+        "gait": "walk"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "approach_3.started": 3.2,
+        "approach_3.finished": 7.7,
+        "human_1.started": 3.2,
+        "human_1.finished": 7.7,
+        "human_1.arrived": 7.7,
+        "approach_3.arrived": 7.7
+      }
+    },
+    {
+      "beat_id": "idle_human_2_750",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 7.5,
+      "end_time": 7.9,
+      "duration": 0.4,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_1_770",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 7.7,
+      "end_time": 7.9,
+      "duration": 0.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "converse_4",
+      "actor_id": "human_1",
+      "function": "converse",
+      "start_time": 7.9,
+      "end_time": 11.9,
+      "duration": 4.0,
+      "params": {
+        "actors": [
+          "human_1",
+          "human_2"
+        ],
+        "center": null
+      },
+      "is_idle_fill": false,
+      "events": {
+        "converse_4.started": 7.9,
+        "converse_4.finished": 11.9,
+        "human_1.started": 7.9,
+        "human_1.finished": 11.9
+      }
+    },
+    {
+      "beat_id": "converse_5",
+      "actor_id": "human_2",
+      "function": "converse",
+      "start_time": 7.9,
+      "end_time": 11.9,
+      "duration": 4.0,
+      "params": {
+        "actors": [
+          "human_1",
+          "human_2"
+        ],
+        "center": null
+      },
+      "is_idle_fill": false,
+      "events": {
+        "converse_5.started": 7.9,
+        "converse_5.finished": 11.9,
+        "human_2.started": 7.9,
+        "human_2.finished": 11.9
+      }
+    },
+    {
+      "beat_id": "idle_human_1_1190",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 11.9,
+      "end_time": 12.1,
+      "duration": 0.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_2_1190",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 11.9,
+      "end_time": 14.625,
+      "duration": 2.725,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "hug_or_kiss_6",
+      "actor_id": "human_1",
+      "function": "hug_or_kiss",
+      "start_time": 12.1,
+      "end_time": 14.1,
+      "duration": 2.0,
+      "params": {
+        "target": "human_2",
+        "style": "kiss"
+      },
+      "is_idle_fill": false,
+      "events": {
+        "hug_or_kiss_6.started": 12.1,
+        "hug_or_kiss_6.finished": 14.1,
+        "human_1.started": 12.1,
+        "human_1.finished": 14.1
+      }
+    },
+    {
+      "beat_id": "idle_human_1_1410",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 14.1,
+      "end_time": 14.625,
+      "duration": 0.525,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "perform_activity_1.started": 0.0,
+    "perform_activity_1.finished": 3.0,
+    "human_1.started": 12.1,
+    "human_1.finished": 14.1,
+    "dance_2.started": 0.0,
+    "dance_2.finished": 7.5,
+    "human_2.started": 7.9,
+    "human_2.finished": 11.9,
+    "approach_3.started": 3.2,
+    "approach_3.finished": 7.7,
+    "human_1.arrived": 7.7,
+    "approach_3.arrived": 7.7,
+    "converse_4.started": 7.9,
+    "converse_4.finished": 11.9,
+    "converse_5.started": 7.9,
+    "converse_5.finished": 11.9,
+    "hug_or_kiss_6.started": 12.1,
+    "hug_or_kiss_6.finished": 14.1
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "perform_activity_1",
+        "actor_id": "human_1",
+        "function": "perform_activity",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {
+          "activity": "smoke",
+          "target": null
+        },
+        "is_idle_fill": false,
+        "events": {
+          "perform_activity_1.started": 0.0,
+          "perform_activity_1.finished": 3.0,
+          "human_1.started": 0.0,
+          "human_1.finished": 3.0
+        }
+      },
+      {
+        "beat_id": "idle_human_1_300",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 3.0,
+        "end_time": 3.2,
+        "duration": 0.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "approach_3",
+        "actor_id": "human_1",
+        "function": "approach",
+        "start_time": 3.2,
+        "end_time": 7.7,
+        "duration": 4.5,
+        "params": {
+          "target": "human_2",
+          "gap": "conversational",
+          "gait": "walk"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "approach_3.started": 3.2,
+          "approach_3.finished": 7.7,
+          "human_1.started": 3.2,
+          "human_1.finished": 7.7,
+          "human_1.arrived": 7.7,
+          "approach_3.arrived": 7.7
+        }
+      },
+      {
+        "beat_id": "idle_human_1_770",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 7.7,
+        "end_time": 7.9,
+        "duration": 0.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "converse_4",
+        "actor_id": "human_1",
+        "function": "converse",
+        "start_time": 7.9,
+        "end_time": 11.9,
+        "duration": 4.0,
+        "params": {
+          "actors": [
+            "human_1",
+            "human_2"
+          ],
+          "center": null
+        },
+        "is_idle_fill": false,
+        "events": {
+          "converse_4.started": 7.9,
+          "converse_4.finished": 11.9,
+          "human_1.started": 7.9,
+          "human_1.finished": 11.9
+        }
+      },
+      {
+        "beat_id": "idle_human_1_1190",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 11.9,
+        "end_time": 12.1,
+        "duration": 0.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "hug_or_kiss_6",
+        "actor_id": "human_1",
+        "function": "hug_or_kiss",
+        "start_time": 12.1,
+        "end_time": 14.1,
+        "duration": 2.0,
+        "params": {
+          "target": "human_2",
+          "style": "kiss"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "hug_or_kiss_6.started": 12.1,
+          "hug_or_kiss_6.finished": 14.1,
+          "human_1.started": 12.1,
+          "human_1.finished": 14.1
+        }
+      },
+      {
+        "beat_id": "idle_human_1_1410",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 14.1,
+        "end_time": 14.625,
+        "duration": 0.525,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "dance_2",
+        "actor_id": "human_2",
+        "function": "dance",
+        "start_time": 0.0,
+        "end_time": 7.5,
+        "duration": 7.5,
+        "params": {
+          "style": "groove"
+        },
+        "is_idle_fill": false,
+        "events": {
+          "dance_2.started": 0.0,
+          "dance_2.finished": 7.5,
+          "human_2.started": 0.0,
+          "human_2.finished": 7.5
+        }
+      },
+      {
+        "beat_id": "idle_human_2_750",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 7.5,
+        "end_time": 7.9,
+        "duration": 0.4,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "converse_5",
+        "actor_id": "human_2",
+        "function": "converse",
+        "start_time": 7.9,
+        "end_time": 11.9,
+        "duration": 4.0,
+        "params": {
+          "actors": [
+            "human_1",
+            "human_2"
+          ],
+          "center": null
+        },
+        "is_idle_fill": false,
+        "events": {
+          "converse_5.started": 7.9,
+          "converse_5.finished": 11.9,
+          "human_2.started": 7.9,
+          "human_2.finished": 11.9
+        }
+      },
+      {
+        "beat_id": "idle_human_2_1190",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 11.9,
+        "end_time": 14.625,
+        "duration": 2.725,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "acknowledging",
+      "start_frame": 0,
+      "end_frame": 27,
+      "blend_in": 0.2,
+      "blend_out": 0.2
+    },
+    {
+      "clip": "dodging_right",
+      "start_frame": 27,
+      "end_frame": 61,
+      "blend_in": 0.1,
+      "blend_out": 0.2
+    },
+    {
+      "clip": "acknowledging",
+      "start_frame": 61,
+      "end_frame": 65,
+      "blend_in": 0.2,
+      "blend_out": 0.2
+    },
+    {
+      "clip": "run",
+      "start_frame": 65,
+      "end_frame": 137,
+      "speed": 4.2,
+      "blend_in": 0.2,
+      "blend_out": 0.2
+    },
+    {
+      "clip": "acknowledging",
+      "start_frame": 137,
+      "end_frame": 142,
+      "blend_in": 0.2,
+      "blend_out": 0.2
+    },
+    {
+      "clip": "left_hook",
+      "start_frame": 142,
+      "end_frame": 190,
+      "blend_in": 0.15,
+      "blend_out": 0.2
+    },
+    {
+      "clip": "acknowledging",
+      "start_frame": 190,
+      "end_frame": 203,
+      "blend_in": 0.2,
+      "blend_out": 0.2
+    }
+  ]
+}

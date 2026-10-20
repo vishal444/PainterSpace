@@ -20,6 +20,7 @@
 #include <QRegularExpression>
 #include <QDateTime>
 #include <QTextStream>
+#include <QTemporaryDir>
 #include "MainWindow.h"
 #include "ShotEngine.h"
 #include "UsdViewportWidget.h"
@@ -149,15 +150,48 @@ const char* kWorldStateInstructions =
     "WORLD STATE RECORD: the user message includes a JSON record of what is in the scene right now, computed by code "
     "from the real USD stage. Trust its numbers instead of estimating geometry yourself. Conventions: meters, Y up, "
     "north = -Z, east = +X, ground at world.ground_y. position is the centre of an object's base. heading_deg is the "
-    "facing direction seen from above: 0 = north (-Z), 90 = east (+X), 180 = south, 270 = west, clockwise. A positive "
-    "USD rotateY turns counter-clockwise from above, so author xformOp:rotateY = -heading_deg. size is width, height, "
-    "depth in the object's own axes; bounds_min/bounds_max are world axis-aligned bounds. Place things inside the named "
-    "zones and free_space areas, keep new objects from overlapping existing bounds, use relations and camera_view to "
-    "frame the shot, and correct anything listed in warnings when it matters for the shot. If continuity.from names a "
-    "previous shot, every object with defined_in = \"shot\" must be re-created in this shot at its listed position, "
+    "facing direction seen from above: 0 = north (-Z), 90 = east (+X), 180 = south, 270 = west, clockwise. "
+    "All normalized assets in the manifest (forward_axis = \"-Z\", including *.norm.usda wrappers for characters, cars, and trees) "
+    "face -Z with base at y = 0; author xformOp:rotateY = -heading_deg. Only if a legacy un-normalized asset has forward_axis = \"+Z\", "
+    "author xformOp:rotateY = 180 - heading_deg. "
+    "SOLID OBJECTS & COLLISION PREVENTION: Characters, cars, doors, and tree trunks are solid 3D colliders validated at every frame. "
+    "Each object in state_start.json includes world-space `anchors` (e.g. `door_fl_stand`, `stand_front`, `stand_left`, `stand_right`) "
+    "that are guaranteed clear of solid colliders. To make a character walk/run to an object or position around obstacles automatically, "
+    "set navigation intent in the character prim's customData, e.g. `customData = { string asset_id = \"character.human\", string go_to = \"Car:door_fl_stand\" }` "
+    "(or `double2 go_to = (x, z)`), and if the shot requires touching a door or object add `string allow_contact = \"Car:door_fl\"`. "
+    "If continuity.from names a previous shot, every object with defined_in = \"shot\" must be re-created in this shot at its listed position, "
     "heading and pose, because shots only sublayer scene.usda. On every prim that references a manifest asset, add "
     "customData = { string asset_id = \"<manifest id>\" } so the next world state record can identify it. "
     "Images, when attached: a labelled top-down map (north up) and the camera's current view.\n";
+
+QByteArray compactManifestForPrompt(const QByteArray& rawManifest) {
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(rawManifest, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) return rawManifest;
+    QJsonObject root = doc.object();
+    QJsonArray assets = root.value("assets").toArray();
+    QJsonArray compactAssets;
+    for (const QJsonValue& val : assets) {
+        if (!val.isObject()) continue;
+        QJsonObject item = val.toObject();
+        item.remove("collision");
+        item.remove("normalization");
+        if (item.value("parts").isObject()) {
+            QJsonObject parts = item.value("parts").toObject();
+            for (const QString& key : parts.keys()) {
+                if (parts.value(key).isObject()) {
+                    QJsonObject partObj = parts.value(key).toObject();
+                    partObj.remove("collider_frame");
+                    parts[key] = partObj;
+                }
+            }
+            item["parts"] = parts;
+        }
+        compactAssets.append(item);
+    }
+    root["assets"] = compactAssets;
+    return QJsonDocument(root).toJson(QJsonDocument::Indented);
+}
 
 bool buildSceneWorldState(const QString& projectRoot, const QString& sceneStagePath, QString* outWorldStateText = nullptr, QStringList* outImages = nullptr) {
     const QString script = locateRepoFile(projectRoot, "tools/world_state.py");
@@ -297,6 +331,10 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
     const QDir queueDir(projectRootDir.filePath("task_queue"));
     queueDir.mkpath(".");
 
+    // Remove any stale LLM response or validation error from a previous run
+    QFile::remove(queueDir.filePath("llm_response.json"));
+    QFile::remove(queueDir.filePath("validation_error.json"));
+
     const QString taskId = QString("%1_%2")
         .arg(outputInfo.dir().dirName())
         .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
@@ -304,7 +342,9 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
     QJsonObject task;
     task["task_id"] = taskId;
     task["status"] = QStringLiteral("pending");
-    task["provider"] = QStringLiteral("gemini_coding_agent");
+    task["provider"] = QStringLiteral("ide_chat_llm_endpoint");
+    task["llm_endpoint_mode"] = true;
+    task["response_file"] = QStringLiteral("task_queue/llm_response.json");
     task["stage_type"] = isSceneStage ? QStringLiteral("scene") : QStringLiteral("shot");
     task["target_stage"] = projectRootDir.relativeFilePath(outputInfo.absoluteFilePath());
     task["prompt"] = prompt;
@@ -331,7 +371,12 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
     task["world_state_images"] = imageList;
     task["manifest_summary"] = QJsonDocument::fromJson(manifestBytes).object();
     task["instructions"] = QStringLiteral(
-        "Author the stage in OpenUSD USDA ASCII format. Use tools/bake_shot_animations.py for locomotion character animations, align facing direction, and save to target_stage. PainterSpace will live-reload automatically upon file save.");
+        "CRITICAL INSTRUCTION FOR IDE CHATBOT / LLM: You are acting STRICTLY as the LLM API endpoint. "
+        "ONLY write the JSON tool-call response ({\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}) "
+        "to task_queue/llm_response.json, display that JSON in chat, and END YOUR RESPONSE IMMEDIATELY THERE. "
+        "DO NOT run compile_shot.py, DO NOT execute any Python/shell scripts, and DO NOT author or edit .usda files directly. "
+        "The PainterSpace C++ desktop application watches task_queue/llm_response.json and will execute the function calls, "
+        "resolve semantic coordinates, compile the USD stage, and run collision validation itself.");
 
     // Write task_queue/pending_request.json
     QFile taskFile(queueDir.filePath("pending_request.json"));
@@ -340,29 +385,46 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
         taskFile.close();
     }
 
-    // Also write a human-readable markdown summary
+    // Enrich pending_request.json with the 76-function FunctionCatalog schemas
+    {
+        const QString prepScript = projectRootDir.filePath("tools/process_agent_queue.py");
+        const QString py = worldStatePython(projectRootPath);
+        if (QFileInfo::exists(prepScript) && !py.isEmpty()) {
+            QProcess prepProc;
+            prepProc.setWorkingDirectory(projectRootPath);
+            prepProc.start(py, {prepScript, QStringLiteral("prepare")});
+            prepProc.waitForFinished(10000);
+        }
+    }
+
+    // Also write a human-readable markdown summary with explicit LLM-only rules
     QFile mdFile(queueDir.filePath("pending_request.md"));
     if (mdFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream ts(&mdFile);
-        ts << "# Pending PainterSpace Generation Task\n\n";
+        ts << "# Pending PainterSpace LLM Endpoint Request\n\n";
         ts << "- **Task ID**: `" << taskId << "`\n";
         ts << "- **Type**: " << (isSceneStage ? "Scene Layer" : "Shot Layer") << "\n";
         ts << "- **Target Stage**: `" << task["target_stage"].toString() << "`\n";
+        ts << "- **Response File**: `task_queue/llm_response.json`\n";
         ts << "- **Prompt**: \"" << prompt << "\"\n\n";
-        ts << "## How to Process in VS Code Chat:\n";
-        ts << "Tell Gemini Coding Agent:\n";
-        ts << "> *\"Generate the queued shot\"*\n\n";
-        ts << "The agent will author the USD file, bake animations, and PainterSpace will live-reload automatically.\n";
+        ts << "## STRICT PROTOCOL FOR IDE CHATBOT / LLM\n";
+        ts << "1. **Act strictly as the LLM API endpoint.**\n";
+        ts << "2. Read `task_queue/pending_request.json` (which includes `function_catalog_schemas` and `world_state`).\n";
+        ts << "3. Write **ONLY** the JSON tool-call plan to `task_queue/llm_response.json`:\n";
+        ts << "```json\n{\n  \"calls\": [\n    {\"function\": \"...\", \"args\": {...}}\n  ]\n}\n```\n";
+        ts << "4. Output that JSON in chat and **STOP IMMEDIATELY**.\n";
+        ts << "5. **NEVER** run `compile_shot.py`, Python scripts, shell commands, or write `.usda` files directly. "
+           << "The running `PainterSpace` C++ application watches `task_queue/llm_response.json` and executes the function calls itself.\n";
         mdFile.close();
     }
 
     if (!isSceneStage) {
-        writeShotMetadata(outputInfo.absoluteFilePath(), prompt, QStringLiteral("gemini-coding-agent"), false);
+        writeShotMetadata(outputInfo.absoluteFilePath(), prompt, QStringLiteral("ide-llm-endpoint"), false);
     }
 
-    qInfo().noquote() << QStringLiteral("[AGENT_DISPATCH] Task successfully queued in task_queue/pending_request.json for target: %1")
+    qInfo().noquote() << QStringLiteral("[AGENT_DISPATCH] Task queued in task_queue/pending_request.json for target: %1")
                             .arg(task["target_stage"].toString());
-    qInfo("In VS Code chat, say: 'Generate the queued shot'");
+    qInfo("Waiting for IDE LLM to write JSON tool calls to task_queue/llm_response.json...");
     return true;
 }
 
@@ -418,7 +480,7 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         return 1;
     }
 
-    const QByteArray manifestBytes = manifest.readAll();
+    const QByteArray manifestBytes = compactManifestForPrompt(manifest.readAll());
     const QString modelName = agentMode ? QStringLiteral("gemini-coding-agent") : qEnvironmentVariable("PAINTERSPACE_OPENAI_MODEL", "gpt-4.1-mini");
 
     if (isSceneStage) {
@@ -581,7 +643,7 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         "This layer must set defaultPrim = \"World\" and subLayers = [ @../scene.usda@ ], and must not redefine the shared World. Use `over \"World\"` for shot-specific actors, movement, camera, and lighting overrides. "
         "Use Y-up, metersPerUnit = 1, timeCodesPerSecond = 24, startTimeCode = 0, and endTimeCode matching the shot duration. "
         "Define a Camera prim named \"ShotCam\" inside `over \"World\"` (at /World/ShotCam). "
-        "Use only USD references from the manifest that have usd_reference_ready=true; asset references must start with ../../../assets/ (for example @../../../assets/usdc_assets/humans/running_fast.usdc@). "
+        "Use only USD references from the manifest that have usd_reference_ready=true; asset references must start with ../../../assets/ (for example @../../../assets/usdc_assets/humans/human.norm.usda@). "
         "Keep stages below 1000 prims and 600 seconds.\n" +
         (worldStateText.isEmpty() ? QString() : QString::fromLatin1(kWorldStateInstructions)) +
         (sceneDescriptionPrompt.isEmpty() ? QString() : ("Overall scene description:\n" + sceneDescriptionPrompt + "\n")) +
@@ -596,87 +658,131 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         userContent = "WORLD STATE RECORD (state_start.json, what is in the scene right now):\n" + worldStateText +
                       "\n\n" + userContent;
     }
-    QJsonValue userMessageContent = userContent;
-    if (!worldStateImages.isEmpty()) {
-        QJsonArray parts{QJsonObject{{"type", "text"}, {"text", userContent}}};
-        for (const QString& imagePath : worldStateImages) {
-            const QJsonObject part = imagePart(imagePath);
-            if (part.isEmpty()) continue;
-            parts.append(QJsonObject{{"type", "text"}, {"text", imagePath.endsWith("_topdown.png")
-                ? QStringLiteral("Top-down map of the world state (north up, object ids labelled):")
-                : QStringLiteral("Current camera view:")}});
-            parts.append(part);
-        }
-        userMessageContent = parts;
-    }
 
-    if (agentMode) {
+    if (agentMode && qEnvironmentVariable("PAINTERSPACE_OFFLINE_COMPILER") != QStringLiteral("1")) {
         writeAgentTaskQueue(projectRootPath, outputInfo, false, prompt, sceneDescriptionPrompt,
                             existingSceneLayerText, existingShotLayerText, worldStateText,
                             worldStateImages, manifestBytes);
         return 0;
     }
 
-    const QJsonObject body{
-        {"model", modelName},
-        {"messages", QJsonArray{
-            QJsonObject{{"role", "system"}, {"content", systemPrompt}},
-            QJsonObject{{"role", "user"}, {"content", userMessageContent}}
-        }},
-        {"temperature", 0.7}
-    };
+    // Primary Shot Generation Pipeline: Declarative Shot Function Library Compiler (compile_shot.py)
+    if (qEnvironmentVariable("PAINTERSPACE_RAW_LLM") != QStringLiteral("1") &&
+        qEnvironmentVariable("PAINTERSPACE_QUEUE_ONLY") != QStringLiteral("1")) {
+        const QString compileScript = projectRootDir.filePath("tools/shot_library/compile_shot.py");
+        const QString py = worldStatePython(projectRootPath);
+        if (QFileInfo::exists(compileScript) && !py.isEmpty()) {
+            QProcess compileProc;
+            compileProc.setWorkingDirectory(projectRootPath);
+            compileProc.start(py, {
+                compileScript,
+                QStringLiteral("--prompt"), prompt,
+                QStringLiteral("--output"), outputInfo.absoluteFilePath(),
+                QStringLiteral("--scene"), sceneStagePath
+            });
+            if (compileProc.waitForFinished(180000) && compileProc.exitCode() == 0 &&
+                QFileInfo::exists(outputInfo.absoluteFilePath())) {
+                writeShotMetadata(outputInfo.absoluteFilePath(), prompt, modelName, true);
+                qInfo().noquote() << "Generated and validated" << outputInfo.absoluteFilePath() << "via ShotCompiler";
+                const WorldStateRun finalized = runWorldStateTool("finalize-shot", projectRootPath, outputInfo.absoluteFilePath());
+                if (finalized.ok) {
+                    qInfo().noquote() << "Wrote" << finalized.result.value("state").toString();
+                }
+                return 0;
+            }
+        }
+    }
+
     QNetworkAccessManager manager;
-    QNetworkRequest request(QUrl("https://api.openai.com/v1/chat/completions"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader("Authorization", "Bearer " + apiKey);
-    QNetworkReply* reply = manager.post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
-    QEventLoop loop;
-    QTimer timeout;
-    timeout.setSingleShot(true);
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    timeout.start(120000);
-    loop.exec();
-    if (!reply->isFinished()) {
-        reply->abort();
-        qCritical("USD generation request timed out");
+    QString feedback;
+    QString lastValidationError;
+    constexpr int kMaxRetries = 3;
+
+    for (int attempt = 0; attempt <= kMaxRetries; ++attempt) {
+        QString attemptContent = userContent;
+        if (!feedback.isEmpty()) {
+            attemptContent += "\n\nVALIDATION / COLLISION FEEDBACK FROM PREVIOUS ATTEMPT (fix this violation):\n" + feedback;
+        }
+        QJsonValue userMessageContent = attemptContent;
+        if (!worldStateImages.isEmpty()) {
+            QJsonArray parts{QJsonObject{{"type", "text"}, {"text", attemptContent}}};
+            for (const QString& imagePath : worldStateImages) {
+                const QJsonObject part = imagePart(imagePath);
+                if (part.isEmpty()) continue;
+                parts.append(QJsonObject{{"type", "text"}, {"text", imagePath.endsWith("_topdown.png")
+                    ? QStringLiteral("Top-down map of the world state (north up, object ids labelled):")
+                    : QStringLiteral("Current camera view:")}});
+                parts.append(part);
+            }
+            userMessageContent = parts;
+        }
+
+        const QJsonObject body{
+            {"model", modelName},
+            {"messages", QJsonArray{
+                QJsonObject{{"role", "system"}, {"content", systemPrompt}},
+                QJsonObject{{"role", "user"}, {"content", userMessageContent}}
+            }},
+            {"temperature", 0.7}
+        };
+        QNetworkRequest request(QUrl("https://api.openai.com/v1/chat/completions"));
+        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        request.setRawHeader("Authorization", "Bearer " + apiKey);
+        QNetworkReply* reply = manager.post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
+        QEventLoop loop;
+        QTimer timeout;
+        timeout.setSingleShot(true);
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+        timeout.start(120000);
+        loop.exec();
+        if (!reply->isFinished()) {
+            reply->abort();
+            qCritical("USD generation request timed out");
+            reply->deleteLater();
+            return 1;
+        }
+        const QByteArray response = reply->readAll();
+        if (reply->error() != QNetworkReply::NoError) {
+            qCritical().noquote() << "USD generation request failed:" << reply->errorString() << response;
+            reply->deleteLater();
+            return 1;
+        }
         reply->deleteLater();
+        QJsonParseError parseError;
+        const QJsonDocument responseDoc = QJsonDocument::fromJson(response, &parseError);
+        QString stageText = responseDoc.object().value("choices").toArray().at(0).toObject()
+                                .value("message").toObject().value("content").toString().trimmed();
+        stageText.remove(QRegularExpression("^```(?:usda)?\\s*", QRegularExpression::CaseInsensitiveOption));
+        stageText.remove(QRegularExpression("\\s*```$"));
+        stageText = stageText.trimmed();
+        if (parseError.error != QJsonParseError::NoError || !stageText.startsWith("#usda 1.0")) {
+            lastValidationError = QStringLiteral("Model response did not contain a USDA stage");
+            feedback = lastValidationError;
+            continue;
+        }
+        QSaveFile output(outputInfo.absoluteFilePath());
+        const QByteArray stageBytes = (stageText + "\n").toUtf8();
+        if (!output.open(QIODevice::WriteOnly | QIODevice::Text) || output.write(stageBytes) != stageBytes.size() || !output.commit()) {
+            qCritical("Unable to save generated USDA stage");
+            return 1;
+        }
+        lastValidationError = ShotEngine::validateAuthoredUsdStage(output.fileName());
+        if (lastValidationError.isEmpty()) {
+            break;
+        }
+        feedback = lastValidationError;
+    }
+
+    writeShotMetadata(outputInfo.absoluteFilePath(), prompt, modelName, lastValidationError.isEmpty());
+    if (!lastValidationError.isEmpty()) {
+        qCritical().noquote() << "Generated stage failed validation:" << lastValidationError;
         return 1;
     }
-    const QByteArray response = reply->readAll();
-    if (reply->error() != QNetworkReply::NoError) {
-        qCritical().noquote() << "USD generation request failed:" << reply->errorString() << response;
-        reply->deleteLater();
-        return 1;
-    }
-    reply->deleteLater();
-    QJsonParseError parseError;
-    const QJsonDocument responseDoc = QJsonDocument::fromJson(response, &parseError);
-    QString stageText = responseDoc.object().value("choices").toArray().at(0).toObject()
-                            .value("message").toObject().value("content").toString().trimmed();
-    stageText.remove(QRegularExpression("^```(?:usda)?\\s*", QRegularExpression::CaseInsensitiveOption));
-    stageText.remove(QRegularExpression("\\s*```$"));
-    stageText = stageText.trimmed();
-    if (parseError.error != QJsonParseError::NoError || !stageText.startsWith("#usda 1.0")) {
-        qCritical("Model response did not contain a USDA stage");
-        return 1;
-    }
-    QSaveFile output(outputInfo.absoluteFilePath());
-    const QByteArray stageBytes = (stageText + "\n").toUtf8();
-    if (!output.open(QIODevice::WriteOnly | QIODevice::Text) || output.write(stageBytes) != stageBytes.size() || !output.commit()) {
-        qCritical("Unable to save generated USDA stage");
-        return 1;
-    }
-    const QString validation = ShotEngine::validateAuthoredUsdStage(output.fileName());
-    writeShotMetadata(output.fileName(), prompt, modelName, validation.isEmpty());
-    if (!validation.isEmpty()) {
-        qCritical().noquote() << "Generated stage failed validation:" << validation;
-        return 1;
-    }
-    qInfo().noquote() << "Generated and validated" << output.fileName();
+    qInfo().noquote() << "Generated and validated" << outputInfo.absoluteFilePath();
 
     // The world state at the end of this shot is the next shot's starting point.
-    const WorldStateRun finalized = runWorldStateTool("finalize-shot", projectRootPath, output.fileName());
+    const WorldStateRun finalized = runWorldStateTool("finalize-shot", projectRootPath, outputInfo.absoluteFilePath());
     if (finalized.ok) {
         qInfo().noquote() << "Wrote" << finalized.result.value("state").toString();
         for (const QJsonValue& warning : finalized.result.value("warnings").toArray()) {
@@ -920,42 +1026,146 @@ int main(int argc, char** argv) {
         // reload stage (simulating regeneration), and confirm the manual move is still applied!
         const QString shot1Path = locateRepoFile(QDir::currentPath(), "scenes/scene_01/shot_001/shot.usda");
         QFile shot1FileBefore(shot1Path);
-        shot1FileBefore.open(QIODevice::ReadOnly);
-        const QByteArray shot1BytesBefore = shot1FileBefore.readAll();
-        shot1FileBefore.close();
+        if (shot1FileBefore.open(QIODevice::ReadOnly)) {
+            const QByteArray shot1BytesBefore = shot1FileBefore.readAll();
+            shot1FileBefore.close();
 
-        viewport.openStage(shot1Path);
-        viewport.clearAllUserEdits();
-        viewport.selectPrim("/World/Car");
-        const QVector3D origCarPos = viewport.selectedPrimPosition();
-        const QVector3D movedCarPos(origCarPos.x() + 3.5f, origCarPos.y(), origCarPos.z() - 1.25f);
-        viewport.setSelectedPrimPosition(movedCarPos);
+            viewport.openStage(shot1Path);
+            viewport.clearAllUserEdits();
+            viewport.selectPrim("/World/Car");
+            const QVector3D origCarPos = viewport.selectedPrimPosition();
+            const QVector3D movedCarPos(origCarPos.x() + 3.5f, origCarPos.y(), origCarPos.z() - 1.25f);
+            viewport.setSelectedPrimPosition(movedCarPos);
 
-        if (viewport.userEditedPrimCount() < 1) {
-            qCritical("Phase 3 FAIL: User edit count did not increment after moving /World/Car");
-            return 1;
-        }
-        // Reload stage (simulating LLM regeneration completing)
-        viewport.reloadStage();
-        viewport.selectPrim("/World/Car");
-        const QVector3D reloadedCarPos = viewport.selectedPrimPosition();
-        QFile shot1FileAfter(shot1Path);
-        shot1FileAfter.open(QIODevice::ReadOnly);
-        const QByteArray shot1BytesAfter = shot1FileAfter.readAll();
-        shot1FileAfter.close();
+            if (viewport.userEditedPrimCount() < 1) {
+                qCritical("Phase 3 FAIL: User edit count did not increment after moving /World/Car");
+                return 1;
+            }
+            // Reload stage (simulating LLM regeneration completing)
+            viewport.reloadStage();
+            viewport.selectPrim("/World/Car");
+            const QVector3D reloadedCarPos = viewport.selectedPrimPosition();
+            QFile shot1FileAfter(shot1Path);
+            if (shot1FileAfter.open(QIODevice::ReadOnly)) {
+                const QByteArray shot1BytesAfter = shot1FileAfter.readAll();
+                shot1FileAfter.close();
 
-        if (shot1BytesBefore != shot1BytesAfter) {
-            qCritical("Phase 3 FAIL: shot.usda was modified by manual edit!");
-            return 1;
+                if (shot1BytesBefore != shot1BytesAfter) {
+                    qCritical("Phase 3 FAIL: shot.usda was modified by manual edit!");
+                    return 1;
+                }
+                if ((reloadedCarPos - movedCarPos).length() > 1e-3f) {
+                    qCritical("Phase 3 FAIL: Manual move in user_edits.usda did not persist across reload!");
+                    return 1;
+                }
+            }
+            // Clean up test user_edits.usda so shot_001 stays clean
+            viewport.clearAllUserEdits();
+            QFile::remove(viewport.userEditsLayerPath());
+            qInfo("Phase 2 & 3 PASS: Manual edit written to user_edits.usda, persisted across stage reload, and shot.usda untouched.");
         }
-        if ((reloadedCarPos - movedCarPos).length() > 1e-3f) {
-            qCritical("Phase 3 FAIL: Manual move in user_edits.usda did not persist across reload!");
-            return 1;
+
+        // Phase 4 Test: Main Scene Edit & Save with Snapshotting and Shot Inheritance
+        {
+            QTemporaryDir tempSceneDir;
+            if (!tempSceneDir.isValid()) {
+                qCritical("Phase 4 FAIL: Could not create temporary scene directory");
+                return 1;
+            }
+            const QDir sceneDir(tempSceneDir.path());
+            const QString scenePath = sceneDir.filePath("scene.usda");
+            const QString shot1DirPath = sceneDir.filePath("shot_001");
+            QDir().mkpath(shot1DirPath);
+            const QString shot1Path = sceneDir.filePath("shot_001/shot.usda");
+
+            // Baseline scene.usda
+            QFile scFile(scenePath);
+            if (!scFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                qCritical("Phase 4 FAIL: Could not write scene.usda");
+                return 1;
+            }
+            scFile.write("#usda 1.0\n(\n    defaultPrim = \"World\"\n)\ndef Xform \"World\"\n{\n    def Xform \"Bench\"\n    {\n        double3 xformOp:translate = (0, 0, 0)\n        uniform token[] xformOpOrder = [\"xformOp:translate\"]\n    }\n}\n");
+            scFile.close();
+
+            // Baseline shot_001/shot.usda sublayering ../scene.usda
+            QFile shFile(shot1Path);
+            if (!shFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                qCritical("Phase 4 FAIL: Could not write shot.usda");
+                return 1;
+            }
+            shFile.write("#usda 1.0\n(\n    defaultPrim = \"World\"\n    subLayers = [\n        @../scene.usda@\n    ]\n)\nover \"World\"\n{\n}\n");
+            shFile.close();
+
+            // Open scene in Scene Mode
+            if (!viewport.openStage(scenePath, /*isSceneStage=*/true)) {
+                qCritical("Phase 4 FAIL: Could not open scene stage");
+                return 1;
+            }
+            viewport.selectPrim("/World/Bench");
+            const QVector3D origBenchPos = viewport.selectedPrimPosition();
+            const QVector3D newBenchPos(15.0f, 0.0f, -8.0f);
+            viewport.setSelectedPrimPosition(newBenchPos);
+
+            if (viewport.userEditedPrimCount() < 1) {
+                qCritical("Phase 4 FAIL: userEditedPrimCount did not increment in scene mode");
+                return 1;
+            }
+
+            // Save scene edits (should snapshot scene.usda to scene_v1.usda and retarget shot_001)
+            QString errorMsg;
+            if (!viewport.saveSceneEdits(&errorMsg)) {
+                qCritical().noquote() << "Phase 4 FAIL: saveSceneEdits returned false:" << errorMsg;
+                return 1;
+            }
+
+            // Check that scene_v1.usda exists
+            const QString snapV1Path = sceneDir.filePath("scene_v1.usda");
+            if (!QFileInfo::exists(snapV1Path)) {
+                qCritical("Phase 4 FAIL: scene_v1.usda was not created!");
+                return 1;
+            }
+
+            // Check that shot_001/shot.usda was retargeted to @../scene_v1.usda@
+            QFile shCheck(shot1Path);
+            if (!shCheck.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                qCritical("Phase 4 FAIL: Could not read shot1 after save");
+                return 1;
+            }
+            const QString shot1Content = QString::fromUtf8(shCheck.readAll());
+            shCheck.close();
+            if (!shot1Content.contains("@../scene_v1.usda@") && !shot1Content.contains("../scene_v1.usda")) {
+                qCritical().noquote() << "Phase 4 FAIL: shot_001 was not retargeted to scene_v1.usda! Content:\n" << shot1Content;
+                return 1;
+            }
+
+            // Open shot_001 stage and verify Bench is at original frozen position (0, 0, 0)
+            viewport.openStage(shot1Path, /*isSceneStage=*/false);
+            viewport.selectPrim("/World/Bench");
+            const QVector3D benchInShot1 = viewport.selectedPrimPosition();
+            if ((benchInShot1 - origBenchPos).length() > 1e-3f) {
+                qCritical().noquote() << "Phase 4 FAIL: shot_001 did not preserve frozen scene position! Expected:" << origBenchPos << "got:" << benchInShot1;
+                return 1;
+            }
+
+            // Create new shot_002 sublayering @../scene.usda@ and verify it inherits newBenchPos
+            const QString shot2DirPath = sceneDir.filePath("shot_002");
+            QDir().mkpath(shot2DirPath);
+            const QString shot2Path = sceneDir.filePath("shot_002/shot.usda");
+            QFile sh2File(shot2Path);
+            if (sh2File.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                sh2File.write("#usda 1.0\n(\n    defaultPrim = \"World\"\n    subLayers = [\n        @../scene.usda@\n    ]\n)\nover \"World\"\n{\n}\n");
+                sh2File.close();
+            }
+            viewport.openStage(shot2Path, /*isSceneStage=*/false);
+            viewport.selectPrim("/World/Bench");
+            const QVector3D benchInShot2 = viewport.selectedPrimPosition();
+            if ((benchInShot2 - newBenchPos).length() > 1e-3f) {
+                qCritical().noquote() << "Phase 4 FAIL: new shot_002 did not inherit current scene.usda position! Expected:" << newBenchPos << "got:" << benchInShot2;
+                return 1;
+            }
+
+            qInfo("Phase 4 PASS: Main scene edit saved, existing shot_001 frozen on scene_v1.usda, new shot_002 inherited scene.usda.");
         }
-        // Clean up test user_edits.usda so shot_001 stays clean
-        viewport.clearAllUserEdits();
-        QFile::remove(viewport.userEditsLayerPath());
-        qInfo("Phase 2 & 3 PASS: Manual edit written to user_edits.usda, persisted across stage reload, and shot.usda untouched.");
         return 0;
     }
 

@@ -1,0 +1,32 @@
+{
+  "prompt": "I want shot of a woman running up the stairs and then going down the stairs on the other side.",
+  "version": "1.0",
+  "scene_version": "scene_v3.usda",
+  "fps": 24,
+  "duration_s": 7.625,
+  "end_frame": 183,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "45e10e4bef80fee2",
+  "actors": [
+    {
+      "actor_id": "human_1",
+      "label": "Hero",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "crimson",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "athletic",
+          "runner"
+        ]
+      },
+      "prim_path": "/World/Hero"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "actor": "human_1",
+    "t0": 3.5,
+    "t1": 6.5,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "Partner_A",
+    "t0": 3.5,
+    "t1": 6.5,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "human_1",
+    "t0": 6.0,
+    "t1": 9.0,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "Partner_A",
+    "t0": 6.0,
+    "t1": 9.0,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "human_2",
+    "t0": 3.5,
+    "t1": 6.5,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "Partner_B",
+    "t0": 3.5,
+    "t1": 6.5,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "human_2",
+    "t0": 6.0,
+    "t1": 9.0,
+    "max_depth_m": 0.35
+  },
+  {
+    "actor": "Partner_B",
+    "t0": 6.0,
+    "t1": 9.0,
+    "max_depth_m": 0.35
+  }
+]

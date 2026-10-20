@@ -1,0 +1,314 @@
+{
+  "total_duration_s": 9.0,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "gesture_1",
+      "actor_id": "human_1",
+      "function": "gesture",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "duration": 3.5,
+      "params": {
+        "move": "cheering",
+        "target": null,
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "gesture_1.started": 0.0,
+        "gesture_1.finished": 3.5,
+        "human_1.started": 0.0,
+        "human_1.finished": 3.5
+      }
+    },
+    {
+      "beat_id": "gesture_2",
+      "actor_id": "human_2",
+      "function": "gesture",
+      "start_time": 0.0,
+      "end_time": 3.5,
+      "duration": 3.5,
+      "params": {
+        "move": "clapping",
+        "target": null,
+        "at_time": 0.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "gesture_2.started": 0.0,
+        "gesture_2.finished": 3.5,
+        "human_2.started": 0.0,
+        "human_2.finished": 3.5
+      }
+    },
+    {
+      "beat_id": "react_3",
+      "actor_id": "human_1",
+      "function": "react",
+      "start_time": 3.5,
+      "end_time": 6.0,
+      "duration": 2.5,
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_3.started": 3.5,
+        "react_3.finished": 6.0,
+        "human_1.started": 3.5,
+        "human_1.finished": 6.0
+      }
+    },
+    {
+      "beat_id": "react_4",
+      "actor_id": "human_2",
+      "function": "react",
+      "start_time": 3.5,
+      "end_time": 6.0,
+      "duration": 2.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 3.5
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_4.started": 3.5,
+        "react_4.finished": 6.0,
+        "human_2.started": 3.5,
+        "human_2.finished": 6.0
+      }
+    },
+    {
+      "beat_id": "react_5",
+      "actor_id": "human_1",
+      "function": "react",
+      "start_time": 6.0,
+      "end_time": 8.5,
+      "duration": 2.5,
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 6.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_5.started": 6.0,
+        "react_5.finished": 8.5,
+        "human_1.started": 6.0,
+        "human_1.finished": 8.5
+      }
+    },
+    {
+      "beat_id": "react_6",
+      "actor_id": "human_2",
+      "function": "react",
+      "start_time": 6.0,
+      "end_time": 8.5,
+      "duration": 2.5,
+      "params": {
+        "mood": "reaction",
+        "look_at": null,
+        "at_time": 6.0
+      },
+      "is_idle_fill": false,
+      "events": {
+        "react_6.started": 6.0,
+        "react_6.finished": 8.5,
+        "human_2.started": 6.0,
+        "human_2.finished": 8.5
+      }
+    },
+    {
+      "beat_id": "idle_human_1_850",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 8.5,
+      "end_time": 9.0,
+      "duration": 0.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_2_850",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 8.5,
+      "end_time": 9.0,
+      "duration": 0.5,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "gesture_1.started": 0.0,
+    "gesture_1.finished": 3.5,
+    "human_1.started": 6.0,
+    "human_1.finished": 8.5,
+    "gesture_2.started": 0.0,
+    "gesture_2.finished": 3.5,
+    "human_2.started": 6.0,
+    "human_2.finished": 8.5,
+    "react_3.started": 3.5,
+    "react_3.finished": 6.0,
+    "react_4.started": 3.5,
+    "react_4.finished": 6.0,
+    "react_5.started": 6.0,
+    "react_5.finished": 8.5,
+    "react_6.started": 6.0,
+    "react_6.finished": 8.5
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "gesture_1",
+        "actor_id": "human_1",
+        "function": "gesture",
+        "start_time": 0.0,
+        "end_time": 3.5,
+        "duration": 3.5,
+        "params": {
+          "move": "cheering",
+          "target": null,
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "gesture_1.started": 0.0,
+          "gesture_1.finished": 3.5,
+          "human_1.started": 0.0,
+          "human_1.finished": 3.5
+        }
+      },
+      {
+        "beat_id": "react_3",
+        "actor_id": "human_1",
+        "function": "react",
+        "start_time": 3.5,
+        "end_time": 6.0,
+        "duration": 2.5,
+        "params": {
+          "mood": "reaction",
+          "look_at": null,
+          "at_time": 3.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_3.started": 3.5,
+          "react_3.finished": 6.0,
+          "human_1.started": 3.5,
+          "human_1.finished": 6.0
+        }
+      },
+      {
+        "beat_id": "react_5",
+        "actor_id": "human_1",
+        "function": "react",
+        "start_time": 6.0,
+        "end_time": 8.5,
+        "duration": 2.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 6.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_5.started": 6.0,
+          "react_5.finished": 8.5,
+          "human_1.started": 6.0,
+          "human_1.finished": 8.5
+        }
+      },
+      {
+        "beat_id": "idle_human_1_850",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 8.5,
+        "end_time": 9.0,
+        "duration": 0.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "gesture_2",
+        "actor_id": "human_2",
+        "function": "gesture",
+        "start_time": 0.0,
+        "end_time": 3.5,
+        "duration": 3.5,
+        "params": {
+          "move": "clapping",
+          "target": null,
+          "at_time": 0.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "gesture_2.started": 0.0,
+          "gesture_2.finished": 3.5,
+          "human_2.started": 0.0,
+          "human_2.finished": 3.5
+        }
+      },
+      {
+        "beat_id": "react_4",
+        "actor_id": "human_2",
+        "function": "react",
+        "start_time": 3.5,
+        "end_time": 6.0,
+        "duration": 2.5,
+        "params": {
+          "mood": "spooked",
+          "look_at": null,
+          "at_time": 3.5
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_4.started": 3.5,
+          "react_4.finished": 6.0,
+          "human_2.started": 3.5,
+          "human_2.finished": 6.0
+        }
+      },
+      {
+        "beat_id": "react_6",
+        "actor_id": "human_2",
+        "function": "react",
+        "start_time": 6.0,
+        "end_time": 8.5,
+        "duration": 2.5,
+        "params": {
+          "mood": "reaction",
+          "look_at": null,
+          "at_time": 6.0
+        },
+        "is_idle_fill": false,
+        "events": {
+          "react_6.started": 6.0,
+          "react_6.finished": 8.5,
+          "human_2.started": 6.0,
+          "human_2.finished": 8.5
+        }
+      },
+      {
+        "beat_id": "idle_human_2_850",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 8.5,
+        "end_time": 9.0,
+        "duration": 0.5,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

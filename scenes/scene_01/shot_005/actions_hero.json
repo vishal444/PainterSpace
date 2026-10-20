@@ -1,0 +1,52 @@
+{
+  "actions": [
+    {
+      "clip": "spooked",
+      "start_s": 0.0,
+      "end_s": 0.45,
+      "speed": 1.35,
+      "blend_s": 0.10
+    },
+    {
+      "clip": "run",
+      "start_s": 0.45,
+      "end_s": 1.35,
+      "speed": 1.35,
+      "blend_s": 0.12
+    },
+    {
+      "clip": "dodging_right",
+      "start_s": 1.35,
+      "end_s": 1.85,
+      "speed": 1.25,
+      "blend_s": 0.12
+    },
+    {
+      "clip": "run",
+      "start_s": 1.85,
+      "end_s": 3.42,
+      "speed": 1.15,
+      "blend_s": 0.15
+    },
+    {
+      "clip": "elbow_punch",
+      "start_s": 3.42,
+      "end_s": 4.92,
+      "speed": 1.2,
+      "blend_s": 0.15
+    },
+    {
+      "clip": "left_hook",
+      "start_s": 4.92,
+      "end_s": 6.42,
+      "speed": 1.2,
+      "blend_s": 0.15
+    },
+    {
+      "clip": "kick_to_the_groin",
+      "start_s": 6.42,
+      "end_s": 8.0,
+      "speed": 1.1
+    }
+  ]
+}

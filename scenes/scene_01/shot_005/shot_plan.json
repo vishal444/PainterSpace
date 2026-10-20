@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0",
+  "prompt": "",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "Hero",
+      "at_reference": "lane_east.center",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "car_1",
+      "asset_id": "cars.car1",
+      "label": "Speeding Car",
+      "at_reference": "lane_east.start",
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      }
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "drive_toward_1",
+      "function": "drive_toward",
+      "actor_id": "car_1",
+      "params": {
+        "target": "human_1",
+        "mode": "stop_short",
+        "gap": "near",
+        "speed": "fast"
+      }
+    },
+    {
+      "beat_id": "dodge_2",
+      "function": "dodge",
+      "actor_id": "human_1",
+      "params": {
+        "threat": "car_1",
+        "lateral_distance_m": 2.2
+      },
+      "start_condition": {
+        "type": "when_closer_than",
+        "value": 0.0,
+        "actor_a": "car_1",
+        "actor_b": "human_1",
+        "gap": "far"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.4
+      }
+    },
+    {
+      "beat_id": "run_to_3",
+      "function": "run_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "car_1:hood_strike"
+      },
+      "start_condition": {
+        "type": "after",
+        "value": "car_1.stopped"
+      }
+    },
+    {
+      "beat_id": "attack_4",
+      "function": "attack",
+      "actor_id": "human_1",
+      "params": {
+        "target": "cars.car1",
+        "moves": [
+          "left_hook",
+          "elbow_punch"
+        ]
+      },
+      "start_condition": {
+        "type": "after",
+        "value": "run_to_3.finished"
+      }
+    }
+  ],
+  "camera": {
+    "style": "medium",
+    "actors": [
+      "human_1",
+      "car_1"
+    ],
+    "vantage": "front"
+  }
+}

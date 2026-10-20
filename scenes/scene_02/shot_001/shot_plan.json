@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "prompt": "",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "Driver",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.04,
+        "descriptive_tags": []
+      },
+      "position": [
+        3.4,
+        0.0,
+        -5.5
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.human",
+      "label": "Runner",
+      "appearance": {
+        "color_variant": "light_beige",
+        "tint_rgb": [
+          0.92,
+          0.88,
+          0.78
+        ],
+        "height_scale": 0.98,
+        "descriptive_tags": []
+      },
+      "position": [
+        -0.6,
+        0.0,
+        -9.0
+      ],
+      "facing_deg": 180.0
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "walk_to_1",
+      "function": "walk_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "Car1:door_fl_stand",
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 4.0
+      }
+    },
+    {
+      "beat_id": "open_part_2",
+      "function": "open_part",
+      "actor_id": "human_1",
+      "params": {
+        "part": "Car1:door_fl",
+        "at_time": 4.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 2.0
+      }
+    },
+    {
+      "beat_id": "wait_3",
+      "function": "wait",
+      "actor_id": "human_2",
+      "params": {
+        "at_time": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 5.0
+      }
+    },
+    {
+      "beat_id": "run_to_4",
+      "function": "run_to",
+      "actor_id": "human_2",
+      "params": {
+        "target": "beside(human_1, left, 1.4)",
+        "at_time": 5.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 2.0
+      }
+    },
+    {
+      "beat_id": "react_5",
+      "function": "react",
+      "actor_id": "human_2",
+      "params": {
+        "mood": "spooked",
+        "look_at": null,
+        "at_time": 7.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 2.0
+      }
+    },
+    {
+      "beat_id": "turn_to_face_6",
+      "function": "turn_to_face",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "at_time": 7.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 0.6
+      }
+    },
+    {
+      "beat_id": "gesture_7",
+      "function": "gesture",
+      "actor_id": "human_1",
+      "params": {
+        "move": "acknowledging",
+        "target": null,
+        "at_time": 7.6
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 1.4
+      }
+    }
+  ],
+  "camera": {
+    "style": "three_quarter_front_left",
+    "actors": [
+      "human_1",
+      "human_2"
+    ],
+    "vantage": "front",
+    "move": "push_in"
+  }
+}

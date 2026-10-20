@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "lint_passed": true,
+  "collision_passed": true,
+  "camera_passed": true,
+  "lint_warnings": [],
+  "collision_report": {
+    "ok": true,
+    "time_steps": 337,
+    "actors": [
+      "Standing_1",
+      "Standing_2",
+      "Standing_3",
+      "Standing_4",
+      "Standing_5",
+      "Standing_6",
+      "Standing_7",
+      "Standing_8",
+      "Standing_9",
+      "Standing_10",
+      "Attacker"
+    ],
+    "assets": [
+      "Car1",
+      "Bridge",
+      "Car"
+    ],
+    "unprotected_assets": [],
+    "violations": []
+  },
+  "camera_warnings": []
+}

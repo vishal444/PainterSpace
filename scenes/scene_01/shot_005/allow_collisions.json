@@ -1,0 +1,16 @@
+[
+  {
+    "actor": "human_1",
+    "asset": "cars.car1",
+    "shape": "body",
+    "joints": [
+      "LeftHand",
+      "RightHand",
+      "RightArm",
+      "LeftArm"
+    ],
+    "t0": 6.225,
+    "t1": 7.125,
+    "max_depth_m": 0.05
+  }
+]

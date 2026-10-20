@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "lint_passed": true,
+  "collision_passed": true,
+  "camera_passed": true,
+  "lint_warnings": [],
+  "collision_report": {
+    "ok": true,
+    "time_steps": 433,
+    "actors": [
+      "Partner_A",
+      "Partner_B"
+    ],
+    "assets": [
+      "Car1"
+    ],
+    "unprotected_assets": [],
+    "violations": []
+  },
+  "camera_warnings": []
+}

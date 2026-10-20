@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "time_steps": 371,
+  "actors": [
+    "Parkour_Runner"
+  ],
+  "assets": [
+    "OakTree",
+    "Sedan1",
+    "Coupe2",
+    "Sedan3"
+  ],
+  "unprotected_assets": [],
+  "violations": []
+}
