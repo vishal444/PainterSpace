@@ -1,0 +1,3371 @@
+{
+  "has_existing_stage": true,
+  "instructions": "CRITICAL INSTRUCTION FOR IDE CHATBOT / LLM: You are acting STRICTLY as the LLM API endpoint. The LLM must respond ONLY with the tools call JSON ({\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}), write that JSON to task_queue/llm_response.json, display that JSON in chat, and END EXECUTION IMMEDIATELY THERE. An empty action timeline does not cancel the prompt; unassigned drawn paths are optional guides. DO NOT run compile_shot.py, DO NOT execute any Python/shell scripts, and DO NOT author or edit .usda files directly. The PainterSpace C++ desktop application watches task_queue/llm_response.json and will execute the function calls, resolve semantic coordinates, compile the USD stage, and run collision validation itself.",
+  "llm_call": {
+    "instruction": "Keep the starting scene assets exactly as they are. Use existing scene objects; do not place, replace, remove, or change buildings or other environment assets, even if a prompt mentions a missing feature. Respond ONLY with the tools call JSON matching schema: {\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}. Write this JSON to task_queue/llm_response.json and end execution immediately there.",
+    "execution_policy": "LLM responds ONLY with tools call JSON; execution ends there."
+  },
+  "llm_endpoint_mode": true,
+  "manifest_summary": {
+    "assets": [
+      {
+        "id": "environment.downtown_tower",
+        "tags": [
+          "environment",
+          "building",
+          "city"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.grand_harbour",
+        "tags": [
+          "environment",
+          "harbour",
+          "waterfront"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.ocean_horizon",
+        "tags": [
+          "environment",
+          "ocean",
+          "water"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.residential_avenue",
+        "tags": [
+          "environment",
+          "building",
+          "avenue",
+          "street"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.residential_intersection",
+        "tags": [
+          "environment",
+          "building",
+          "intersection",
+          "street"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.residential_neighborhood",
+        "tags": [
+          "environment",
+          "building",
+          "neighborhood",
+          "street"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "character.female",
+        "tags": [
+          "character",
+          "human",
+          "female",
+          "woman",
+          "rigged",
+          "animated"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "character.human",
+        "tags": [
+          "character",
+          "human",
+          "rigged",
+          "animated"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "character.male",
+        "tags": [
+          "character",
+          "human",
+          "male",
+          "man",
+          "rigged",
+          "animated"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "cars.car1",
+        "tags": [
+          "vehicle",
+          "car",
+          "car1"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "door_fl_stand",
+          "door_fr_stand",
+          "door_rl_stand",
+          "door_rr_stand",
+          "driver_seat",
+          "passenger_seat",
+          "seat_rear_left",
+          "seat_rear_right",
+          "hood_strike",
+          "door_fl_strike"
+        ],
+        "surfaces": [
+          "roof",
+          "hood",
+          "trunk"
+        ]
+      },
+      {
+        "id": "cars.car2",
+        "tags": [
+          "vehicle",
+          "car",
+          "car2"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "door_l_stand",
+          "door_r_stand",
+          "driver_seat",
+          "passenger_seat",
+          "seat_rear_left",
+          "seat_rear_right",
+          "hood_strike",
+          "door_fl_strike",
+          "door_fl_stand",
+          "door_fr_stand",
+          "door_rl_stand",
+          "door_rr_stand"
+        ],
+        "surfaces": [
+          "roof",
+          "hood",
+          "trunk"
+        ]
+      },
+      {
+        "id": "trees.birch_tree",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "birch"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.birch_tree_lush",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "birch",
+          "lush"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.oak_tree",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "oak"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.oak_tree_lush",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "oak",
+          "lush"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.pine_tree",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "pine"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.pine_tree_lush",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "pine",
+          "lush"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.city_square",
+        "tags": [
+          "building",
+          "environment",
+          "city",
+          "square"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.grand_night_club",
+        "tags": [
+          "building",
+          "environment",
+          "grand",
+          "night",
+          "club"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "corner",
+          "entrance"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.high_end_club_small",
+        "tags": [
+          "building",
+          "environment",
+          "high",
+          "end",
+          "club",
+          "small"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.test_stair_building",
+        "tags": [
+          "building",
+          "stairs",
+          "test"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "stairs_main_bottom",
+          "stairs_main_top"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "cameras.alexa_mini_lf",
+        "tags": [
+          "camera",
+          "alexa",
+          "mini",
+          "lf"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.circle_table",
+        "tags": [
+          "furniture",
+          "circle",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.cupboard_glass",
+        "tags": [
+          "furniture",
+          "cupboard",
+          "glass"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.cupboard_wood",
+        "tags": [
+          "furniture",
+          "cupboard",
+          "wood"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.oval_table",
+        "tags": [
+          "furniture",
+          "oval",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.rounded_square_table",
+        "tags": [
+          "furniture",
+          "rounded",
+          "square",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.square_table",
+        "tags": [
+          "furniture",
+          "square",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      }
+    ],
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "opening_door_inwards",
+      "reaction",
+      "soccer_tripping_down",
+      "start_walking",
+      "spooked",
+      "acknowledging",
+      "arm_stretching",
+      "breakdance_freeze_var_3",
+      "brutal_assassination",
+      "chapa_giratoria",
+      "cheering",
+      "clapping",
+      "climbing",
+      "crawling",
+      "crouch_to_stand",
+      "defeat_expression",
+      "dodging_right",
+      "elbow_punch",
+      "falling",
+      "floating",
+      "head_hit_during_fight",
+      "jogging_with_box",
+      "jumping_down",
+      "kick_to_the_groin",
+      "kiss",
+      "kneeling_down",
+      "left_hook",
+      "macaco_side",
+      "martelo_2",
+      "nervously_look_around",
+      "playing_drums",
+      "pointing_forward",
+      "praying",
+      "pulling_lever",
+      "sad_walk_arc_right",
+      "silly_dancing",
+      "singing",
+      "sitting_clap",
+      "sitting",
+      "slow_jog_backwards",
+      "swimming",
+      "boxing_block",
+      "administering_cpr",
+      "angry_point",
+      "ascending_stairs",
+      "backflip",
+      "basketball_dribble",
+      "being_carried",
+      "being_cocky",
+      "being_strangled",
+      "bored",
+      "braced_hang_shimmy",
+      "button_pushing",
+      "cards",
+      "cartwheel",
+      "casting_a_spell",
+      "charge",
+      "climbing_a_rope",
+      "climbing_down_wall",
+      "climbing_down",
+      "climbing_ladder",
+      "climbing_slanted_roof",
+      "closing_a_lid_or_trunk",
+      "closing",
+      "cocky_head_turn",
+      "combo_punch",
+      "counting",
+      "crawling_backwards",
+      "crazy_gesture",
+      "crouched_sneaking_right",
+      "crying",
+      "descending_stairs_fast",
+      "descending_stairs",
+      "diagonal_wall_run",
+      "digging",
+      "dismissing_gesture",
+      "dive_roll",
+      "dodge_while_sitting",
+      "dodging_back",
+      "driving",
+      "drunk_idle",
+      "dying_and_falling_backwards",
+      "dying",
+      "entering_car",
+      "entering_code",
+      "evading_a_threat",
+      "exiting_car",
+      "fall_flat",
+      "falling_flat_impact",
+      "falling_from_losing_balance",
+      "falling_into_pool_on_back",
+      "falling_into_pool",
+      "falling_in_air_idle",
+      "fast_run",
+      "finding_object_on_ground",
+      "fishing_cast",
+      "fishing_idle",
+      "freehang_drop",
+      "gaming",
+      "getting_up",
+      "grabbing_pistol",
+      "groving_to_music_energetically",
+      "guitar_playing",
+      "happy_hand_gesture",
+      "happy_female_gesture",
+      "having_a_meeting",
+      "hiding_grab",
+      "hit_on_legs",
+      "hit_on_side_of_body",
+      "hit_on_the_back",
+      "holding_down",
+      "honking_horn",
+      "hostage_situation_idle_hostage_with_hands_on_neck",
+      "injured_stumble_idle",
+      "injured_walking",
+      "jogging",
+      "jumping_rope",
+      "kick_soccerball",
+      "kicking",
+      "kneeling_inspecting",
+      "kneeling",
+      "knife_idle",
+      "knocked_down",
+      "knocked_out",
+      "knocked_unconscious_on_chair",
+      "landing_on_four_limbs",
+      "laying_seizure",
+      "lengthy_head_nod",
+      "lifting",
+      "listening_to_music",
+      "looking_around",
+      "looking_down",
+      "looking",
+      "lying_down",
+      "male_confident_standing_pose",
+      "male_sitting_pose",
+      "male_sitting_yoga_pose",
+      "male_relaxed_standing_pose",
+      "moonwalk",
+      "neck_stretching",
+      "open_door_outwards",
+      "opening",
+      "patting",
+      "piano_playing",
+      "pointing_fiinger",
+      "pull_heavy_object",
+      "pulling_a_rope",
+      "punching",
+      "push_stop",
+      "push",
+      "rallying",
+      "rapping",
+      "reacting_startled",
+      "receive_soccerball",
+      "receiving_cpr",
+      "restrain",
+      "rope_swinging",
+      "run_backward",
+      "run_to_dive",
+      "running_up_stairs",
+      "sad_idle",
+      "salute",
+      "searching_files_high",
+      "shaking_hands_2",
+      "shooting_gun",
+      "shoulder_throw_victim",
+      "shrugging",
+      "sideways_stabbing",
+      "sitting_disapproval",
+      "sitting_thumbs_up",
+      "sitting_to_a_chair",
+      "sleeping_idle",
+      "slipping",
+      "smoking",
+      "sneak_walk",
+      "spat_in_face",
+      "speedbag",
+      "spinning",
+      "stable_sword_outward_slash",
+      "stand_to_roll",
+      "stand_to_sit",
+      "standing_arguing",
+      "standing_clap",
+      "standing_up",
+      "standing",
+      "stick_bat_on_hand_idle",
+      "superhero_flying",
+      "sweep_fall",
+      "talking_on_a_cell_phone",
+      "talking_phone_pacing",
+      "talking_casually",
+      "talking_energetically",
+      "talking_expressively",
+      "threatening",
+      "throw_object",
+      "toss_grenade",
+      "tripping",
+      "typing",
+      "using_a_filing_cabinet",
+      "vault_over_box",
+      "victory",
+      "walking_up_the_stairs",
+      "walking_with_shopping_bag",
+      "waving",
+      "wheelchair",
+      "withdrawing_sword",
+      "writhing_in_pain_laying_down",
+      "writing",
+      "yelling_out",
+      "yelling",
+      "backward_walking_turn",
+      "drunk_idle_variation_2",
+      "drunk_idle_variation",
+      "drunk_run_backward",
+      "drunk_run_forward",
+      "drunk_running_left_turn",
+      "drunk_turn",
+      "drunk_walk_backwards",
+      "drunk_walk",
+      "drunk_walking_turn",
+      "machine_gun_gunplay",
+      "run_backward_arc_right"
+    ]
+  },
+  "prompt": "A man runs up the stairs from one side, and the woman runs up the stairs from the other side and they start fight, and after they are tired and they kiss.",
+  "provider": "ide_chat_llm_endpoint",
+  "response_file": "task_queue/llm_response.json",
+  "scene_prompt": "The shot starts with a man standing on the corner smoking, he sees a girl dancing, he walks to her talks a bit, and then they kiss.",
+  "scene_stage": "scenes/scene_07/scene.usda",
+  "stage_type": "shot",
+  "status": "completed",
+  "target_stage": "scenes/scene_07/shot_013/shot.usda",
+  "task_id": "shot_013_20261022_195811",
+  "scene_context": {
+    "objects": [
+      {
+        "name": "Ground",
+        "asset_id": "Ground",
+        "position": [
+          0.0,
+          -0.04,
+          0.0
+        ],
+        "heading_deg": 0.0,
+        "stairs": {}
+      },
+      {
+        "name": "CitySquare",
+        "asset_id": "buildings.city_square",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "heading_deg": 0.0,
+        "stairs": {
+          "ascending_steps": {
+            "width_m": 6.0,
+            "rise_m": 1.7000000017881396,
+            "tread_count": 10
+          },
+          "descending_steps": {
+            "width_m": 6.0,
+            "rise_m": 1.7000000017881394,
+            "tread_count": 10
+          }
+        }
+      }
+    ]
+  },
+  "current_shot_state": {
+    "objects": [
+      {
+        "id": "CitySquare",
+        "asset": "buildings.city_square",
+        "category": "building",
+        "position": [
+          0,
+          -0.36,
+          0
+        ],
+        "heading_deg": 0
+      }
+    ],
+    "camera": {
+      "aspect": 1.78,
+      "focal_mm": 35,
+      "fov_deg": 54.43,
+      "heading_deg": 0,
+      "look_at": [
+        0,
+        0,
+        -5.65
+      ],
+      "path": "/World/ShotCam",
+      "pitch_deg": -8,
+      "position": [
+        0,
+        2.2,
+        10
+      ],
+      "vertical_fov_deg": 32.27
+    }
+  },
+  "director_brief_digest": "",
+  "planner_rules": "You are the PainterSpace General Shot Planner.\nFOUNDATIONAL LAW: Never emit raw (x, y, z) coordinates or `pos(...)` strings.\nAlways compose shots by calling `FunctionCatalog` methods with semantic references:\n- Zone markers: `lane_east.north`, `lane_east.south`, `lane_east.center`, `lane_east.stop_mark`, `lane_west.north`, `lane_west.south`, `sidewalk_east.north`, `sidewalk_west.south`, `plaza.center`\n- Vehicle anchors & surfaces: `car_1:door_fl_stand`, `car_1:door_fr_stand`, `car_1:hood_front`, `car_1:trunk_rear`, `car_1:roof`, `car_1:hood`\n- Relative selectors: `in_front_of(actor, gap)`, `behind(actor, gap)`, `beside(actor, left|right, gap)`, `left_of(actor, gap)`, `right_of(actor, gap)`, `nearest_to(actor, type)`\n- Cardinal directions: `north`, `south`, `east`, `west`\nKeep the starting scene assets exactly as they are. Reuse the listed Current Scene Objects; do not place, replace, remove, or change buildings or other environment assets to make the prompt work. A library asset is not part of the scene unless it appears in Current Scene Objects.\nIf an action needs an asset or feature absent from the starting scene, do not add a substitute asset or invent an anchor. Use only actions the starting assets support.\n- Stair portals on current scene objects: [\"CitySquare:ascending_steps\", \"CitySquare:descending_steps\"]\n- Current Scene Objects: [{\"name\": \"Ground\", \"asset_id\": \"Ground\"}, {\"name\": \"CitySquare\", \"asset_id\": \"buildings.city_square\"}]\n- Available Zones: [\"lane_east\", \"lane_west\", \"sidewalk_east\", \"sidewalk_west\", \"plaza\"]\nCRITICAL EXECUTION RULE: Respond ONLY with the tools call JSON matching schema: `{\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}`. Your execution MUST end there. DO NOT execute scripts, commands, or tools; PainterSpace executes the plan.\nNever emit numeric times, distances, angles or geometry; use named levels and segment IDs.\nThe Director's Brief wins over prose. Locked segments are compiled directly; fill only open windows.\nPreferred choices must use listed alternatives. Report prose conflicts in brief_conflicts.\n",
+  "strict_llm_protocol": {
+    "role": "You are acting STRICTLY as the LLM API endpoint for PainterSpace.",
+    "mandate": "When sending prompt using the task queue, always make sure the LLM responds only with the tools call json, and the execution should end there. make this explicit in the LLM call.",
+    "must_do": [
+      "1. Read this file (task_queue/pending_request.json).",
+      "2. Select function calls from the prompt using function_catalog_schemas and semantic references. An empty action timeline does not cancel the prompt; unassigned drawn paths are optional guides.",
+      "3. Write ONLY the tools call JSON response to task_queue/llm_response.json with schema: {\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}.",
+      "4. Output that JSON block in chat and END YOUR EXECUTION IMMEDIATELY THERE."
+    ],
+    "must_never_do": [
+      "DO NOT run the queue processor, planner, compiler, simulator, animation bake, validator, renderer, or ANY Python/shell commands while handling this pending request.",
+      "DO NOT write or edit .usda files directly.",
+      "DO NOT perform the program's execution or compilation work yourself \u2014 the PainterSpace C++ desktop app watches task_queue/llm_response.json and automatically executes the function calls, compiles shot.usda, and validates collisions itself."
+    ]
+  },
+  "semantic_reference_grammar": {
+    "rule": "Use symbolic references and named gaps only. Never emit numeric geometry, timing or angles.",
+    "examples": [
+      {
+        "at": "lane_east.north"
+      },
+      {
+        "target": "beside(human_1, left, near)"
+      }
+    ]
+  },
+  "function_catalog_schemas": [
+    {
+      "type": "function",
+      "function": {
+        "name": "approach",
+        "description": "Execute approach on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "gait": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "argue",
+        "description": "Execute argue on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "center": {
+              "type": "string"
+            },
+            "intensity": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "attack",
+        "description": "Attack using manifest clips, such as left_hook, elbow_punch or punching.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "moves": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "back_up_to",
+        "description": "Step, jog, or run backward toward target while keeping torso/head facing forward.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "pace": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "board_vehicle",
+        "description": "Scalable function to seat 1, 2, 4, or N occupants into any vehicle.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "occupants": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "occupants"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "brake_to_stop",
+        "description": "Execute brake_to_stop on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "braking": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "carry_to",
+        "description": "Carry a box, bag, or heavy object to a semantic target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "item_style": {
+              "type": "string"
+            },
+            "pace": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "celebrate",
+        "description": "Actor celebrates (`cheer`, `victory`, `clap`, `rally`, `fist_pump`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_plan",
+        "description": "Run plan consistency checks on the current plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "climb_stairs",
+        "description": "Traverse a staircase ascending or descending with cadence matching and continuous elevation.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "stairs": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "pace": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "stairs"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "climb_surface",
+        "description": "Actor climbs up or down a vertical or slanted surface (`wall`, `ladder`, `rope`, `roof`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "close_door",
+        "description": "Execute close_door on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "door_part": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "close_part",
+        "description": "Execute close_part on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "part_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "part_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "collapse_or_knockout",
+        "description": "Actor slips, trips, collapses, or is knocked unconscious (`knocked_out`, `knocked_down`, `dying`, `sweep_fall`, `slip`, `trip`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "converse",
+        "description": "Execute converse on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "center": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "crawl_to",
+        "description": "Crawl low along the ground (forward or backward) toward a semantic target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "dance",
+        "description": "Actor dances (`groove`, `silly`, `breakdance`, `moonwalk`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "defend_or_block",
+        "description": "Actor guards, blocks, or evades a combat strike (`block`, `dodge_back`, `dodge_right`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "threat": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "describe_actor",
+        "description": "Describe actor ID, label, asset, appearance, and role tags.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "disembark_vehicle",
+        "description": "Scalable function to disembark occupants from a vehicle.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "occupants": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "disperse",
+        "description": "Execute disperse on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "dodge",
+        "description": "Execute dodge on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "threat": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "when_closer_than": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive",
+        "description": "Actor acts as driver seated in vehicle, moving with vehicle controls.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_along",
+        "description": "Execute drive_along on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "zone_or_lane": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "zone_or_lane"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_past",
+        "description": "Execute drive_past on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "lateral_gap": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_to",
+        "description": "Execute drive_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_toward",
+        "description": "Execute drive_toward on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "emote",
+        "description": "Actor expresses a distinct emotion or attitude (`cry`, `yell`, `shrug`, `nod`, `dismiss`, `bored`, `salute`, `threaten`, `cocky`, `sad`, `laugh`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "emotion": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "enter_vehicle",
+        "description": "Actor approaches and boards a vehicle seat (`driver_seat`, `passenger_seat`, `seat_rear_left`, `seat_rear_right`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "seat": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "exit_vehicle",
+        "description": "Actor opens vehicle door, rises from seat, and steps out onto the roadway stand anchor.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "door_part": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "fall",
+        "description": "Execute fall on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "find_actor",
+        "description": "Find actor IDs matching descriptive wording (e.g. 'the tall one', 'red jacket').",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "descriptors": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "descriptors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flee_from",
+        "description": "Execute flee_from on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "threat": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "into_zone": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "threat"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flinch",
+        "description": "Execute flinch on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "fly_to",
+        "description": "Fly or levitate/float through the air to a target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "follow",
+        "description": "Execute follow on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "until": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "follow_path",
+        "description": "Follow an authored route by ID; geometry is resolved only by the compiler.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "path_id": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "path_id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "gesture",
+        "description": "Execute gesture on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "move": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "greet",
+        "description": "Execute greet on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "hit_reaction",
+        "description": "Execute hit_reaction on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "strike_move": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "honk_horn",
+        "description": "Driver honks the vehicle horn (`honking_horn`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "huddle",
+        "description": "Execute huddle on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "center": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "hug_or_kiss",
+        "description": "Actor shares an affectionate gesture (`kiss`, `pat`, `comfort`) with another actor.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "inspect_area",
+        "description": "Actor scans or searches the surrounding area (`look_around`, `nervous`, `look_down`, `search_ground`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "interact_object",
+        "description": "Actor manipulates a world prop or mechanism (`push_button`, `pull_lever`, `enter_code`, `open_cabinet`, `search_high`, `dig`, `type`, `write`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jog_to",
+        "description": "Execute jog_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jump_down",
+        "description": "Execute jump_down on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jump_on",
+        "description": "Execute jump_on on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jump_over",
+        "description": "Execute jump_over on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "obstacle": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "obstacle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "kneel",
+        "description": "Actor kneels down on one or both knees (`kneel`, `pray`, `inspect`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "lie_down",
+        "description": "Actor lies down flat on the ground or a surface (`sleep`, `rest`, `writhe`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_actors",
+        "description": "List all currently placed actors in the shot.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_anchors",
+        "description": "List valid anchors for an asset or actor.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_or_actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_or_actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_assets",
+        "description": "List all valid asset IDs and placeable assets in the project library.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_clips",
+        "description": "List available animation clips, optionally filtered by category.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "category": {
+              "type": "string"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_surfaces",
+        "description": "List top surfaces available for jumping or sitting on.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_or_actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_or_actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_zones",
+        "description": "List all named zones authored in the scene.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "look_at",
+        "description": "Execute look_at on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "medical_aid",
+        "description": "Actor administers emergency medical care (`cpr`) to a patient on the ground.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "patient": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "patient"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "open_door",
+        "description": "Execute open_door on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "door_part": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "open_part",
+        "description": "Execute open_part on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "part_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "part_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pace_while_talking",
+        "description": "Walk/pace while talking on a cell phone.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "perform",
+        "description": "Choose an action for a named user segment, or after a segment completion.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "during": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "variant": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "action"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "perform_acrobatics",
+        "description": "Actor performs an acrobatic maneuver (`backflip`, `cartwheel`, `macaco`, `spin`, `breakdance_freeze`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "move": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "perform_activity",
+        "description": "Actor performs a recreational, musical, or athletic activity (`guitar`, `piano`, `drums`, `sing`, `rap`, `basketball`, `soccer_kick`, `jump_rope`, `fish`, `smoke`, `cards`, `gaming`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "activity": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pick_up",
+        "description": "Execute pick_up on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "object_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "object_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "place",
+        "description": "Place an asset instance at a reference with a unique actor record.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_id": {
+              "type": "string"
+            },
+            "at_reference": {
+              "type": "string"
+            },
+            "facing_reference": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "role_tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "appearance": {
+              "type": "string"
+            },
+            "in_vehicle": {
+              "type": "string"
+            },
+            "seat": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string"
+            },
+            "facing": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "place_group",
+        "description": "Place multiple actors in a formation.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "group_name": {
+              "type": "string"
+            },
+            "asset_id": {
+              "type": "string"
+            },
+            "at_reference": {
+              "type": "string"
+            },
+            "formation": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "group_name",
+            "asset_id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pull_object",
+        "description": "Actor pulls a heavy object or rope (`heavy`, `rope`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "push",
+        "description": "Execute push on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "put_down",
+        "description": "Execute put_down on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "react",
+        "description": "Execute react on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "mood": {
+              "type": "string"
+            },
+            "look_at": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "when_closer_than": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "remove",
+        "description": "Remove an actor from the shot.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "reverse_to",
+        "description": "Execute reverse_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run_to",
+        "description": "Execute run_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_appearance",
+        "description": "Customize appearance variant or build.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "color_variant": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            },
+            "tint_rgb": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_lights",
+        "description": "Execute set_lights on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "headlights": {
+              "type": "boolean"
+            },
+            "hazards": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "shake_hands",
+        "description": "Actor shakes hands with another actor (`shaking_hands_2`), automatically facing them.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "shove",
+        "description": "Execute shove on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "sit_in",
+        "description": "Seat character in a vehicle or interior seat anchor (e.g. car_1:driver_seat).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "seat_anchor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "seat_anchor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "sit_on",
+        "description": "Execute sit_on on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "seat_anchor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "seat_anchor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "sneak_to",
+        "description": "Execute sneak_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stand_at",
+        "description": "Execute stand_at on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "facing_reference": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stand_up",
+        "description": "Execute stand_up on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stumble_to",
+        "description": "Limp, stagger, or stumble (injured, drunk, or sad) toward a semantic target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "swim_to",
+        "description": "Swim toward a target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "take_cover",
+        "description": "Execute take_cover on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "throw_toward",
+        "description": "Actor throws an object or projectile toward a target (`overhand`, `toss`, `grenade`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "turn_to_face",
+        "description": "Execute turn_to_face on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "use_phone",
+        "description": "Actor uses a mobile phone (`talk`, `pace`, `text`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "use_weapon",
+        "description": "Actor draws or attacks with a weapon (`pistol`, `rifle`, `sword`, `knife`) against a target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "weapon": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "vault_over",
+        "description": "Actor vaults, hurdles, or dive-rolls over an obstacle (`vault`, `dive_roll`, `roll`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "obstacle": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "obstacle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "wait",
+        "description": "Execute wait on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "until": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "walk_to",
+        "description": "Execute walk_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    }
+  ],
+  "completed_stage": "/Users/vishaljose/PainterSpace/scenes/scene_07/shot_013/shot.usda"
+}

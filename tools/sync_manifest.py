@@ -87,6 +87,7 @@ CATEGORY_BASE_TAGS: dict[str, list[str]] = {
     "vehicles": ["vehicle"],
     "trees": ["tree", "nature", "foliage", "prop"],
     "humans": ["character", "human"],
+    "human_actions": ["animation", "human"],
     "characters": ["character"],
     "props": ["prop"],
     "buildings": ["building", "environment"],
@@ -614,6 +615,10 @@ def sync_manifest(project_root: Path | None = None, manifest_path: Path | None =
                     else:
                         clip_entry.setdefault("stride_speed_mps", 0.0)
                     clips[stem] = clip_entry
+                    continue
+
+                # Keep the action library out of the placeable asset catalog.
+                if subdir == "human_actions":
                     continue
 
                 if rel_path in seen_paths:

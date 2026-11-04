@@ -34,6 +34,12 @@ class TestRegressionIssues(unittest.TestCase):
     def setUp(self):
         self.test_dir = Path(tempfile.mkdtemp(prefix="painterspace_reg_test_"))
         self.manifest_path = REPO_ROOT / "manifest.json"
+        # Compiled shots reference ../../../assets/... relative to the project root,
+        # so the temp project needs the real asset library to bake/bind characters.
+        if not (REPO_ROOT / "assets").exists():
+            shutil.rmtree(self.test_dir, ignore_errors=True)
+            self.skipTest("assets/ is git-ignored and missing; these tests need the real asset library")
+        os.symlink(REPO_ROOT / "assets", self.test_dir / "assets")
 
     def tearDown(self):
         shutil.rmtree(self.test_dir, ignore_errors=True)
@@ -335,6 +341,12 @@ def "World" {
         self.assertGreater(roof_violations[0]["worst_depth_m"], 0.40,
                            "Penetration depth through roof must be accurately reported")
 
+        # Rising beside the door is outside the cabin roof, even while the
+        # time-scoped vehicle transition contact is active.
+        xf_df.GetOrderedXformOps()[0].Set(Gf.Vec3d(-2.5, 0.20, -0.15))
+        rep_outside = validate(st_fail, db, t0=0, t1=0, allow=rules_fail)
+        self.assertFalse(any(v.get("part") == "cabin_roof" for v in rep_outside["violations"]))
+
     # -------------------------------------------------------------------------
     # Prompt Adherence & Scene Snapshot Invalidation Tests
     # -------------------------------------------------------------------------
@@ -553,6 +565,42 @@ def "World" {
         self.assertIn("kick_to_the_groin", clips_a)
         self.assertTrue(len(actions_a.get("look_at_targets", [])) > 0, "Social/combat beats should emit look_at_targets for gaze IK")
 
+    def test_compile_is_independent_of_pythonhashseed(self):
+        """Compiling the same plan under different PYTHONHASHSEED values must be byte-identical."""
+        import hashlib
+        import subprocess
+
+        script = (
+            "import sys, hashlib\n"
+            "from pathlib import Path\n"
+            f"R = Path({str(REPO_ROOT)!r})\n"
+            "for p in ('tools', 'tools/collision', 'tools/shot_library'): sys.path.insert(0, str(R / p))\n"
+            "from compiler import ShotCompiler\n"
+            "from function_catalog import FunctionCatalog\n"
+            "c = ShotCompiler(project_root=R)\n"
+            "cat = FunctionCatalog(c.manifest)\n"
+            "cat.place('character.human', position=[0.0, 0.0, 0.0], label='A')\n"
+            "cat.place('character.human', position=[0.0, 0.0, 1.5], label='B')\n"
+            "cat.argue(actors=['human_1', 'human_2'], intensity='heated', at_time=0.0, for_duration=5.0)\n"
+            "shot = Path(sys.argv[1])\n"
+            "ok, rep = c.compile(cat.plan, shot, validate=False)\n"
+            "assert ok, rep\n"
+            "print(hashlib.sha1(shot.read_bytes()).hexdigest())\n"
+            "print(hashlib.sha1((shot.parent / 'actions_human_1.json').read_bytes()).hexdigest())\n"
+        )
+        shot_path = self.test_dir / "scenes" / "scene_seed" / "shot_001" / "shot.usda"
+        outputs = []
+        for seed in ("1", "2", "12345"):
+            if shot_path.parent.exists():
+                shutil.rmtree(shot_path.parent)
+            env = dict(os.environ, PYTHONHASHSEED=seed)
+            res = subprocess.run([sys.executable, "-c", script, str(shot_path)],
+                                 capture_output=True, text=True, env=env, timeout=120)
+            self.assertEqual(res.returncode, 0, res.stderr[-1500:])
+            outputs.append(res.stdout.strip().splitlines()[-2:])
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
+
     def test_camera_3d_perspective_frustum_validation(self):
         """Verify 3D perspective camera frustum validator catches actors behind camera or off-screen."""
         from camera_controller import CameraController, CameraKeyframe
@@ -632,7 +680,11 @@ def "World" {
             )
             shot_out = self.test_dir / "scenes" / f"scene_gen_{idx}" / "shot_001" / "shot.usda"
             ok_compile, rep = compiler.compile(plan, shot_out, validate=False)
-            self.assertTrue(ok_compile, f"Failed to compile general plan for '{p}': {rep}")
+            if "stairs" in p:
+                self.assertFalse(ok_compile)
+                self.assertEqual(rep["error"]["error_code"], "STAIR_NOT_IN_SCENE")
+            else:
+                self.assertTrue(ok_compile, f"Failed to compile general plan for '{p}': {rep}")
 
     def test_expanded_fundamental_function_catalog(self):
         """Verify all 25 new fundamental building-block functions are exported as LLM tools,
@@ -687,10 +739,10 @@ def "World" {
             "calls": [
                 {"function": "set_environment", "args": {"asset": "residential_avenue", "name": "ResidentialAvenue"}},
                 {"function": "place", "args": {"asset": "mustang_fastback", "name": "Mustang", "pos": {"at": "ResidentialAvenue"}}},
-                {"function": "place", "args": {"asset": "walking", "name": "Hero", "pos": {"near": "Mustang", "side": "left", "dist": 2.5}, "facing": {"facing": "Mustang"}}},
-                {"function": "walk_to", "args": {"actor": "Hero", "target": {"near": "Mustang", "side": "left", "dist": 1.1}, "start": 0, "end": 48}},
-                {"function": "enter_vehicle", "args": {"actor": "Hero", "vehicle": "Mustang", "seat": "driver", "start": 48, "end": 84}},
-                {"function": "camera_frame", "args": {"subjects": ["Hero", "Mustang"], "shot": "wide", "angle": "three_quarter_left", "start": 0, "end": 84}},
+                {"function": "place", "args": {"asset": "walking", "name": "Hero", "pos": {"near": "Mustang", "side": "left", "gap": "near"}, "facing": {"facing": "Mustang"}}},
+                {"function": "walk_to", "args": {"actor": "Hero", "target": "Mustang:door_fl_stand"}},
+                {"function": "enter_vehicle", "args": {"actor": "Hero", "vehicle": "Mustang", "seat": "driver", "after": "human_1.arrived"}},
+                {"function": "camera_frame", "args": {"subjects": ["Hero", "Mustang"], "shot": "wide", "vantage": "eye_level"}},
             ]
         }
 
@@ -700,6 +752,58 @@ def "World" {
         ok_compile, rep = compiler.compile(plan, shot_out, validate=False)
         self.assertTrue(ok_compile, f"Failed to compile LLM JSON plan: {rep}")
         self.assertTrue(shot_out.exists())
+
+    def test_task_queue_llm_call_tools_json_protocol(self):
+        """Verify that when prompts are prepared or sent using the task queue, the LLM call instructions
+        explicitly mandate responding only with the tools call JSON and ending execution immediately there.
+        """
+        from llm_planner import LLMShotPlanner
+        from function_catalog import FunctionCatalog
+        from compiler import ShotCompiler
+        import process_agent_queue
+
+        compiler = ShotCompiler(project_root=REPO_ROOT)
+        catalog = FunctionCatalog(compiler.manifest)
+        planner = LLMShotPlanner(catalog)
+
+        sys_prompt = planner.build_system_prompt()
+        self.assertIn("calls", sys_prompt)
+        self.assertIn("execution MUST end there", sys_prompt)
+        self.assertIn("Keep the starting scene assets exactly as they are", sys_prompt)
+        self.assertIn("Stair portals on current scene objects: []", sys_prompt)
+        existing_scene_prompt = LLMShotPlanner(FunctionCatalog(compiler.manifest, scene_data={
+            "objects": [{"name": "GrandNightClub", "asset": "buildings.grand_night_club"}],
+        })).build_system_prompt()
+        self.assertIn('"GrandNightClub"', existing_scene_prompt)
+        self.assertIn("Stair portals on current scene objects: []", existing_scene_prompt)
+        self.assertNotIn("- Stairs: `stairs_main`", existing_scene_prompt)
+
+        # Test protocol schema in pending tasks
+        dummy_task = {
+            "task_id": "test_shot_001",
+            "prompt": "Two actors walk toward each other",
+            "target_stage": "scenes/scene_01/shot_001/shot.usda",
+            "scene_stage": "scenes/scene_01/scene.usda",
+        }
+        test_pending = self.test_dir / "pending_request.json"
+        orig_pending = process_agent_queue.PENDING_FILE
+        try:
+            process_agent_queue.PENDING_FILE = test_pending
+            test_pending.write_text(json.dumps(dummy_task), encoding="utf-8")
+            ret = process_agent_queue.prepare_pending_task()
+            self.assertEqual(ret, 0)
+            prepared = json.loads(test_pending.read_text(encoding="utf-8"))
+            protocol = prepared.get("strict_llm_protocol", {})
+            self.assertIn("responds only with the tools call json", protocol.get("mandate", "").lower())
+            self.assertIn("end your execution immediately", " ".join(protocol.get("must_do", [])).lower())
+            llm_call = prepared.get("llm_call", {})
+            self.assertIn("tools call json", llm_call.get("instruction", "").lower())
+            self.assertIn("Keep the starting scene assets exactly as they are", llm_call.get("instruction", ""))
+            self.assertIn("execution ends there", llm_call.get("execution_policy", "").lower())
+        finally:
+            process_agent_queue.PENDING_FILE = orig_pending
+            if test_pending.exists():
+                test_pending.unlink()
 
 
 if __name__ == "__main__":

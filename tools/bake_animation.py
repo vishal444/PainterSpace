@@ -15,7 +15,7 @@ import argparse
 import json
 import math
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +83,7 @@ class Action:
     speed: float
     loop: bool
     blend: float
+    speed_keys: list = field(default_factory=list)
 
 
 @dataclass
@@ -250,7 +251,18 @@ def attr_value(attr: Usd.Attribute, time: float, fallback: list[Any]) -> list[An
 
 
 def sample_clip(clip: Clip, output_time: float, action: Action, fallback: Pose) -> Pose:
-    elapsed = max(0.0, (output_time - action.start) * action.speed)
+    relative = max(0., output_time-action.start)
+    elapsed = relative*action.speed
+    if action.speed_keys:
+        elapsed = 0.
+        keys = action.speed_keys
+        for (ta, va), (tb, vb) in zip(keys, keys[1:]):
+            stop = min(relative, tb)
+            if stop > ta:
+                d = stop-ta
+                elapsed += va*d + .5*(vb-va)*d*d/(tb-ta)
+            if relative <= tb: break
+        if relative > keys[-1][0]: elapsed += (relative-keys[-1][0])*keys[-1][1]
     # USD time codes need not start at zero. A one-sample clip is held.
     if clip.duration <= 1e-8:
         source_time = clip.first
@@ -377,7 +389,12 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
         blend_s = raw.get("blend_s", 0.0)
         if not isinstance(blend_s, (int, float)) or blend_s < 0:
             raise BakeError(f"Action '{name}' blend_s must be non-negative")
-        actions.append(Action(clips[name], float(start), float(end), float(speed), loop, float(blend_s)))
+        speed_keys = raw.get("speed_keys", [])
+        if any(len(k) != 2 or any(not isinstance(x, (float, int)) or not math.isfinite(x) for x in k) or k[1] <= 0 for k in speed_keys):
+            raise BakeError("Invalid stride speed keys")
+        if speed_keys and (speed_keys[0][0] != 0 or any(b[0] <= a[0] for a, b in zip(speed_keys, speed_keys[1:]))):
+            raise BakeError("Stride speed keys must start at zero and increase")
+        actions.append(Action(clips[name], float(start), float(end), float(speed), loop, float(blend_s), speed_keys))
 
     for earlier, later in zip(actions, actions[1:]):
         if later.start > earlier.end: warn(f"gap from {earlier.end:g}s to {later.start:g}s; holding pose")
@@ -419,9 +436,7 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
     end_frame = int(math.ceil(duration * fps))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    if output_path.exists():
-        output_path.unlink()
-    stage = Usd.Stage.CreateNew(str(output_path))
+    stage = Usd.Stage.CreateInMemory()
     UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
     UsdGeom.SetStageMetersPerUnit(stage, 1.0)
     stage.SetStartTimeCode(0)
@@ -432,15 +447,31 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
     animation.CreateJointsAttr(Vt.TokenArray(joints))
     rotation_attr, translation_attr, scale_attr = (animation.CreateRotationsAttr(), animation.CreateTranslationsAttr(), animation.CreateScalesAttr())
     held = fallback
+    clip_attr = animation.GetPrim().CreateAttribute("ps:actionClip", Sdf.ValueTypeNames.String)
+    exact_windows = bool(payload.get("exact_windows", False))
     active_clip_name = "idle"
-    for frame in range(end_frame + 1):
+    if exact_windows:
+        sample_frames = {i/2 for i in range(end_frame*2+1)}
+        for action in actions:
+            sample_frames.update((action.start*fps, action.end*fps, max(action.start,action.end-.25)*fps))
+        sample_frames = sorted(f for f in sample_frames if 0 <= f <= end_frame)
+    else:
+        sample_frames = range(end_frame+1)
+    for frame in sample_frames:
         time = frame / fps
         index = action_at(actions, time)
         if index is not None:
             current = actions[index]
             active_clip_name = current.clip.name
             pose = sample_clip(current.clip, time, current, fallback)
-            if index and current.blend > 0 and time < current.start + current.blend:
+            if exact_windows and index + 1 < len(actions):
+                following = actions[index + 1]
+                blend_start = max(current.start, following.start - min(.25, current.end-current.start))
+                if abs(current.end-following.start) < 1e-6 and blend_start <= time < following.start:
+                    next_pose = sample_clip(following.clip, following.start, following, fallback)
+                    weight = (time-blend_start)/max(1e-9, following.start-blend_start)
+                    pose = blend(pose, next_pose, weight)
+            if not exact_windows and index and current.blend > 0 and time < current.start + current.blend:
                 previous = sample_clip(actions[index - 1].clip, time, actions[index - 1], fallback)
                 pose = blend(previous, pose, (time - current.start) / current.blend)
             held = pose
@@ -459,11 +490,15 @@ def bake(character_path: Path, manifest_path: Path, actions_path: Path, output_p
         # Apply procedural breathing micro-motion and gaze IK
         out_pose = apply_procedural_life_and_gaze(out_pose, joints, time, active_clip_name, look_at_targets)
 
+        clip_attr.Set(active_clip_name, frame)
         rotation_attr.Set(Vt.QuatfArray(out_pose.rotations), frame)
         translation_attr.Set(Vt.Vec3fArray(out_pose.translations), frame)
         scale_attr.Set(Vt.Vec3fArray(out_pose.scales), frame)
     stage.SetDefaultPrim(animation.GetPrim())
-    stage.GetRootLayer().Save()
+    stage.GetRootLayer().Export(str(output_path))
+    cached = Sdf.Layer.Find(str(output_path.resolve()))
+    if cached:
+        cached.Reload()
     return end_frame, fps
 
 

@@ -121,7 +121,7 @@ Instead of coordinates, the planner addresses space using semantic expressions r
 ### Mode A: Live LLM Tool-Calling (`_plan_with_llm_api`)
 When `OPENAI_API_KEY` or `PAINTERSPACE_LLM_URL` is set in the environment:
 1. [`_plan_with_llm_api()`](../tools/shot_library/llm_planner.py#L283-L347) sends the system prompt, the user's storyboard prompt, and the `tools` schema to the LLM API (`gpt-4o-mini` by default, configurable via `PAINTERSPACE_LLM_MODEL`).
-2. The LLM responds with a sequence of structured `tool_calls` (or a JSON `{"calls": [...]}` array).
+2. The LLM responds with a sequence of structured `tool_calls` (or a JSON `{"calls": [...]}` or phase-grouped `{"phases": [{"phase": 1, "calls": [...]}, ...]}` payload). When `"phases"` or per-call `"phase"` tags are used in `plan_from_llm_json`, the planner automatically attaches `wait_for` barriers from all beats at the end of phase $N$ onto beats created in phase $N+1$, and `FunctionCatalog.group_fight` attaches shared-phase `wait_for` barriers to both its `run_to` run-in beats and its combat beats. Generated interaction approaches and reaction partners retain these barriers too; reciprocal calls with different barriers are not merged into one interaction.
 3. [`_invoke_catalog_call()`](../tools/shot_library/llm_planner.py#L349-L364) validates each tool call, enforces the Foundational Law (replacing any raw `pos(...)` string if an LLM ever attempts one), and executes the method directly on `self.catalog`.
 
 ### Mode B: Offline Compositional Semantic Planner (`_plan_general_semantic`)
@@ -200,6 +200,8 @@ Inside [`MotionSynthesizer.synthesize_actor()`](../tools/shot_library/motion_syn
 Finally, [`ShotCompiler`](../tools/shot_library/compiler.py) converts the synthesized `Keyframe` arrays into OpenUSD timeSamples:
 1. **`shot.usda` Root Transforms**: Writes `xformOp:translate.timeSamples` (`frame: (x, y, z)`), `xformOp:rotateY.timeSamples` (`frame: -heading_deg`), `xformOp:rotateX.timeSamples`, and nested door hinge `over "Doors" { over "Door_FL" { xformOp:rotateY.timeSamples } }`.
 2. **`ShotCam` Perspective Frustum Transform ([`CameraController.synthesize_camera`](../tools/shot_library/camera_controller.py#L74-L213))**: Computes the 3D bounding box centroid $\mathbf{c}$ and radius $R$ of all tracked actors over $[0, T]$, solves standoff distance $D = (R + \text{margin}) / \tan(\text{FOV} / 2)$, and computes camera `(x, y, z)` and `rotateXYZ = (pitch, yaw, 0)` at every frame.
+   - **Director Mode Coexistence**: When `camera_locked` is set to `True` (Manual Camera Director Mode), the compiler skips camera synthesis. The director's manually authored camera in `user_edits.usda` cleanly overrides `shot.usda` via OpenUSD layer composition strength. Frustum validation runs against the manual camera and emits non-blocking advisory warnings if subjects move out of frame.
+   - **Hybrid Bridge ("Convert LLM Cam → Rig")**: Any LLM-synthesized camera trajectory can be sampled and fitted to an editable Centripetal Catmull-Rom spline rig with arc-length parameterization, easing curves, and subject tracking for further fine-tuning.
 3. **`anim_<actor>.usda` Skeletal Joint Rotations ([`bake_animation.py`](../tools/bake_animation.py))**: Evaluates quaternion `slerp` across all 65 `UsdSkel` joints at $24\text{ fps}$, blends upper-body gesture overlays, adds procedural `Spine2`/`Neck`/`Head` gaze IK rotations toward `look_at_targets`, and binds the animation to `/World/<Actor>` in `shot.usda`.
 
 ---
@@ -245,4 +247,3 @@ catalog.camera_frame(actors=["human_1", "human_2"], style="medium", vantage="eye
 - **Frames 72–130 ($3.0\text{ s}$–$5.4\text{ s}$)**: Triggered by `car_1.stopped`, `Door_FL` swings open $-65^\circ$ and `Door_FR` swings open $+65^\circ$ under a unified `over "Doors"` block while `human_1` and `human_2` step out to `car_1:door_fl_stand` and `car_1:door_fr_stand` at `car_1`'s stopped position.
 - **Frames 130–226 ($5.4\text{ s}$–$9.4\text{ s}$)**: `human_1` and `human_2` turn to face each other, engage procedural head/neck Gaze IK (`look_at_targets`), and alternate non-combat argument gestures (`pointing_forward`, `reaction`, `acknowledging`).
 - **Camera (`/World/ShotCam`)**: Solves the 3D bounding box of `human_1` and `human_2` and frames the action with verified perspective frustum visibility.
-

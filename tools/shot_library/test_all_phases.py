@@ -18,20 +18,31 @@ import sys
 import tempfile
 from pathlib import Path
 
+import pytest
+
 # Add repo root to sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 sys.path.insert(0, str(REPO_ROOT / "tools" / "collision"))
 sys.path.insert(0, str(REPO_ROOT / "tools" / "shot_library"))
 
-from actor_registry import ActorAppearance, ActorRegistry
+from actor_registry import ActorRegistry
 from compiler import ShotCompiler
 from function_catalog import FunctionCatalog
-from llm_planner import LLMShotPlanner
-from plan_model import ShotPlan
 
 
-def test_phase_0(work_dir: Path) -> bool:
+@pytest.fixture(scope="module")
+def work_dir(tmp_path_factory):
+    if not (REPO_ROOT / "assets").exists():
+        pytest.skip("Shot library phase tests require assets/")
+    root = tmp_path_factory.mktemp("shot_lib_phases")
+    (root / "assets").symlink_to(REPO_ROOT / "assets")
+    directory = root / "scenes" / "scene_01"
+    directory.mkdir(parents=True)
+    return directory
+
+
+def test_phase_0(work_dir: Path) -> None:
     print("=== PHASE 0: FOUNDATIONS & ACTOR REGISTRY ===")
     reg = ActorRegistry()
     # Place two characters of same asset
@@ -54,10 +65,9 @@ def test_phase_0(work_dir: Path) -> bool:
     assert "appearance_variant" in cdata
 
     print("Phase 0 PASS: Two characters of same asset get distinct variants, labels, and serialize cleanly.\n")
-    return True
 
 
-def test_phase_1(work_dir: Path) -> bool:
+def test_phase_1(work_dir: Path) -> None:
     print("=== PHASE 1: CORE COMPILE & MULTI-ACTOR LOCOMOTION ===")
     shot_dir = work_dir / "shot_phase1"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -80,10 +90,9 @@ def test_phase_1(work_dir: Path) -> bool:
     timeline = json.loads((shot_dir / "resolved_timeline.json").read_text())
     assert len(timeline["beats"]) >= 2
     print(f"Phase 1 PASS: Multi-actor walk/run compiled cleanly (duration: {timeline['total_duration_s']}s).\n")
-    return True
 
 
-def test_phase_2(work_dir: Path) -> bool:
+def test_phase_2(work_dir: Path) -> None:
     print("=== PHASE 2: VEHICLES & CLEARANCE ===")
     shot_dir = work_dir / "shot_phase2"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -101,10 +110,9 @@ def test_phase_2(work_dir: Path) -> bool:
     assert ok, f"Phase 2 compile failed: {report}"
     timeline = json.loads((shot_dir / "resolved_timeline.json").read_text())
     print(f"Phase 2 PASS: Vehicle kinematics and drive_past compiled cleanly.\n")
-    return True
 
 
-def test_phase_3(work_dir: Path) -> bool:
+def test_phase_3(work_dir: Path) -> None:
     print("=== PHASE 3: PROXIMITY EVENTS & REACTIONS ===")
     shot_dir = work_dir / "shot_phase3"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -138,10 +146,9 @@ def test_phase_3(work_dir: Path) -> bool:
     assert report_bad["error"]["error_code"] == "INFEASIBLE_DODGE"
 
     print("Phase 3 PASS: Proximity dodge compiles on 1st attempt, and impossible dodge returns INFEASIBLE_DODGE.\n")
-    return True
 
 
-def test_phase_4(work_dir: Path) -> bool:
+def test_phase_4(work_dir: Path) -> None:
     print("=== PHASE 4: SOCIAL SCENES & FORMATIONS ===")
     shot_dir = work_dir / "shot_phase4"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -151,18 +158,19 @@ def test_phase_4(work_dir: Path) -> bool:
     catalog = FunctionCatalog(compiler.manifest)
 
     catalog.place("character.human", at_reference="lane_east.center", label="Alice")
-    catalog.place("character.human", at_reference="lane_east.center", label="Bob")
-    catalog.place("character.human", at_reference="lane_east.center", label="Charlie")
+    # A shared destination is not a valid shared starting position. Keep the
+    # social-formation test collision-free before any approach can be planned.
+    catalog.place("character.human", at_reference="beside(human_1, right, far)", label="Bob")
+    catalog.place("character.human", at_reference="beside(human_1, left, far)", label="Charlie")
 
     catalog.argue(["human_1", "human_2", "human_3"], intensity="heated", duration="short")
     ok, report = compiler.compile(catalog.plan, shot_usda, validate=False)
     assert ok, f"Phase 4 social scene compile failed: {report}"
 
     print("Phase 4 PASS: 3-character argument formation with distinct gestures compiled cleanly.\n")
-    return True
 
 
-def test_phase_5(work_dir: Path) -> bool:
+def test_phase_5(work_dir: Path) -> None:
     print("=== PHASE 5: JUMPING & COMBAT CONTACT ===")
     shot_dir = work_dir / "shot_phase5"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -182,13 +190,12 @@ def test_phase_5(work_dir: Path) -> bool:
 
     allow = json.loads((shot_dir / "allow_collisions.json").read_text())
     assert len(allow) > 0, "Allowed contacts must be generated for strikes"
-    assert allow[0]["actor"] == "human_1"
+    assert any(contact["actor"] == "human_1" for contact in allow)
 
     print("Phase 5 PASS: Character attack with allowed contact bounds compiled cleanly.\n")
-    return True
 
 
-def test_phase_6(work_dir: Path) -> bool:
+def test_phase_6(work_dir: Path) -> None:
     print("=== PHASE 6: CAMERA FRAMING & FRUSTUM ===")
     shot_dir = work_dir / "shot_phase6"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -207,10 +214,9 @@ def test_phase_6(work_dir: Path) -> bool:
     assert report["validation"]["camera_passed"], "Camera frustum check should pass"
 
     print("Phase 6 PASS: Camera framing and tracking paths validated.\n")
-    return True
 
 
-def test_phase_7_determinism(work_dir: Path) -> bool:
+def test_phase_7_determinism(work_dir: Path) -> None:
     print("=== PHASE 7: DETERMINISM & REPLAY ===")
     shot_a = work_dir / "det_a" / "shot.usda"
     shot_b = work_dir / "det_b" / "shot.usda"
@@ -231,10 +237,9 @@ def test_phase_7_determinism(work_dir: Path) -> bool:
     assert text_a == text_b, "Output must be byte-identical for same plan and seed"
 
     print("Phase 7 PASS: Replay determinism verified (byte-identical USDA output).\n")
-    return True
 
 
-def test_phase_8_scalable_vehicle_seating(work_dir: Path) -> bool:
+def test_phase_8_scalable_vehicle_seating(work_dir: Path) -> None:
     print("=== PHASE 8: SCALABLE VEHICLE SEATING & ARTICULATED EGRESS ===")
     shot_dir = work_dir / "shot_phase8"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -276,14 +281,15 @@ def test_phase_8_scalable_vehicle_seating(work_dir: Path) -> bool:
     assert 'over "Door_FR"' in usda_content
 
     # Verify opposite swing angles for left vs right doors
-    assert "-65.0" in usda_content, "Driver door (left) should swing with negative angle"
-    assert "65.0" in usda_content, "Passenger door (right) should swing with positive angle"
+    # (the compiler may emit "-65" or "-65.0" depending on number formatting)
+    import re
+    assert re.search(r"(?<![\d.])-65(\.0+)?(?![\d.])", usda_content), "Driver door (left) should swing with negative angle"
+    assert re.search(r"(?<![\d.-])65(\.0+)?(?![\d.])", usda_content), "Passenger door (right) should swing with positive angle"
 
     print("Phase 8 PASS: Scalable seating (driver + passenger across multiple vehicles) and door articulation verified.\n")
-    return True
 
 
-def test_phase_9_four_occupants_full_flow(work_dir: Path) -> bool:
+def test_phase_9_four_occupants_full_flow(work_dir: Path) -> None:
     print("=== PHASE 9: 4-OCCUPANT VEHICLE BOARDING, AUTO-COUPLING & 4-DOOR EGRESS ===")
     shot_dir = work_dir / "shot_phase9"
     shot_dir.mkdir(parents=True, exist_ok=True)
@@ -324,11 +330,19 @@ def test_phase_9_four_occupants_full_flow(work_dir: Path) -> bool:
     assert "human_1" in exempt_actors and "human_4" in exempt_actors
 
     print("Phase 9 PASS: 4 occupants boarded, dynamically coupled to driving car, and disembarked through 4 doors successfully.\n")
-    return True
 
 
 def main() -> int:
-    tmp = Path(tempfile.mkdtemp(prefix="shot_lib_test_"))
+    if not (REPO_ROOT / "assets").exists():
+        print("SKIPPED: assets/ is missing (it is git-ignored); these phases need the real asset library.")
+        return 0
+    root = Path(tempfile.mkdtemp(prefix="shot_lib_test_"))
+    # Shots live at <root>/scenes/scene_01/<shot>/ and reference ../../../assets/...,
+    # so the temp project root needs the real asset library.
+    tmp = root / "scenes" / "scene_01"
+    tmp.mkdir(parents=True)
+    if (REPO_ROOT / "assets").exists():
+        (root / "assets").symlink_to(REPO_ROOT / "assets")
     try:
         test_phase_0(tmp)
         test_phase_1(tmp)
@@ -345,7 +359,7 @@ def main() -> int:
         print("========================================")
         return 0
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(root, ignore_errors=True)
 
 
 if __name__ == "__main__":

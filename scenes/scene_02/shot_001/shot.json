@@ -1,16 +1,101 @@
 {
-  "prompt": "",
+  "prompt": "17 people come out of the buildings and dance together.",
   "version": "1.0",
+  "scene_version": "scene_v1.usda",
   "fps": 24,
-  "duration_s": 9.5,
-  "end_frame": 228,
+  "duration_s": 102.95833333333333,
+  "end_frame": 2471,
   "camera_prim": "/World/ShotCam",
-  "plan_hash": "2393821af2e8aa60",
+  "plan_hash": "9f5a2e82d6baea3d",
   "actors": [
     {
       "actor_id": "human_1",
-      "label": "Driver",
-      "asset_id": "character.human",
+      "label": "human_1",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "prim_path": "/World/human_1"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "human_2",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "prim_path": "/World/human_2"
+    },
+    {
+      "actor_id": "human_3",
+      "label": "human_3",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "prim_path": "/World/human_3"
+    },
+    {
+      "actor_id": "human_4",
+      "label": "human_4",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "prim_path": "/World/human_4"
+    },
+    {
+      "actor_id": "human_5",
+      "label": "human_5",
+      "asset_id": "character.female",
       "role_tags": [],
       "appearance": {
         "color_variant": "charcoal",
@@ -19,27 +104,266 @@
           0.22,
           0.25
         ],
-        "height_scale": 1.04,
-        "descriptive_tags": []
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
       },
-      "prim_path": "/World/Driver"
+      "prim_path": "/World/human_5"
     },
     {
-      "actor_id": "human_2",
-      "label": "Runner",
-      "asset_id": "character.human",
+      "actor_id": "human_6",
+      "label": "human_6",
+      "asset_id": "character.male",
       "role_tags": [],
       "appearance": {
-        "color_variant": "light_beige",
+        "color_variant": "purple",
         "tint_rgb": [
-          0.92,
-          0.88,
-          0.78
+          0.72,
+          0.38,
+          0.82
         ],
-        "height_scale": 0.98,
-        "descriptive_tags": []
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
       },
-      "prim_path": "/World/Runner"
+      "prim_path": "/World/human_6"
+    },
+    {
+      "actor_id": "human_7",
+      "label": "human_7",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "prim_path": "/World/human_7"
+    },
+    {
+      "actor_id": "human_8",
+      "label": "human_8",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "prim_path": "/World/human_8"
+    },
+    {
+      "actor_id": "human_9",
+      "label": "human_9",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "prim_path": "/World/human_9"
+    },
+    {
+      "actor_id": "human_10",
+      "label": "human_10",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "prim_path": "/World/human_10"
+    },
+    {
+      "actor_id": "human_11",
+      "label": "human_11",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      },
+      "prim_path": "/World/human_11"
+    },
+    {
+      "actor_id": "human_12",
+      "label": "human_12",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "purple",
+        "tint_rgb": [
+          0.72,
+          0.38,
+          0.82
+        ],
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
+      },
+      "prim_path": "/World/human_12"
+    },
+    {
+      "actor_id": "human_13",
+      "label": "human_13",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "prim_path": "/World/human_13"
+    },
+    {
+      "actor_id": "human_14",
+      "label": "human_14",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "prim_path": "/World/human_14"
+    },
+    {
+      "actor_id": "human_15",
+      "label": "human_15",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "prim_path": "/World/human_15"
+    },
+    {
+      "actor_id": "human_16",
+      "label": "human_16",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "prim_path": "/World/human_16"
+    },
+    {
+      "actor_id": "human_17",
+      "label": "human_17",
+      "asset_id": "character.female",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      },
+      "prim_path": "/World/human_17"
     }
   ]
 }

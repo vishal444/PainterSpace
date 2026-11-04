@@ -5,27 +5,4 @@
 
 over "World"
 {
-    over "Car1" (
-        active = false
-    )
-    {
-        token visibility = "invisible"
-    }
-
-    def Xform "Car1_2" (
-        active = false
-        customData = {
-            string asset_id = "cars.car1"
-            string forward_axis = "+Z"
-            string world_state_role = "object"
-        }
-        prepend references = @../../../assets/usdc_assets/cars/car1.usda@
-    )
-    {
-        token visibility = "invisible"
-        float3 xformOp:rotateXYZ = (0, 0, 0)
-        double3 xformOp:translate = (0, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
-    }
 }
-

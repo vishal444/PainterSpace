@@ -8,13 +8,16 @@ multi-move combat combos, and parabolic jump arcs.
 from __future__ import annotations
 
 import math
+import heapq
 import random
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+import zlib
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from plan_model import Beat, StructuredError
+from crowd_spacing import DANCE_STYLE_CLIPS, defense_clip, reaction_clip, dialogue_clips
+from plan_model import StructuredError
 from semantic_references import (
     GAP_BETWEEN_BODIES,
     GAP_TO_VEHICLE,
@@ -23,7 +26,47 @@ from semantic_references import (
     heading_from_vector,
     vector_from_heading,
 )
-from timeline_resolver import ResolvedBeat
+from timeline_resolver import JUMP_TAKEOFF_S, ResolvedBeat
+
+# Free space between conservative XZ footprints for ordinary vehicle travel.
+VEHICLE_TRAVEL_CLEARANCE_M = 0.35
+# Space for a walking actor's torso and animated limbs around solid props.
+HUMAN_ROUTE_CLEARANCE_M = 0.65
+# Extra exit clearance keeps the first walking root outside the routing boundary.
+VEHICLE_EXIT_ROUTE_BUFFER_M = 0.15
+# Polygon resolution for collision-safe visibility routes around circular footprints.
+ROUTE_OBSTACLE_SIDES = 20
+# Numeric tolerance for agreement between reserved and synthesized root endpoints.
+ROUTE_ENDPOINT_TOLERANCE_M = 1e-4
+
+
+
+def _stable_hash(text: str) -> int:
+    """Process-independent string hash (Python's built-in hash() is salted per run)."""
+    return zlib.crc32(text.encode("utf-8"))
+
+
+def stair_route_geometry(stair_data: Dict[str, Any], direction: str = "up",
+                         lane_offset_m: float = 0.0, exit_distance_m: float = 0.0
+                         ) -> Tuple[List[List[float]], float, List[float]]:
+    """Return the actual tread route and final position used by stair synthesis."""
+    points = [list(point) for point in stair_data.get("centerline", [])]
+    if direction == "down":
+        points.reverse()
+    if len(points) < 2:
+        raise ValueError("A stair route requires at least two centerline points")
+    dx, dz = points[-1][0] - points[0][0], points[-1][2] - points[0][2]
+    direct_length = max(1e-6, math.hypot(dx, dz))
+    if lane_offset_m:
+        for point in points:
+            point[0] += -dz / direct_length * lane_offset_m
+            point[2] += dx / direct_length * lane_offset_m
+    total_horizontal = max(0.1, sum(
+        math.hypot(b[0] - a[0], b[2] - a[2]) for a, b in zip(points, points[1:])))
+    arrival = [points[-1][0] + exit_distance_m * dx / total_horizontal,
+               points[-1][1],
+               points[-1][2] + exit_distance_m * dz / total_horizontal]
+    return points, total_horizontal, arrival
 
 
 @dataclass
@@ -39,6 +82,7 @@ class Keyframe:
     pitch_deg: float = 0.0
     roll_deg: float = 0.0
     height_offset_m: float = 0.0
+    vehicle_supported: bool = False  # Seat/door motion can place the rig root below the road.
 
 
 @dataclass
@@ -65,9 +109,12 @@ class ActorPerformance:
     ) -> None:
         self.actions.append({
             "clip": clip,
-            "start_s": round(float(t_start), 3),
-            "end_s": round(max(float(t_end), float(t_start) + 0.1), 3),
-            "speed": round(float(speed), 3),
+            # Route splitting can produce valid sub-millisecond segments and
+            # very slow final steps. Rounding can invert their interval or
+            # turn positive playback speed into zero before the bake.
+            "start_s": float(t_start),
+            "end_s": float(t_end),
+            "speed": float(speed),
             "blend_s": float(blend_s),
             "start_frame": int(round(t_start * fps)),
             "end_frame": int(round(t_end * fps)),
@@ -137,6 +184,7 @@ class MotionSynthesizer:
         fps: int = 24,
         ref_resolver: Optional[ReferenceResolver] = None,
         scene_data: Optional[Dict[str, Any]] = None,
+        solid_envelopes: Optional[Any] = None,
     ) -> None:
         self.manifest = manifest
         self.fps = fps
@@ -144,14 +192,104 @@ class MotionSynthesizer:
         self.assets = {a.get("id"): a for a in manifest.get("assets", [])}
         self.ref_resolver = ref_resolver
         self.scene_data = scene_data or {}
+        self.solid_envelopes = solid_envelopes
+        self._vehicle_routes = None
+
+    def _solid_action_radius(self, actor_id: str, beat_id: str = "",
+                             function: str = "") -> float:
+        """Use measured full-body animation reach when available."""
+        envelopes = self.solid_envelopes
+        if envelopes is None or not envelopes.knows(actor_id):
+            return HUMAN_ROUTE_CLEARANCE_M
+        return max(HUMAN_ROUTE_CLEARANCE_M,
+                   envelopes.solid_movement_radius(actor_id, function, beat_id)
+                   + envelopes.buffer_m)
+
+    def _arrival_action_radius(self, actor_id: str, movement_beat: ResolvedBeat,
+                               schedule: List[ResolvedBeat],
+                               include_next_movement: bool = False) -> float:
+        """Reserve the movement pose and following stationary poses."""
+        radius = self._solid_action_radius(actor_id, movement_beat.beat_id,
+                                           movement_beat.function)
+        moving_functions = {
+            "walk_to", "run_to", "jog_to", "sneak_to", "approach", "flee_from",
+            "follow", "disperse", "crawl_to", "stumble_to", "back_up_to",
+            "carry_to", "swim_to", "fly_to", "take_cover", "jump_on",
+            "jump_down", "jump_over", "climb_stairs", "climb_surface",
+            "vault_over", "exit_vehicle", "enter_vehicle",
+        }
+        after_arrival = False
+        for beat in schedule:
+            if beat.beat_id == movement_beat.beat_id:
+                after_arrival = True
+                continue
+            if not after_arrival:
+                continue
+            if beat.function in moving_functions:
+                if include_next_movement:
+                    radius = max(radius, self._solid_action_radius(
+                        actor_id, beat.beat_id, beat.function))
+                break
+            radius = max(radius, self._solid_action_radius(actor_id, beat.beat_id,
+                                                           beat.function))
+        return radius
+
+    def _moving_body_radius(self, asset_id: str) -> float:
+        """Conservative XZ footprint radius from an asset's measured bounds."""
+        bounds = self.assets.get(asset_id, {}).get("bounds_m", [2.0, 1.5, 4.5])
+        return 0.5 * math.hypot(float(bounds[0]), float(bounds[2]))
+
+    def _vehicle_neighbors(self, actor_id: str, other_performances, all_initial_states):
+        """Include synthesized trajectories and as-yet-unsynthesized parked vehicles."""
+        states = dict(all_initial_states or {})
+        for other_id, performance in other_performances.items():
+            states.setdefault(other_id, {"asset_id": performance.asset_id,
+                                         "is_vehicle": performance.is_vehicle})
+        for other_id, state in states.items():
+            if other_id == actor_id:
+                continue
+            asset_id = str(state.get("asset_id", ""))
+            asset = self.assets.get(asset_id, {})
+            if not (state.get("is_vehicle") or "vehicle" in asset.get("tags", [])):
+                continue
+            performance = other_performances.get(other_id)
+            yield other_id, asset_id, performance, state
+
+    def _vehicle_clear_at(self, actor_id, asset_id, position, time_s,
+                          other_performances, all_initial_states, margin_m):
+        radius = self._moving_body_radius(asset_id)
+        for other_id, other_asset, performance, state in self._vehicle_neighbors(
+                actor_id, other_performances, all_initial_states):
+            other_pos = (performance.sample(time_s)[0] if performance and performance.keyframes
+                         else state.get("position", [0.0, 0.0, 0.0]))
+            required = radius + self._moving_body_radius(other_asset) + margin_m
+            if math.hypot(position[0] - other_pos[0], position[2] - other_pos[2]) < required:
+                return False, other_id
+        return True, None
+
+    def _static_vehicle_route(self, start, goal, asset_id):
+        from crowd.config import CrowdSolverConfig
+        from vehicle_routes import VehicleRoutes
+        # Standalone synthesis without a scene remains useful for unit/preview
+        # work. Validated compiler runs already require scene collision coverage.
+        if not self.scene_data.get('support_surfaces') and not self.scene_data.get('solid_boxes'):
+            return [list(start), list(goal)], ''
+        if self._vehicle_routes is None:
+            config = getattr(self.ref_resolver, 'crowd_config', None) or CrowdSolverConfig()
+            self._vehicle_routes = VehicleRoutes(self.scene_data, config)
+        bounds = self.assets.get(asset_id, {}).get('bounds_m')
+        height = float(bounds[1]) if bounds else math.inf
+        return self._vehicle_routes.plan(tuple(start), tuple(goal), self._moving_body_radius(asset_id), height)
 
     def _resolve_vehicle_seat_anchor(
         self,
         vehicle_id: str,
         seat_name: str,
         other_performances: Dict[str, ActorPerformance],
+        occupant_asset_id: Optional[str] = None,
+        occupant_height_scale: float = 1.0,
     ) -> Tuple[List[float], float]:
-        """Resolves local position and facing for any seat on any vehicle asset (data-driven)."""
+        """Resolve a seat and keep the occupant's measured height below its cabin roof."""
         v_perf = other_performances.get(vehicle_id)
         v_asset_id = v_perf.asset_id if v_perf and v_perf.asset_id else ""
         v_asset = self.assets.get(v_asset_id)
@@ -161,17 +299,39 @@ class MotionSynthesizer:
                 None,
             )
 
+        def fit_roof(position: List[float]) -> List[float]:
+            occupant = self.assets.get(occupant_asset_id) if occupant_asset_id else None
+            # A generic fallback anchor may be useful for an unknown vehicle, but
+            # its dimensions must not be used to alter another asset's seat.
+            if (not v_asset or not occupant
+                    or v_asset.get("id") != (v_asset_id or vehicle_id)):
+                return position
+            cabin = v_asset.get("cabin")
+            cabin_max = cabin.get("max", []) if cabin else []
+            roof_y = cabin_max[1] if len(cabin_max) > 1 else None
+            if roof_y is None:
+                bounds = v_asset.get("bounds_m")
+                roof_y = bounds[1] if bounds and len(bounds) > 1 else None
+            bounds_max = occupant.get("bounds_max")
+            head_y = (bounds_max[1] if bounds_max and len(bounds_max) > 1
+                      else occupant.get("collision", {}).get("character", {}).get("height_m"))
+            if roof_y is None or head_y is None:
+                return position
+            fitted = list(position)
+            fitted[1] = min(fitted[1], float(roof_y) - float(head_y) * occupant_height_scale)
+            return fitted
+
         # 1. Author-defined anchor in asset metadata
         if v_asset and "anchors" in v_asset and seat_name in v_asset["anchors"]:
             adata = v_asset["anchors"][seat_name]
-            return list(adata.get("pos", [0.0, 0.0, 0.0])), float(adata.get("facing_deg", 0.0))
+            return fit_roof(list(adata.get("pos", [0.0, 0.0, 0.0]))), float(adata.get("facing_deg", 0.0))
 
         # 2. Derive from steering wheel part if driver seat
         if v_asset and "parts" in v_asset and "driver" in seat_name.lower():
             sw = v_asset["parts"].get("steering_wheel")
             if sw and "hinge" in sw:
                 hx, hy, hz = sw["hinge"]
-                return [hx, max(0.25, hy * 0.40), hz + 0.35], 0.0
+                return fit_roof([hx, max(0.25, hy * 0.40), hz + 0.35]), 0.0
 
         # 3. Derive from physical bounds
         bounds = [2.0, 1.5, 4.5]
@@ -186,7 +346,7 @@ class MotionSynthesizer:
         y_pos = max(0.30, bounds[1] * 0.25)
         z_pos = (bounds[2] * 0.15) if is_rear else (-bounds[2] * 0.05)
 
-        return [x_pos, y_pos, z_pos], 0.0
+        return fit_roof([x_pos, y_pos, z_pos]), 0.0
 
     def _resolve_vehicle_door_stand(
         self,
@@ -238,37 +398,57 @@ class MotionSynthesizer:
         return [x_stand, 0.0, 0.15], facing, base_door_name
 
     def _resolve_stair(self, stair_ref: str) -> Optional[Dict[str, Any]]:
-        """Resolves stair metadata by asset:stair_id, stair_id, or asset_id."""
-        obj_name = None
-        stair_id = stair_ref
-        if ":" in stair_ref:
-            obj_name, stair_id = stair_ref.split(":", 1)
-        elif "." in stair_ref:
-            obj_name, stair_id = stair_ref.split(".", 1)
-
-        for a in self.manifest.get("assets", []):
-            a_id = a.get("id", "")
-            a_label = a.get("label", "")
-            if obj_name and obj_name.lower() not in (a_id.lower(), a_label.lower()):
+        """Resolve a stair on a placed asset and convert its measurements to world space."""
+        instance, separator, stair_id = stair_ref.partition(":")
+        if not separator:
+            instance, stair_id = "", stair_ref
+        assets = self.manifest.get("assets", [])
+        by_id = {asset.get("id"): asset for asset in assets}
+        scene_objects = self.scene_data.get("objects", [])
+        candidates = scene_objects if "objects" in self.scene_data else [
+            {"name": asset.get("id"), "asset": asset.get("id")} for asset in assets]
+        for obj in candidates:
+            asset = by_id.get(obj.get("asset") or obj.get("asset_id"))
+            if not asset:
                 continue
-            stairs = a.get("stairs", {})
-            for sid, sdata in stairs.items():
-                if sid.lower() == stair_id.lower() or not stair_id or stair_id in sid.lower():
-                    return {
-                        "asset_id": a_id,
-                        "stair_id": sid,
-                        "data": sdata,
-                        "levels": a.get("levels", []),
-                    }
-        for a in self.manifest.get("assets", []):
-            for sid, sdata in a.get("stairs", {}).items():
-                if sid.lower() == stair_id.lower() or stair_id.lower() in sid.lower():
-                    return {
-                        "asset_id": a.get("id", ""),
-                        "stair_id": sid,
-                        "data": sdata,
-                        "levels": a.get("levels", []),
-                    }
+            if instance and instance.lower() not in (
+                    str(obj.get("name", "")).lower(), str(asset.get("id", "")).lower(),
+                    str(asset.get("label", "")).lower()):
+                continue
+            for sid, authored in (obj.get("stairs") or asset.get("stairs", {})).items():
+                if stair_id.lower() not in (sid.lower(), str(asset.get("id", "")).lower()):
+                    continue
+                data = dict(authored)
+                matrix = obj.get("world_transform")
+                if matrix and not authored.get("world_space"):
+                    transform = np.array(matrix, dtype=float)
+
+                    def world(point):
+                        p = np.array([*point, 1.0], dtype=float) @ transform
+                        return [float(v) for v in p[:3]]
+
+                    local_line = authored.get("centerline", [])
+                    if len(local_line) >= 2:
+                        data["centerline"] = [world(p) for p in local_line]
+                        first, last = local_line[0], local_line[-1]
+                        dx, dz = last[0] - first[0], last[2] - first[2]
+                        local_length = max(1e-6, math.hypot(dx, dz))
+                        cross = [-dz / local_length, 0.0, dx / local_length]
+                        edge = world([first[i] + cross[i] for i in range(3)])
+                        origin = data["centerline"][0]
+                        width_scale = math.hypot(edge[0] - origin[0], edge[2] - origin[2])
+                        world_line = data["centerline"]
+                        world_length = sum(math.hypot(b[0] - a[0], b[2] - a[2])
+                                           for a, b in zip(world_line, world_line[1:]))
+                        data["width_m"] = float(authored.get("width_m", 0.0)) * width_scale
+                        depth_scale = world_length / local_length
+                        data["treads"] = [{**t, "tread_m": float(t.get("tread_m", 0.3)) * depth_scale,
+                                           "rise_m": float(t.get("rise_m", 0.2)) *
+                                           abs(world_line[-1][1] - world_line[0][1]) /
+                                           max(1e-6, abs(last[1] - first[1]))}
+                                          for t in authored.get("treads", [])]
+                return {"asset_id": asset.get("id", ""), "instance": obj.get("name"),
+                        "stair_id": sid, "data": data, "levels": asset.get("levels", [])}
         return None
 
     def _build_live_actor_states(
@@ -321,7 +501,12 @@ class MotionSynthesizer:
         live_states = self._build_live_actor_states(
             t, actor_id, curr_pos, curr_heading, other_performances, all_initial_states
         )
-        res, err = resolver.resolve(str(target_ref), live_states, t, source_actor_id=actor_id)
+        radius = (self.solid_envelopes.solid_movement_radius(actor_id, beat.function, beat.beat_id)
+                  if self.solid_envelopes is not None and self.solid_envelopes.knows(actor_id) else None)
+        resolve_target = (resolver.resolve_facing if beat.function in ('turn_to_face', 'look_at')
+                          else resolver.resolve)
+        res, err = resolve_target(target_ref, live_states, t, source_actor_id=actor_id,
+                                    clearance_radius_m=radius)
         if not err and res is not None:
             return res
         return fallback_target
@@ -335,6 +520,7 @@ class MotionSynthesizer:
         end_pos: List[float],
         other_performances: Dict[str, ActorPerformance],
         scene_data: Optional[Dict[str, Any]] = None,
+        actor_radius_m: float = HUMAN_ROUTE_CLEARANCE_M,
     ) -> List[Dict[str, float]]:
         """Collect 2D XZ obstacle circles/boxes active during [t_start, t_end] for path avoidance."""
         obstacles: List[Dict[str, float]] = []
@@ -359,7 +545,7 @@ class MotionSynthesizer:
             obstacles.append({
                 "cx": float(pos[0]),
                 "cz": float(pos[2]),
-                "radius": radius + 0.38,
+                "radius": radius + actor_radius_m,
             })
 
         # 2. Other vehicles / actors present at t_mid
@@ -368,14 +554,14 @@ class MotionSynthesizer:
                 continue
             opos, _ = operf.sample(t_mid)
             if operf.is_vehicle:
-                v_meta = self.assets.get(operf.asset_id, {})
-                bounds = v_meta.get("bounds_m", [2.0, 1.5, 4.5])
-                radius = 0.5 * min(float(bounds[0]), float(bounds[2])) + 0.45
+                radius = self._moving_body_radius(operf.asset_id) + actor_radius_m
             else:
-                radius = 0.65
-            if math.hypot(start_pos[0] - opos[0], start_pos[2] - opos[2]) < radius + 0.35:
+                radius = actor_radius_m
+            # An actor may intentionally begin or finish a vehicle interaction
+            # within its footprint. Such a route needs a separate contact beat.
+            if math.hypot(start_pos[0] - opos[0], start_pos[2] - opos[2]) < radius:
                 continue
-            if math.hypot(end_pos[0] - opos[0], end_pos[2] - opos[2]) < radius + 0.35:
+            if math.hypot(end_pos[0] - opos[0], end_pos[2] - opos[2]) < radius:
                 continue
             obstacles.append({
                 "cx": float(opos[0]),
@@ -385,6 +571,89 @@ class MotionSynthesizer:
 
         return obstacles
 
+    def _spaced_actor_destination(
+        self,
+        actor_id: str,
+        target_id: str,
+        target_pos: List[float],
+        start_pos: List[float],
+        arrival_time: float,
+        other_performances: Dict[str, ActorPerformance],
+        all_initial_states: Optional[Dict[str, Dict[str, Any]]],
+        scene_data: Optional[Dict[str, Any]],
+        actor_radius_m: float = HUMAN_ROUTE_CLEARANCE_M,
+    ) -> Optional[List[float]]:
+        """Reserve a supported arrival position near an actor without stacking arrivals."""
+        from support_surfaces import (ACTOR_SUPPORT_MARGIN_M, STANDING_SPOT_SPACING_M,
+                                      SUPPORT_LEVEL_TOLERANCE_M, contains)
+
+        target_perf = other_performances.get(target_id)
+        if target_perf and target_perf.keyframes:
+            target_pos, _ = target_perf.sample(arrival_time)
+        occupied = []
+        for other_id, state in (all_initial_states or {}).items():
+            if other_id in (actor_id, target_id):
+                continue
+            performance = other_performances.get(other_id)
+            position = (performance.sample(arrival_time)[0]
+                        if performance and performance.keyframes else state.get("position"))
+            if position and abs(float(position[1]) - float(target_pos[1])) <= SUPPORT_LEVEL_TOLERANCE_M:
+                occupied.append(position)
+        for other_id, performance in other_performances.items():
+            if other_id in (actor_id, target_id) or other_id in (all_initial_states or {}):
+                continue
+            if performance.keyframes:
+                position, _ = performance.sample(arrival_time)
+                if abs(position[1] - target_pos[1]) <= SUPPORT_LEVEL_TOLERANCE_M:
+                    occupied.append(position)
+        vehicle_exclusions = [
+            (performance.sample(arrival_time)[0],
+             self._moving_body_radius(performance.asset_id) + actor_radius_m)
+            for performance in other_performances.values()
+            if performance.is_vehicle and performance.keyframes
+        ]
+
+        surfaces = [surface for surface in (scene_data or self.scene_data).get("support_surfaces", [])
+                    if abs(float(surface["height_m"]) - float(target_pos[1]))
+                    <= SUPPORT_LEVEL_TOLERANCE_M]
+        dx, dz = start_pos[0] - target_pos[0], start_pos[2] - target_pos[2]
+        base_angle = math.atan2(dz, dx)
+        clearance = STANDING_SPOT_SPACING_M
+        best = None
+        # Each additional ring can hold more actors. The number of rings grows
+        # from the number of potential arrivals, not from a particular shot.
+        required_rings = max(
+            (math.ceil((math.hypot(target_pos[0] - position[0],
+                                   target_pos[2] - position[2]) + radius_m)
+                       / clearance)
+             for position, radius_m in vehicle_exclusions),
+            default=1,
+        )
+        for ring in range(1, max(len(occupied) + 2, required_rings + 1)):
+            radius = clearance * ring
+            slots = max(8, math.ceil(2.0 * math.pi * radius / clearance))
+            candidates = []
+            for index in range(slots):
+                angle = base_angle + 2.0 * math.pi * index / slots
+                candidate = [target_pos[0] + radius * math.cos(angle),
+                             target_pos[1],
+                             target_pos[2] + radius * math.sin(angle)]
+                if surfaces and not any(contains(surface, candidate, ACTOR_SUPPORT_MARGIN_M)
+                                        for surface in surfaces):
+                    continue
+                if any(math.hypot(candidate[0] - other[0], candidate[2] - other[2])
+                       < clearance for other in occupied):
+                    continue
+                if any(math.hypot(candidate[0] - position[0], candidate[2] - position[2]) < radius_m
+                       for position, radius_m in vehicle_exclusions):
+                    continue
+                candidates.append(candidate)
+            if candidates:
+                best = min(candidates, key=lambda point: math.hypot(
+                    point[0] - start_pos[0], point[2] - start_pos[2]))
+                break
+        return best
+
     def _plan_smooth_path(
         self,
         start_pos: List[float],
@@ -392,7 +661,7 @@ class MotionSynthesizer:
         obstacles: List[Dict[str, float]],
         n_samples: int = 32,
     ) -> List[List[float]]:
-        """Route around blocking XZ obstacles and smooth via centripetal Catmull-Rom spline."""
+        """Find a collision-safe visibility route around circular XZ footprints."""
         dx = end_pos[0] - start_pos[0]
         dz = end_pos[2] - start_pos[2]
         seg_len = math.hypot(dx, dz)
@@ -401,37 +670,78 @@ class MotionSynthesizer:
 
         ux = dx / seg_len
         uz = dz / seg_len
-        nx = -uz
-        nz = ux
+        def segment_distance(a, b, cx, cz):
+            vx, vz = b[0] - a[0], b[2] - a[2]
+            along = max(0.0, min(1.0, ((cx - a[0]) * vx + (cz - a[2]) * vz)
+                                      / max(1e-12, vx * vx + vz * vz)))
+            return math.hypot(a[0] + along * vx - cx, a[2] + along * vz - cz)
 
-        # Check which obstacles intersect the straight line segment
-        blocking: List[Tuple[float, Dict[str, float], float]] = []
+        blocking = []
         for obs in obstacles:
-            rel_x = obs["cx"] - start_pos[0]
-            rel_z = obs["cz"] - start_pos[2]
-            proj = rel_x * ux + rel_z * uz
-            if 0.1 * seg_len < proj < 0.9 * seg_len:
-                lat = rel_x * nx + rel_z * nz
-                if abs(lat) < obs["radius"]:
-                    blocking.append((proj, obs, lat))
+            if segment_distance(start_pos, end_pos, obs["cx"], obs["cz"]) < obs["radius"]:
+                blocking.append(obs)
 
         if not blocking:
             return [list(start_pos), list(end_pos)]
 
-        blocking.sort(key=lambda item: item[0])
-        control_pts: List[List[float]] = [list(start_pos)]
-        for proj, obs, lat in blocking:
-            # Detour to the side of the obstacle opposite to its center offset from the line
-            side_sign = -1.0 if lat >= 0.0 else 1.0
-            detour_offset = obs["radius"] + 0.35
-            wp_x = obs["cx"] + nx * side_sign * detour_offset
-            wp_z = obs["cz"] + nz * side_sign * detour_offset
-            wp_y = start_pos[1] + (end_pos[1] - start_pos[1]) * (proj / seg_len)
-            control_pts.append([wp_x, wp_y, wp_z])
-        control_pts.append(list(end_pos))
+        # Include nearby circles that a detour could encounter. The radius of
+        # blocking circles determines the local search corridor.
+        reach = 2.0 * max(obs["radius"] for obs in blocking)
+        nearby = [obs for obs in obstacles if segment_distance(
+            start_pos, end_pos, obs["cx"], obs["cz"]) <= obs["radius"] + reach]
+        nodes = [list(start_pos), list(end_pos)]
+        for obs in nearby:
+            # Expand the vertex ring so its straight chords stay outside the
+            # original circle, including between adjacent waypoints.
+            ring_radius = (obs["radius"] + 0.05) / math.cos(math.pi / ROUTE_OBSTACLE_SIDES)
+            for index in range(ROUTE_OBSTACLE_SIDES):
+                angle = 2.0 * math.pi * index / ROUTE_OBSTACLE_SIDES
+                x = obs["cx"] + ring_radius * math.cos(angle)
+                z = obs["cz"] + ring_radius * math.sin(angle)
+                if any(math.hypot(x - other["cx"], z - other["cz"]) < other["radius"]
+                       for other in nearby if other is not obs):
+                    continue
+                projection = max(0.0, min(1.0, ((x - start_pos[0]) * ux + (z - start_pos[2]) * uz) / seg_len))
+                nodes.append([x, start_pos[1] + (end_pos[1] - start_pos[1]) * projection, z])
 
-        # Evaluate Catmull-Rom spline through control_pts
-        return self._evaluate_catmull_rom_chain(control_pts, n_samples=n_samples)
+        def visible(a, b):
+            return all(segment_distance(a, b, obs["cx"], obs["cz"]) >= obs["radius"]
+                       for obs in nearby)
+
+        distances = [math.inf] * len(nodes)
+        parents = [-1] * len(nodes)
+        distances[0] = 0.0
+        frontier = [(0.0, 0)]
+        visited = set()
+        while frontier:
+            distance, index = heapq.heappop(frontier)
+            if index in visited:
+                continue
+            if index == 1:
+                break
+            visited.add(index)
+            for next_index in range(1, len(nodes)):
+                if next_index in visited or next_index == index or not visible(nodes[index], nodes[next_index]):
+                    continue
+                edge = math.hypot(nodes[index][0] - nodes[next_index][0],
+                                  nodes[index][2] - nodes[next_index][2])
+                candidate = distance + edge
+                if candidate < distances[next_index]:
+                    distances[next_index] = candidate
+                    parents[next_index] = index
+                    heapq.heappush(frontier, (candidate, next_index))
+        if not math.isfinite(distances[1]):
+            return []
+        route = []
+        index = 1
+        while index != -1:
+            route.append(nodes[index])
+            index = parents[index]
+        route.reverse()
+        if any(segment_distance(a, b, obs["cx"], obs["cz"]) < obs["radius"]
+               for a, b in zip(route, route[1:]) for obs in obstacles):
+            return []
+        return route
 
     def _evaluate_catmull_rom_chain(
         self, points: List[List[float]], n_samples: int = 32
@@ -517,9 +827,10 @@ class MotionSynthesizer:
         ref_resolver: Optional[ReferenceResolver] = None,
         scene_data: Optional[Dict[str, Any]] = None,
         all_initial_states: Optional[Dict[str, Dict[str, Any]]] = None,
+        stop_at_time: Optional[float] = None,
     ) -> Tuple[Optional[ActorPerformance], Optional[StructuredError]]:
         """Synthesize continuous keyframes and performance clips for one actor across all beats."""
-        rng = random.Random(seed + hash(actor_id) % 1000)
+        rng = random.Random(seed + _stable_hash(actor_id) % 1000)
         is_vehicle = initial_state.get("is_vehicle", False) or "car" in actor_id or "car" in initial_state.get("asset_id", "")
         perf = ActorPerformance(
             actor_id=actor_id,
@@ -534,6 +845,10 @@ class MotionSynthesizer:
 
         # Seating and vehicle attachment state for characters
         seated_vehicle = initial_state.get("seated_vehicle")
+        appearance = initial_state.get("appearance")
+        occupant_height_scale = float(
+            appearance.get("height_scale", 1.0) if isinstance(appearance, dict)
+            else getattr(appearance, "height_scale", 1.0))
         seat_anchor_name = initial_state.get("seat_anchor", "driver_seat") or "driver_seat"
         at_ref = initial_state.get("at_reference", "")
         if not seated_vehicle and at_ref and ":" in at_ref:
@@ -543,7 +858,9 @@ class MotionSynthesizer:
                 seat_anchor_name = ref_sub
 
         if not is_vehicle and seated_vehicle and seated_vehicle in other_performances:
-            local_seat, local_facing = self._resolve_vehicle_seat_anchor(seated_vehicle, seat_anchor_name, other_performances)
+            local_seat, local_facing = self._resolve_vehicle_seat_anchor(
+                seated_vehicle, seat_anchor_name, other_performances,
+                initial_state.get("asset_id"), occupant_height_scale)
             v_perf = other_performances[seated_vehicle]
             v_pos, v_heading = v_perf.sample(0.0)
             theta = math.radians(v_heading)
@@ -559,11 +876,25 @@ class MotionSynthesizer:
         dt = 1.0 / self.fps
 
         for beat in sorted_beats:
+            # Planning can request a physical prefix while keeping the full
+            # schedule available for animation-reach reservations at its end.
+            if stop_at_time is not None and beat.start_time >= stop_at_time - 1e-9:
+                break
             fn = beat.function
             t_start = beat.start_time
             t_end = beat.end_time
             dur = max(0.01, t_end - t_start)
             target_ref = beat.params.get("target") or beat.params.get("to")
+            # Older plans represented boarding as sit_in. Only an occupant
+            # already coupled to this vehicle may use the seated hold branch;
+            # an outside actor must pass through the entry transition.
+            if fn == "sit_in":
+                host = beat.params.get("vehicle")
+                if not host and isinstance(target_ref, str) and ":" in target_ref:
+                    host = target_ref.split(":", 1)[0]
+                if (host in other_performances and other_performances[host].is_vehicle
+                        and seated_vehicle != host):
+                    fn = "enter_vehicle"
             # Dynamic beat-start reference resolution against live trajectories at t_start
             target = self._resolve_target_at_time(
                 beat=beat,
@@ -576,6 +907,127 @@ class MotionSynthesizer:
                 all_initial_states=all_initial_states,
                 ref_resolver=ref_resolver,
             )
+            paired_positions = beat.params.get("interaction_positions") or {}
+            paired_position = ((paired_positions.get(target_ref) if isinstance(target_ref, str) else None)
+                               or beat.params.get("paired_target_position"))
+            if paired_position is not None and target_ref not in other_performances:
+                target = ResolvedTarget(
+                    position=np.array(paired_position, dtype=float),
+                    facing_deg=0.0,
+                    clearance_radius=0.35,
+                    target_type="actor",
+                    target_name=str(target_ref),
+                )
+
+            if beat.params.get("variant"):
+                from director_brief import ACTION_SPEEDS
+                if fn not in ACTION_SPEEDS and fn != "attack":
+                    beat.params["in_place_clip"] = beat.params["variant"]
+                beat.params["clip"] = beat.params["variant"]
+                if fn == "attack":
+                    beat.params["moves"] = [beat.params["variant"]]
+            if beat.params.get("in_place_clip"):
+                clip = beat.params["in_place_clip"]
+                if clip not in self.clips:
+                    return None, StructuredError("BRIEF_CLIP", f"Missing clip {clip}", beat_id=beat.beat_id)
+                perf.add_action(clip, t_start, t_end, fps=self.fps)
+                for i in range(math.ceil(dur*self.fps)+1):
+                    perf.keyframes.append(Keyframe(min(t_end,t_start+i/self.fps), list(curr_pos), curr_heading, action_clip=clip))
+                continue
+            # A manifest clip is an admissible timeline action, with no free-text fallback.
+            if fn in self.clips and not beat.params.get("brief_path"):
+                perf.add_action(fn, t_start, t_end, fps=self.fps, blend_s=min(.25, dur))
+                for i in range(max(1, math.ceil(dur*self.fps))+1):
+                    t = min(t_end, t_start+i/self.fps)
+                    perf.keyframes.append(Keyframe(t, list(curr_pos), curr_heading, action_clip=fn))
+                continue
+
+            # User geometry is resolved here, never by the planner. Exact path windows
+            # bypass autonomous routing so a compiler cannot silently redraw intent.
+            if beat.params.get("brief_path"):
+                from director_brief import resolve_path_for_actor, ACTION_SPEEDS, path_metrics
+                path = dict(beat.params["brief_path"])
+                if (beat.params.get('auto_crowd_movement') and path.get('points')
+                        and math.dist(curr_pos, path['points'][0]) > ROUTE_ENDPOINT_TOLERANCE_M):
+                    return None, StructuredError(
+                        'PLANNED_ROUTE_DISCONTINUITY',
+                        'The reserved route does not start at the synthesized actor position.',
+                        beat_id=beat.beat_id, actor_id=actor_id,
+                        details={'actual_start_m': list(curr_pos),
+                                 'planned_start_m': list(path['points'][0])})
+                action = beat.params.get("action", fn)
+                gait = ACTION_SPEEDS.get(action, (0, 0, "walk"))[2]
+                clip = beat.params.get("variant") or ("run" if gait in ("jog", "sprint") else gait)
+                jump_spans = []
+                if not is_vehicle:
+                    from support_surfaces import project_drawn_route
+                    path["points"], jump_spans = project_drawn_route(
+                        path["points"], self.scene_data.get("support_surfaces", []),
+                        float(curr_pos[1]), self.scene_data.get("solid_boxes", []))
+                length = path_metrics(path)["length_m"]
+                stationary = length == 0.0
+                if stationary:
+                    # A destination can already be reached after allocation or
+                    # replanning. Keep its hold and completion event, using the
+                    # same resting clip as wait rather than a zero-speed gait.
+                    clip = 'acknowledging'
+                if not is_vehicle and clip not in self.clips:
+                    return None, StructuredError("BRIEF_CLIP", f"Missing clip {clip}", beat_id=beat.beat_id)
+                speed = length / dur
+                nominal = {"walk": 1.4, "run": 4.2, "jog": 2.6, "sprint": 6.0}.get(gait, speed or 1)
+                samples = resolve_path_for_actor(path, (t_start, t_end))
+                jump_windows = []
+                if jump_spans:
+                    # The route sampler includes every vertex at its traversal
+                    # time, even with easing. Match vertices in order so clip
+                    # windows follow the actual speed profile.
+                    vertex_times = []
+                    sample_index = 0
+                    for vertex in path["points"]:
+                        while sample_index < len(samples) - 1 and math.dist(samples[sample_index][1], vertex) > 1e-5:
+                            sample_index += 1
+                        vertex_times.append(samples[sample_index][0])
+                    jump_windows = [(vertex_times[a], vertex_times[b]) for a, b in jump_spans]
+                if not is_vehicle:
+                    cursor = t_start
+                    for jump_start, jump_end in jump_windows:
+                        if jump_start > cursor + 1e-6:
+                            perf.add_action(clip, cursor, jump_start, fps=self.fps,
+                                            speed=1.0 if stationary else speed/nominal,
+                                            blend_s=min(.25, jump_start - cursor))
+                        perf.add_action("jump", jump_start, jump_end, fps=self.fps,
+                                        blend_s=min(.1, jump_end - jump_start))
+                        cursor = jump_end
+                    if t_end > cursor + 1e-6 or not jump_windows:
+                        perf.add_action(clip, cursor, t_end, fps=self.fps,
+                                        speed=1.0 if stationary else speed/nominal,
+                                        blend_s=min(.25, t_end - cursor))
+                if not is_vehicle and not stationary and path.get("speed_profile") == "ease_in_out" and not jump_windows:
+                    low, high = path.get("speed_band", [0, speed*1.5])
+                    strength = max(0., min(.5, 1-low/max(1e-9,speed), high/max(1e-9,speed)-1))
+                    perf.actions[-1]["speed_keys"] = [[t-t_start, speed*(1-strength*math.cos(2*math.pi*(t-t_start)/dur))/nominal] for t, _, _ in samples]
+                # Replace the preceding endpoint to make the new action own the boundary.
+                perf.keyframes = [k for k in perf.keyframes if k.time_s < t_start]
+                last_pos, last_heading, last_time = samples[0][1], samples[0][2], samples[0][0]
+                for t, pos, heading in samples:
+                    if stationary:
+                        heading = curr_heading
+                    step = math.dist(last_pos, pos)
+                    current_speed = step/max(1e-9, t-last_time) if t > last_time else speed
+                    steering = 0.
+                    if is_vehicle:
+                        curr_wheel_spin += math.degrees(step/wheel_radius)
+                        delta = math.radians((heading-last_heading+180)%360-180)
+                        steering = math.degrees(math.atan(wheelbase*delta/max(1e-6,step))) if step > 0 else 0.
+                    sample_clip = ("jump" if any(a - 1e-6 <= t <= b + 1e-6
+                                                 for a, b in jump_windows) else clip)
+                    perf.keyframes.append(Keyframe(t, pos, heading, speed_mps=current_speed, action_clip=sample_clip,
+                                                  wheel_spin_deg=curr_wheel_spin, steering_deg=steering))
+                    last_pos, last_heading, last_time = pos, heading, t
+                curr_pos = list(samples[-1][1])
+                if not stationary:
+                    curr_heading = samples[-1][2]
+                continue
 
             # -------------------------------------------------------------
             # 1. VEHICLE FUNCTIONS
@@ -590,11 +1042,18 @@ class MotionSynthesizer:
                         end_pos = list(target.position)
                         if fn == "drive_toward":
                             if mode == "stop_short":
-                                gap = GAP_TO_VEHICLE.get(str(beat.params.get("gap", "near")).lower(), 1.8)
+                                gap = (ref_resolver or self.ref_resolver or ReferenceResolver(self.manifest)).resolve_gap(
+                                    beat.params.get("gap", "near"), is_vehicle=True)
+                                target_state = (all_initial_states or {}).get(str(target_ref), {})
+                                target_perf = other_performances.get(str(target_ref))
+                                target_asset = target_state.get("asset_id") or (target_perf.asset_id if target_perf else "")
+                                target_radius = (self._moving_body_radius(target_asset)
+                                                 if target_asset else float(target.clearance_radius))
+                                gap += self._moving_body_radius(perf.asset_id) + target_radius
                                 dir_vec = np.array(end_pos) - np.array(curr_pos)
                                 dir_len = np.linalg.norm(dir_vec[[0, 2]])
                                 if dir_len > 1e-3:
-                                    end_pos = list(np.array(end_pos) - (dir_vec / dir_len) * gap)
+                                    end_pos = list(np.array(curr_pos) + (dir_vec / dir_len) * max(0.0, dir_len - gap))
                             elif mode == "near_miss":
                                 end_pos[0] += 0.8
                             elif mode == "collide":
@@ -605,7 +1064,17 @@ class MotionSynthesizer:
                         dist = dur * (3.0 if is_reverse else 6.0)
                         end_pos = [curr_pos[0] + sign_dir * fwd_x * dist, curr_pos[1], curr_pos[2] + sign_dir * fwd_z * dist]
 
-                    dist_to_travel = math.hypot(end_pos[0] - curr_pos[0], end_pos[2] - curr_pos[2])
+                    route, route_error = self._static_vehicle_route(curr_pos, end_pos, perf.asset_id)
+                    if route is None:
+                        return None, StructuredError(
+                            'VEHICLE_ROUTE_LIMIT',
+                            f"No supported, clear vehicle route for '{actor_id}': {route_error}.",
+                            beat_id=beat.beat_id, actor_id=actor_id,
+                            details={'reason': route_error, 'start': list(curr_pos), 'destination': end_pos},
+                            suggestions=['Choose a reachable destination or adjust placement within the requested region.'])
+                    from vehicle_routes import prefix_route
+                    from director_brief import resolve_path_for_actor
+                    dist_to_travel = sum(math.dist(a, b) for a, b in zip(route, route[1:]))
                     v_max = 16.0
                     a_brake = 7.5 if beat.params.get("braking") == "emergency" else 4.5
                     min_brake_dist = (v_max * 0.5) ** 2 / (2.0 * a_brake)
@@ -631,18 +1100,67 @@ class MotionSynthesizer:
 
                     heading_diff = (travel_heading - curr_heading + 180.0) % 360.0 - 180.0
 
-                    for frame_idx in range(n_frames + 1):
-                        f_time = t_start + frame_idx * dt
-                        u = frame_idx / float(n_frames)
-                        s = 3.0 * (u ** 2) - 2.0 * (u ** 3)
-                        pos = [
-                            curr_pos[0] + dx * s,
-                            curr_pos[1] + (end_pos[1] - curr_pos[1]) * s,
-                            curr_pos[2] + dz * s,
-                        ]
-                        v_inst = (6.0 * u * (1.0 - u)) * (dist_to_travel / dur) if dur > 0 else 0.0
+                    from crowd.config import CrowdSolverConfig
+                    from crowd.st_planner import Reservation, blocked_intervals
+                    clearance_config = replace(
+                        getattr(self.ref_resolver, 'crowd_config', None) or CrowdSolverConfig(),
+                        buffer_m=VEHICLE_TRAVEL_CLEARANCE_M)
+                    neighbors = [Reservation(other_id,
+                        [(k.time_s, *k.position) for k in performance.keyframes]
+                        if performance and performance.keyframes else [(t_start, *state['position'])],
+                        self._moving_body_radius(other_asset))
+                        for other_id, other_asset, performance, state in self._vehicle_neighbors(
+                            actor_id, other_performances, all_initial_states)]
 
-                        delta_dist = (dist_to_travel / n_frames) if n_frames > 0 else 0.0
+                    def trajectory_clear(scale):
+                        # Test the actual piecewise-linear motion continuously;
+                        # fast crossings between frames must not slip through.
+                        samples = resolve_path_for_actor(
+                            {'points': prefix_route(route, scale), 'speed_profile': 'ease_in_out'},
+                            (t_start, t_end), self.fps * 2)
+                        for (ta, a, _), (tb, b, _) in zip(samples, samples[1:]):
+                            if blocked_intervals(a, b, ta, tb, self._moving_body_radius(perf.asset_id),
+                                                 neighbors, clearance_config):
+                                return False, 'vehicle_trajectory'
+                        return True, None
+
+                    travel_scale = 1.0
+                    if mode != "collide" and not trajectory_clear(1.0)[0]:
+                        if not trajectory_clear(0.0)[0]:
+                            return None, StructuredError(
+                                "MOVING_OBJECT_CLEARANCE",
+                                f"'{actor_id}' has no collision-free waiting position during this move.",
+                                beat_id=beat.beat_id, actor_id=actor_id,
+                                suggestions=["Increase starting separation or adjust the routes."])
+                        low, high = 0.0, 1.0
+                        for _ in range(18):
+                            middle = (low + high) * 0.5
+                            if trajectory_clear(middle)[0]:
+                                low = middle
+                            else:
+                                high = middle
+                        travel_scale = low
+                        if fn not in ('drive_toward', 'brake_to_stop'):
+                            return None, StructuredError(
+                                'VEHICLE_DESTINATION_CLEARANCE',
+                                f"'{actor_id}' cannot reach the requested destination without crossing another vehicle.",
+                                beat_id=beat.beat_id, actor_id=actor_id,
+                                details={'destination': end_pos, 'reachable_fraction': travel_scale},
+                                suggestions=['Adjust arrival spacing or sequence the vehicle movements.'])
+
+                    last_frame_pos = list(curr_pos)
+
+                    actual_route = prefix_route(route, travel_scale)
+                    samples = resolve_path_for_actor(
+                        {'points': actual_route, 'speed_profile': 'ease_in_out'}, (t_start, t_end), self.fps * 2)
+                    last_frame_time = t_start
+                    for frame_idx, (f_time, pos, segment_heading) in enumerate(samples):
+                        u = (f_time - t_start) / dur
+                        travel_heading = (curr_heading if dist_to_travel * travel_scale <= 1e-9 else
+                                          (segment_heading + 180.) % 360. if is_reverse else segment_heading)
+                        delta_dist = math.hypot(pos[0] - last_frame_pos[0], pos[2] - last_frame_pos[2])
+                        elapsed = f_time - last_frame_time
+                        v_inst = delta_dist / elapsed if elapsed > 0 else 0.0
                         spin_sign = -1.0 if is_reverse else 1.0
                         curr_wheel_spin += spin_sign * (delta_dist / wheel_radius) * (180.0 / math.pi)
 
@@ -663,7 +1181,10 @@ class MotionSynthesizer:
                             pitch_deg=pitch,
                         ))
 
-                    curr_pos = end_pos
+                        last_frame_pos = pos
+                        last_frame_time = f_time
+
+                    curr_pos = last_frame_pos
                     curr_heading = travel_heading
 
                 elif fn in ("open_door", "close_door", "set_lights", "wait", "idle"):
@@ -723,14 +1244,16 @@ class MotionSynthesizer:
                         if v_target:
                             seated_vehicle = v_target
 
-                    local_seat, local_facing = self._resolve_vehicle_seat_anchor(seated_vehicle, seat_anchor_name, other_performances)
+                    local_seat, local_facing = self._resolve_vehicle_seat_anchor(
+                        seated_vehicle, seat_anchor_name, other_performances,
+                        initial_state.get("asset_id"), occupant_height_scale)
 
                     if fn == "honk_horn":
                         clip_name = "honking_horn" if "honking_horn" in self.clips else "sitting"
                     elif fn == "use_phone":
                         clip_name = "talking_on_a_cell_phone" if "talking_on_a_cell_phone" in self.clips else "sitting"
                     elif fn in ("drive", "sit_in", "sit_on", "wait", "idle"):
-                        clip_name = "sitting"
+                        clip_name = "driving" if fn == "drive" and "driving" in self.clips else "sitting"
                     elif fn in ("react", "flinch"):
                         clip_name = "reaction"
                     elif fn in ("converse", "argue", "gesture", "greet", "emote"):
@@ -740,21 +1263,19 @@ class MotionSynthesizer:
 
                     if seated_vehicle and seated_vehicle in other_performances:
                         v_perf = other_performances[seated_vehicle]
-                        v_asset_id = v_perf.asset_id or ""
                         perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.2)
-                        for a_tgt in set(filter(None, [seated_vehicle, v_asset_id])):
-                            perf.allowed_contacts.append({
-                                "actor": actor_id,
-                                "asset": a_tgt,
-                                "is_occupant": True,
-                                "t0": round(t_start, 3),
-                                "t1": round(t_end + 1.5, 3),
-                                "max_depth_m": 0.45,
-                            })
+                        perf.allowed_contacts.append({
+                            "actor": actor_id,
+                            "asset": seated_vehicle,
+                            "is_occupant": True,
+                            "t0": float(t_start),
+                            "t1": float(t_end),
+                            "max_depth_m": 0.45,
+                        })
 
                         n_frames = max(1, int(round(dur * self.fps)))
                         for frame_idx in range(n_frames + 1):
-                            f_time = t_start + frame_idx * dt
+                            f_time = t_start + dur * frame_idx / n_frames
                             v_pos, v_heading = v_perf.sample(f_time)
                             theta = math.radians(v_heading)
                             rot_x = local_seat[0] * math.cos(theta) - local_seat[2] * math.sin(theta)
@@ -768,6 +1289,7 @@ class MotionSynthesizer:
                                 heading_deg=seat_world_heading,
                                 speed_mps=0.0,
                                 action_clip=clip_name,
+                                vehicle_supported=True,
                             ))
                         curr_pos = seat_world_pos
                         curr_heading = seat_world_heading
@@ -822,40 +1344,97 @@ class MotionSynthesizer:
                         v_asset_id = ""
 
                     local_stand, local_stand_facing, _ = self._resolve_vehicle_door_stand(v_id, door_part, other_performances)
+                    if v_asset_id:
+                        # Authored door anchors can be suitable for a static rig yet
+                        # leave animated limbs inside the body after disembarking.
+                        safe_radius = (self._moving_body_radius(v_asset_id)
+                                       + self._arrival_action_radius(
+                                           actor_id, beat, sorted_beats,
+                                           include_next_movement=True)
+                                       + VEHICLE_EXIT_ROUTE_BUFFER_M)
+                        radial = math.hypot(local_stand[0], local_stand[2])
+                        if radial < safe_radius:
+                            if radial < 1e-6:
+                                side = -1.0 if "_l" in door_part else 1.0
+                                local_stand[0], local_stand[2] = side, 0.0
+                                radial = 1.0
+                            local_stand[0] *= safe_radius / radial
+                            local_stand[2] *= safe_radius / radial
 
+                    # Interpolate in the vehicle's local frame. A car may still
+                    # be moving or turning during the exit; a world-space path
+                    # frozen at t_start can put the actor back through its body.
                     theta = math.radians(v_heading)
-                    rot_x = local_stand[0] * math.cos(theta) - local_stand[2] * math.sin(theta)
-                    rot_z = local_stand[0] * math.sin(theta) + local_stand[2] * math.cos(theta)
-                    exit_world_pos = [v_pos[0] + rot_x, 0.0, v_pos[2] + rot_z]
-                    exit_world_heading = (v_heading + local_stand_facing) % 360.0
+                    offset_x = curr_pos[0] - v_pos[0]
+                    offset_z = curr_pos[2] - v_pos[2]
+                    start_local_x = offset_x * math.cos(theta) + offset_z * math.sin(theta)
+                    start_local_z = -offset_x * math.sin(theta) + offset_z * math.cos(theta)
+                    start_local_y = curr_pos[1] - v_pos[1]
+                    start_local_heading = (curr_heading - v_heading) % 360.0
+                    if v_id and v_id in other_performances:
+                        end_vehicle_pos, end_vehicle_heading = other_performances[v_id].sample(t_end)
+                    else:
+                        end_vehicle_pos, end_vehicle_heading = v_pos, v_heading
+                    end_theta = math.radians(end_vehicle_heading)
+                    exit_world_pos = [
+                        end_vehicle_pos[0] + local_stand[0] * math.cos(end_theta)
+                        - local_stand[2] * math.sin(end_theta),
+                        end_vehicle_pos[1] + local_stand[1],
+                        end_vehicle_pos[2] + local_stand[0] * math.sin(end_theta)
+                        + local_stand[2] * math.cos(end_theta),
+                    ]
+                    exit_world_heading = (end_vehicle_heading + local_stand_facing) % 360.0
 
-                    clip_name = "opening_door_inwards"
-                    perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.2)
-                    for a_tgt in set(filter(None, [v_id, v_asset_id])):
+                    # Keep the seated pose while the root clears the cabin.
+                    # Start the standing action only after reaching free space.
+                    clear_time = t_start + 0.5 * dur
+                    seated_clip = next((name for name in ("sitting", "driving", "male_sitting_pose")
+                                        if name in self.clips), "opening_door_inwards")
+                    standing_clip = next((name for name in ("standing_up", "exiting_car", "opening_door_inwards")
+                                          if name in self.clips), seated_clip)
+                    perf.add_action(seated_clip, t_start, clear_time, fps=self.fps, speed=1.0, blend_s=0.0)
+                    perf.add_action(standing_clip, clear_time, t_end, fps=self.fps, speed=1.0, blend_s=0.2)
+                    if v_id:
                         perf.allowed_contacts.append({
                             "actor": actor_id,
-                            "asset": a_tgt,
-                            "t0": round(t_start, 3),
-                            "t1": round(t_end + 1.5, 3),
+                            "asset": v_id,
+                            "is_occupant": bool(v_id and v_id in other_performances),
+                            "t0": float(t_start),
+                            "t1": float(clear_time),
                             "max_depth_m": 0.50,
                         })
 
                     n_frames = max(1, int(round(dur * self.fps)))
                     for frame_idx in range(n_frames + 1):
-                        f_time = t_start + frame_idx * dt
+                        f_time = t_start + dur * frame_idx / n_frames
                         u = frame_idx / float(n_frames)
-                        s = 3.0 * (u ** 2) - 2.0 * (u ** 3)
-                        px = curr_pos[0] + (exit_world_pos[0] - curr_pos[0]) * s
-                        py = curr_pos[1] + (exit_world_pos[1] - curr_pos[1]) * s
-                        pz = curr_pos[2] + (exit_world_pos[2] - curr_pos[2]) * s
-                        diff = (exit_world_heading - curr_heading + 180.0) % 360.0 - 180.0
-                        h = (curr_heading + s * diff) % 360.0
+                        # Seated translation first, standing rise after clearance.
+                        travel_u = min(1.0, u * 2.0)
+                        rise_u = max(0.0, u * 2.0 - 1.0)
+                        travel_s = 3.0 * travel_u ** 2 - 2.0 * travel_u ** 3
+                        rise_s = 3.0 * rise_u ** 2 - 2.0 * rise_u ** 3
+                        if v_id and v_id in other_performances:
+                            frame_vehicle_pos, frame_vehicle_heading = other_performances[v_id].sample(f_time)
+                        else:
+                            frame_vehicle_pos, frame_vehicle_heading = v_pos, v_heading
+                        frame_theta = math.radians(frame_vehicle_heading)
+                        local_x = start_local_x + (local_stand[0] - start_local_x) * travel_s
+                        local_z = start_local_z + (local_stand[2] - start_local_z) * travel_s
+                        local_y = start_local_y + (local_stand[1] - start_local_y) * rise_s
+                        px = (frame_vehicle_pos[0] + local_x * math.cos(frame_theta)
+                              - local_z * math.sin(frame_theta))
+                        py = frame_vehicle_pos[1] + local_y
+                        pz = (frame_vehicle_pos[2] + local_x * math.sin(frame_theta)
+                              + local_z * math.cos(frame_theta))
+                        diff = (local_stand_facing - start_local_heading + 180.0) % 360.0 - 180.0
+                        h = (frame_vehicle_heading + start_local_heading + travel_s * diff) % 360.0
                         perf.keyframes.append(Keyframe(
                             time_s=f_time,
                             position=[px, py, pz],
                             heading_deg=h,
                             speed_mps=0.8,
-                            action_clip=clip_name,
+                            action_clip=seated_clip if u < 0.5 else standing_clip,
+                            vehicle_supported=bool(v_id and v_id in other_performances),
                         ))
 
                     curr_pos = exit_world_pos
@@ -869,46 +1448,61 @@ class MotionSynthesizer:
                         if p_ref and ":" in str(p_ref):
                             v_id = str(p_ref).split(":")[0]
 
-                    seat_anchor_name = beat.params.get("seat", "driver_seat")
-                    local_seat, local_facing = self._resolve_vehicle_seat_anchor(v_id, seat_anchor_name, other_performances)
+                    seat_anchor_name = beat.params.get("seat") or (
+                        str(target_ref).split(":", 1)[1]
+                        if target_ref and ":" in str(target_ref) else "driver_seat")
+                    local_seat, local_facing = self._resolve_vehicle_seat_anchor(
+                        v_id, seat_anchor_name, other_performances,
+                        initial_state.get("asset_id"), occupant_height_scale)
 
                     if v_id and v_id in other_performances:
                         v_perf = other_performances[v_id]
                         v_pos, v_heading = v_perf.sample(t_end)
-                        v_asset_id = v_perf.asset_id or ""
                         theta = math.radians(v_heading)
                         rot_x = local_seat[0] * math.cos(theta) - local_seat[2] * math.sin(theta)
                         rot_z = local_seat[0] * math.sin(theta) + local_seat[2] * math.cos(theta)
                         seat_world_pos = [v_pos[0] + rot_x, v_pos[1] + local_seat[1], v_pos[2] + rot_z]
                         seat_world_heading = (v_heading + local_facing) % 360.0
 
-                        for a_tgt in set(filter(None, [v_id, v_asset_id])):
-                            perf.allowed_contacts.append({
-                                "actor": actor_id,
-                                "asset": a_tgt,
-                                "t0": round(t_start, 3),
-                                "t1": round(t_end + 1.5, 3),
-                                "max_depth_m": 1.0,
-                            })
+                        perf.allowed_contacts.append({
+                            "actor": actor_id,
+                            "asset": v_id,
+                            "is_occupant": True,
+                            "t0": float(t_start),
+                            "t1": float(t_end),
+                            "max_depth_m": 1.0,
+                        })
 
                         clip_name = "crouch_to_stand"
-                        perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.2)
+                        seated_clip = next((name for name in ("sitting", "driving", "male_sitting_pose")
+                                            if name in self.clips), clip_name)
+                        # Finish changing pose outside the cabin. Keeping a
+                        # standing clip until arrival makes the next action
+                        # blend that standing pose through the vehicle roof.
+                        lowered_time = t_start + 0.5 * dur
+                        perf.add_action(clip_name, t_start, lowered_time, fps=self.fps, speed=1.0, blend_s=0.2)
+                        perf.add_action(seated_clip, lowered_time, t_end, fps=self.fps, speed=1.0, blend_s=0.0)
                         n_frames = max(1, int(round(dur * self.fps)))
                         for frame_idx in range(n_frames + 1):
-                            f_time = t_start + frame_idx * dt
+                            f_time = t_start + dur * frame_idx / n_frames
                             u = frame_idx / float(n_frames)
-                            s = 3.0 * (u ** 2) - 2.0 * (u ** 3)
-                            px = curr_pos[0] + (seat_world_pos[0] - curr_pos[0]) * s
-                            py = curr_pos[1] + (seat_world_pos[1] - curr_pos[1]) * s
-                            pz = curr_pos[2] + (seat_world_pos[2] - curr_pos[2]) * s
+                            # Crouch outside the car before moving under its roof.
+                            lower_u = min(1.0, u * 2.0)
+                            travel_u = max(0.0, u * 2.0 - 1.0)
+                            lower_s = 3.0 * lower_u ** 2 - 2.0 * lower_u ** 3
+                            travel_s = 3.0 * travel_u ** 2 - 2.0 * travel_u ** 3
+                            px = curr_pos[0] + (seat_world_pos[0] - curr_pos[0]) * travel_s
+                            py = curr_pos[1] + (seat_world_pos[1] - curr_pos[1]) * lower_s
+                            pz = curr_pos[2] + (seat_world_pos[2] - curr_pos[2]) * travel_s
                             diff = (seat_world_heading - curr_heading + 180.0) % 360.0 - 180.0
-                            h = (curr_heading + s * diff) % 360.0
+                            h = (curr_heading + travel_s * diff) % 360.0
                             perf.keyframes.append(Keyframe(
                                 time_s=f_time,
                                 position=[px, py, pz],
                                 heading_deg=h,
                                 speed_mps=0.8,
-                                action_clip="sitting" if u > 0.7 else clip_name,
+                                action_clip=seated_clip if u >= 0.5 else clip_name,
+                                vehicle_supported=True,
                             ))
 
                         curr_pos = seat_world_pos
@@ -979,6 +1573,15 @@ class MotionSynthesizer:
                     if clip_name not in self.clips:
                         clip_name = "walk" if "walk" in self.clips else "acknowledging"
 
+                    if (target and target.target_type == "actor"
+                            and fn in ("walk_to", "run_to", "jog_to", "sneak_to", "approach")
+                            and target.target_name in other_performances):
+                        # A moving target is a rendezvous at arrival time, not
+                        # a snapshot of its old placement at departure time.
+                        arrival_pos, arrival_heading = other_performances[target.target_name].sample(t_end)
+                        target = replace(target, position=np.array(arrival_pos, dtype=float),
+                                         facing_deg=arrival_heading)
+
                     end_pos = list(curr_pos)
                     target_facing = curr_heading
 
@@ -1010,7 +1613,7 @@ class MotionSynthesizer:
                         if rad_len > 1e-3:
                             ux, uz = rad_dx / rad_len, rad_dz / rad_len
                         else:
-                            angle = (hash(actor_id) % 360) * (math.pi / 180.0)
+                            angle = (_stable_hash(actor_id) % 360) * (math.pi / 180.0)
                             ux, uz = math.sin(angle), math.cos(angle)
                         end_pos = [curr_pos[0] + ux * disp_dist, curr_pos[1], curr_pos[2] + uz * disp_dist]
                         target_facing = heading_from_vector(ux, uz)
@@ -1037,6 +1640,26 @@ class MotionSynthesizer:
                             if dir_len > 1e-3:
                                 end_pos = list(np.array(end_pos) - (dir_vec / dir_len) * gap)
                                 target_facing = heading_from_vector(dir_vec[0], dir_vec[2])
+                        elif target.target_type == "actor" and fn in (
+                                "walk_to", "run_to", "jog_to", "sneak_to"):
+                            target_id = str(target.target_name)
+                            destination = self._spaced_actor_destination(
+                                actor_id, target_id, end_pos, curr_pos, t_end,
+                                other_performances, all_initial_states, scene_data,
+                                actor_radius_m=self._arrival_action_radius(
+                                    actor_id, beat, sorted_beats))
+                            if destination is None:
+                                return None, StructuredError(
+                                    "ACTOR_APPROACH_OCCUPIED",
+                                    f"No clear supported arrival position near '{target_id}'.",
+                                    beat_id=beat.beat_id,
+                                    actor_id=actor_id,
+                                    suggestions=["Choose a less crowded target or stagger the arrivals."],
+                                )
+                            end_pos = destination
+                            target_facing = heading_from_vector(
+                                target.position[0] - end_pos[0],
+                                target.position[2] - end_pos[2])
                         elif fn == "take_cover":
                             # Step behind cover object relative to threat
                             cover_gap = 0.85
@@ -1044,6 +1667,10 @@ class MotionSynthesizer:
                             dir_len = np.linalg.norm(dir_vec[[0, 2]])
                             if dir_len > 1e-3:
                                 end_pos = list(np.array(end_pos) - (dir_vec / dir_len) * cover_gap)
+
+                    if beat.params.get("exact_window") and target is None and fn in ("walk_to", "run_to", "jog_to"):
+                        dx, dz = vector_from_heading(curr_heading)
+                        end_pos = [curr_pos[0]+dx*nominal_clip_speed*dur, curr_pos[1], curr_pos[2]+dz*nominal_clip_speed*dur]
 
                     # Clamp travel distance for slow/specialized gaits so actors never exceed physical stride limits
                     if fn in ("crawl_to", "stumble_to", "back_up_to", "carry_to", "swim_to"):
@@ -1061,9 +1688,17 @@ class MotionSynthesizer:
 
                     # Route around obstacles and build smooth spline polyline
                     obstacles = self._collect_obstacles_at_time(
-                        t_start, t_end, actor_id, curr_pos, end_pos, other_performances, scene_data
+                        t_start, t_end, actor_id, curr_pos, end_pos, other_performances,
+                        scene_data, actor_radius_m=self._solid_action_radius(
+                            actor_id, beat.beat_id, fn),
                     )
                     polyline = self._plan_smooth_path(curr_pos, end_pos, obstacles)
+                    if not polyline:
+                        return None, StructuredError(
+                            "ROUTE_CLEARANCE_FAILED",
+                            f"No clear route for '{actor_id}' around the current obstacles.",
+                            beat_id=beat.beat_id, actor_id=actor_id,
+                            suggestions=["Move the start or destination clear of nearby objects."])
 
                     # Compute total arc length of polyline
                     path_len = sum(
@@ -1093,6 +1728,7 @@ class MotionSynthesizer:
                     forward_pitch = 4.5 if gait == "run" else (2.5 if gait == "jog" else 1.0)
                     fly_alt = float(beat.params.get("altitude_m", 2.5)) if fn == "fly_to" else 0.0
 
+                    first_motion_frame = len(perf.keyframes)
                     for frame_idx in range(n_frames + 1):
                         f_time = t_start + frame_idx * dt
                         u = frame_idx / float(n_frames)
@@ -1112,14 +1748,9 @@ class MotionSynthesizer:
                         if fn == "fly_to":
                             pos[1] = pos[1] + fly_alt * math.sin(u * math.pi)
 
-                        # Smoothly blend heading toward final target_facing over the final 18% of stride
-                        if not is_continuous and u > 0.82:
-                            alpha_h = (u - 0.82) / 0.18
-                            smooth_a = 3.0 * (alpha_h ** 2) - 2.0 * (alpha_h ** 3)
-                            diff = (target_facing - tangent_heading + 180.0) % 360.0 - 180.0
-                            heading = (tangent_heading + smooth_a * diff) % 360.0
-                        else:
-                            heading = tangent_heading
+                        # Keep the body aligned with travel while moving. A later
+                        # stationary beat may turn toward the target on arrival.
+                        heading = tangent_heading
 
                         # Centripetal torso roll on curved paths
                         roll_val = max(-8.0, min(8.0, -0.12 * curvature * (inst_spd / max(1.0, nominal_clip_speed))))
@@ -1136,8 +1767,16 @@ class MotionSynthesizer:
                             roll_deg=roll_val,
                         ))
 
+                    for frame_index in range(first_motion_frame, len(perf.keyframes) - 1):
+                        here, following = perf.keyframes[frame_index:frame_index + 2]
+                        dx = following.position[0] - here.position[0]
+                        dz = following.position[2] - here.position[2]
+                        if math.hypot(dx, dz) > 1e-6:
+                            travel = heading_from_vector(dx, dz)
+                            here.heading_deg = (travel + 180.0) % 360.0 if is_backward_motion else travel
+
                     curr_pos = list(end_pos)
-                    curr_heading = target_facing
+                    curr_heading = heading
 
                 elif fn == "pace_while_talking":
                     center_pos = list(target.position) if target else list(curr_pos)
@@ -1277,72 +1916,105 @@ class MotionSynthesizer:
 
                     stair_info = self._resolve_stair(stairs_ref)
                     if not stair_info:
-                        sdata = {
-                            "centerline": [
-                                [curr_pos[0], curr_pos[1], curr_pos[2]],
-                                [curr_pos[0], curr_pos[1] + (3.0 if direction == "up" else -3.0), curr_pos[2] + (5.0 if direction == "up" else -5.0)],
-                            ],
-                            "treads": [{"tread_m": 0.33, "rise_m": 0.2}],
-                            "from_level": "L0",
-                            "to_level": "L1",
-                        }
-                        stair_obj_name = "stairs"
-                    else:
-                        sdata = stair_info["data"]
-                        stair_obj_name = stair_info["asset_id"]
+                        return None, StructuredError(
+                            "STAIR_NOT_IN_SCENE", f"No placed stair matches '{stairs_ref}'.",
+                            beat_id=beat.beat_id, actor_id=actor_id)
+                    sdata = stair_info["data"]
+                    stair_obj_name = stair_info["asset_id"]
 
                     treads = sdata.get("treads", [])
                     tread_depth = np.mean([float(t.get("tread_m", 0.30)) for t in treads]) if treads else 0.30
                     tread_depth = max(0.15, float(tread_depth))
-
-                    if speed_mps_param is not None:
-                        v_h = float(speed_mps_param)
-                    elif direction == "down":
-                        v_h = 0.90 if pace == "run" else 0.65
-                    else:
-                        v_h = 2.0 if pace == "run" else 0.65
-
-                    target_step_freq = v_h / tread_depth
 
                     if direction == "up":
                         clip_name = "running_up_stairs" if pace == "run" else "walking_up_the_stairs"
                     else:
                         clip_name = "descending_stairs_fast" if pace == "run" else "descending_stairs"
 
-                    clip_meta = self.manifest.get("clips", {}).get(clip_name, {})
-                    f_clip = float(clip_meta.get("step_frequency_hz") or (3.43 if "run" in clip_name or "fast" in clip_name else 1.714))
-
-                    playback_speed = max(0.5, min(2.5, target_step_freq / max(0.1, f_clip)))
-
-                    perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=round(playback_speed, 3), blend_s=0.2)
-
                     raw_cline = sdata.get("centerline", [])
                     if len(raw_cline) < 2:
-                        raw_cline = [
-                            [curr_pos[0], curr_pos[1], curr_pos[2]],
-                            [curr_pos[0], curr_pos[1] + (3.0 if direction == "up" else -3.0), curr_pos[2] + 4.0],
-                        ]
+                        return None, StructuredError(
+                            "STAIR_GEOMETRY_MISSING", "The placed stair has no usable centerline.",
+                            beat_id=beat.beat_id, actor_id=actor_id)
 
-                    if direction == "down":
-                        cline_pts = [list(pt) for pt in reversed(raw_cline)]
-                    else:
-                        cline_pts = [list(pt) for pt in raw_cline]
+                    lane_offset = float(beat.params.get("stair_lane_offset_m", 0.0))
+                    if lane_offset:
+                        width = float(sdata.get("width_m", 0.0))
+                        if width <= 0 or abs(lane_offset) > width * 0.5 - 0.2:
+                            return None, StructuredError(
+                                "INVALID_STAIR_LANE", "Stair lane is outside the usable tread width.",
+                                beat_id=beat.beat_id, actor_id=actor_id)
+                    exit_distance = max(0.0, float(beat.params.get("stair_exit_distance_m", 0.0)))
+                    cline_pts, total_horiz, stair_arrival = stair_route_geometry(
+                        sdata, direction, lane_offset, exit_distance)
 
+                    # The centerline belongs to the staircase. Moving it by the
+                    # actor's starting offset sends side entrants through a wall
+                    # and outside the recognized stair portal.
                     p0 = np.array(cline_pts[0], float)
-                    d_start = np.linalg.norm(np.array(curr_pos) - p0)
-                    if d_start < 4.0:
-                        shift_xz = np.array(curr_pos)[[0, 2]] - p0[[0, 2]]
-                        for pt in cline_pts:
-                            pt[0] += shift_xz[0]
-                            pt[2] += shift_xz[1]
+                    travel_x = cline_pts[-1][0] - cline_pts[0][0]
+                    travel_z = cline_pts[-1][2] - cline_pts[0][2]
+                    travel_len = max(1e-6, math.hypot(travel_x, travel_z))
+                    back_x, back_z = -travel_x / travel_len * 0.7, -travel_z / travel_len * 0.7
+                    approach_pts = [list(curr_pos)]
+                    if math.hypot(curr_pos[0] - p0[0], curr_pos[2] - p0[2]) > 0.5:
+                        approach_pts.extend([
+                            [curr_pos[0] + back_x, curr_pos[1], curr_pos[2] + back_z],
+                            [p0[0] + back_x, p0[1], p0[2] + back_z],
+                        ])
+                    approach_pts.append(list(p0))
+                    approach_lengths = [math.dist(a, b) for a, b in zip(approach_pts, approach_pts[1:])]
+                    approach_distance = sum(approach_lengths)
+                    approach_speed = 3.0 if pace == "run" else 1.25
+                    approach_duration = (approach_distance / approach_speed
+                                         if approach_distance > 0.15 else 0.0)
+                    exit_duration = exit_distance / approach_speed
+                    climb_duration = dur - approach_duration - exit_duration
+                    requested_climb_speed = float(speed_mps_param) if speed_mps_param is not None else (2.0 if pace == "run" else 0.65)
+                    min_climb_duration = total_horiz / min(max_allowed_speed, requested_climb_speed)
+                    if climb_duration + 1e-6 < min_climb_duration:
+                        return None, StructuredError(
+                            error_code="STAIR_WINDOW_TOO_SHORT",
+                            message="The stair action has too little time to reach the entry and climb safely.",
+                            beat_id=beat.beat_id, actor_id=actor_id,
+                            details={"required_duration_s": round(approach_duration + min_climb_duration + exit_duration, 3)},
+                            suggestions=["Allow more time for the approach and stair climb."],
+                        )
+                    climb_start = t_start + approach_duration
+                    climb_speed = total_horiz / climb_duration
+                    clip_meta = self.manifest.get("clips", {}).get(clip_name, {})
+                    f_clip = float(clip_meta.get("step_frequency_hz") or (3.43 if "run" in clip_name or "fast" in clip_name else 1.714))
+                    # One animated footfall should cover one authored tread.
+                    playback_speed = max(0.5, min(2.5, (climb_speed / tread_depth) / max(0.1, f_clip)))
 
-                    y_start = float(curr_pos[1])
-                    y_end = float(cline_pts[-1][1])
-                    total_horiz = sum(
-                        math.hypot(cline_pts[i + 1][0] - cline_pts[i][0], cline_pts[i + 1][2] - cline_pts[i][2])
-                        for i in range(len(cline_pts) - 1)
-                    )
-                    total_horiz = max(0.1, total_horiz)
+                    if approach_duration:
+                        approach_clip = "run" if pace == "run" else "walk"
+                        perf.add_action(approach_clip, t_start, climb_start, fps=self.fps,
+                                        speed=1.0, blend_s=0.2)
+                        approach_frames = max(1, int(round(approach_duration * self.fps)))
+                        for frame_idx in range(approach_frames + 1):
+                            u = frame_idx / approach_frames
+                            remaining = u * approach_distance
+                            pos = list(p0)
+                            approach_heading = curr_heading
+                            for seg_idx, seg_len in enumerate(approach_lengths):
+                                if remaining <= seg_len or seg_idx == len(approach_lengths) - 1:
+                                    a, b = approach_pts[seg_idx:seg_idx + 2]
+                                    v = min(1.0, remaining / max(1e-6, seg_len))
+                                    pos = [a[axis] + v * (b[axis] - a[axis]) for axis in range(3)]
+                                    approach_heading = heading_from_vector(b[0] - a[0], b[2] - a[2])
+                                    break
+                                remaining -= seg_len
+                            perf.keyframes.append(Keyframe(
+                                time_s=t_start + u * approach_duration,
+                                position=pos,
+                                heading_deg=approach_heading, speed_mps=approach_speed,
+                                action_clip=approach_clip, clip_phase=u,
+                            ))
+
+                    climb_end = t_end - exit_duration
+                    perf.add_action(clip_name, climb_start, climb_end, fps=self.fps,
+                                    speed=round(playback_speed, 3), blend_s=0.2)
 
                     travel_dx = cline_pts[-1][0] - cline_pts[0][0]
                     travel_dz = cline_pts[-1][2] - cline_pts[0][2]
@@ -1351,44 +2023,30 @@ class MotionSynthesizer:
                     perf.allowed_contacts.append({
                         "actor": actor_id,
                         "asset": stair_obj_name,
-                        "t0": round(t_start, 3),
-                        "t1": round(t_end + 0.5, 3),
+                        "t0": float(t_start),
+                        "t1": float(t_end + 0.5),
                         "max_depth_m": 0.45,
                     })
 
-                    n_frames = max(1, int(round(dur * self.fps)))
+                    n_frames = max(1, int(round(climb_duration * self.fps)))
                     pitch_target = 7.5 if direction == "up" else -3.0
 
                     for frame_idx in range(n_frames + 1):
-                        f_time = t_start + frame_idx * dt
+                        f_time = climb_start + frame_idx * climb_duration / n_frames
                         u = frame_idx / float(n_frames)
 
                         s_curr = u * total_horiz
                         acc = 0.0
-                        pos_x, pos_z = cline_pts[-1][0], cline_pts[-1][2]
+                        pos_x, pos_y, pos_z = cline_pts[-1]
                         for i in range(len(cline_pts) - 1):
                             seg_len = math.hypot(cline_pts[i + 1][0] - cline_pts[i][0], cline_pts[i + 1][2] - cline_pts[i][2])
                             if acc + seg_len >= s_curr or i == len(cline_pts) - 2:
                                 seg_u = max(0.0, min(1.0, (s_curr - acc) / max(1e-4, seg_len)))
                                 pos_x = cline_pts[i][0] + seg_u * (cline_pts[i + 1][0] - cline_pts[i][0])
+                                pos_y = cline_pts[i][1] + seg_u * (cline_pts[i + 1][1] - cline_pts[i][1])
                                 pos_z = cline_pts[i][2] + seg_u * (cline_pts[i + 1][2] - cline_pts[i][2])
                                 break
                             acc += seg_len
-
-                        d_ease = min(0.35, total_horiz / 3.0)
-                        dy_total = y_end - y_start
-                        m_slope = dy_total / max(1e-4, total_horiz - d_ease)
-                        if s_curr <= 0:
-                            pos_y = y_start
-                        elif s_curr < d_ease:
-                            pos_y = y_start + 0.5 * (m_slope / d_ease) * (s_curr ** 2)
-                        elif s_curr <= total_horiz - d_ease:
-                            pos_y = y_start + 0.5 * m_slope * d_ease + m_slope * (s_curr - d_ease)
-                        elif s_curr < total_horiz:
-                            ds = total_horiz - s_curr
-                            pos_y = y_end - 0.5 * (m_slope / d_ease) * (ds ** 2)
-                        else:
-                            pos_y = y_end
 
                         if u < 0.15:
                             pitch_val = pitch_target * (u / 0.15)
@@ -1401,25 +2059,32 @@ class MotionSynthesizer:
                             time_s=f_time,
                             position=[pos_x, pos_y, pos_z],
                             heading_deg=travel_heading,
-                            speed_mps=v_h,
+                            speed_mps=climb_speed,
                             action_clip=clip_name,
                             clip_phase=u,
                             pitch_deg=pitch_val,
                         ))
 
-                    curr_pos = [cline_pts[-1][0], y_end, cline_pts[-1][2]]
+                    curr_pos = list(cline_pts[-1])
                     curr_heading = travel_heading
+                    if exit_duration:
+                        exit_clip = "run" if pace == "run" else "walk"
+                        perf.add_action(exit_clip, climb_end, t_end, fps=self.fps,
+                                        speed=1.0, blend_s=0.2)
+                        exit_frames = max(1, int(round(exit_duration * self.fps)))
+                        for frame_idx in range(exit_frames + 1):
+                            u = frame_idx / exit_frames
+                            perf.keyframes.append(Keyframe(
+                                time_s=climb_end + u * exit_duration,
+                                position=[curr_pos[0] + u * exit_distance * travel_dx / total_horiz,
+                                          curr_pos[1],
+                                          curr_pos[2] + u * exit_distance * travel_dz / total_horiz],
+                                heading_deg=travel_heading, speed_mps=approach_speed,
+                                action_clip=exit_clip, clip_phase=u))
+                        curr_pos = stair_arrival
 
                 elif fn in ("react", "hit_reaction", "spooked", "flinch"):
-                    style = str(beat.params.get("style", "")).lower()
-                    if fn == "hit_reaction":
-                        clip_name = "head_hit_during_fight"
-                    elif fn == "spooked" or style in ("startled", "spooked", "fear", "panic"):
-                        clip_name = "spooked"
-                    elif style in ("happy", "cheer", "excited"):
-                        clip_name = "clapping"
-                    else:
-                        clip_name = "reaction"
+                    clip_name = reaction_clip(fn, beat.params)
 
                     if target and math.hypot(target.position[0] - curr_pos[0], target.position[2] - curr_pos[2]) > 0.1:
                         curr_heading = heading_from_vector(
@@ -1428,11 +2093,13 @@ class MotionSynthesizer:
                         )
                         perf.add_look_at(target.position, t_start, t_end, weight=0.9)
 
-                    if fn in ("hit_reaction", "react"):
+                    contact_target = beat.params.get("target") or beat.params.get("threat")
+                    if fn in ("hit_reaction", "react") and contact_target:
                         perf.allowed_contacts.append({
                             "actor": actor_id,
-                            "t0": round(t_start, 3),
-                            "t1": round(t_end + 0.5, 3),
+                            "asset": str(contact_target),
+                            "t0": t_start,
+                            "t1": t_end,
                             "max_depth_m": 0.35,
                         })
                     perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.1)
@@ -1447,7 +2114,7 @@ class MotionSynthesizer:
                             action_clip=clip_name,
                         ))
 
-                elif fn in ("attack", "push", "shove"):
+                elif fn in ("attack", "push", "shove", "group_fight"):
                     if fn in ("push", "shove"):
                         moves = [beat.params.get("clip", "elbow_punch")]
                     else:
@@ -1458,8 +2125,21 @@ class MotionSynthesizer:
                         moves = ["left_hook"]
 
                     t_target = str(beat.params.get("target") or "")
-                    target_perf = other_performances.get(t_target)
-                    target_asset = target_perf.asset_id if target_perf and target_perf.asset_id else t_target
+
+                    if fn == "group_fight":
+                        live_states = self._build_live_actor_states(
+                            t_start, actor_id, curr_pos, curr_heading, other_performances, all_initial_states)
+                        planned_positions = beat.params.get("opponent_positions", {})
+                        positions = [(live_states[opponent]["position"] if opponent in other_performances
+                                      else planned_positions.get(opponent, live_states[opponent]["position"]))
+                                     for opponent in beat.params.get("opponents", [])
+                                     if opponent in live_states]
+                        if not positions:
+                            return None, StructuredError("FIGHT_GROUPS", "Group fight has no available opposing characters",
+                                                         beat_id=beat.beat_id, actor_id=actor_id)
+                        center = np.mean(positions, axis=0)
+                        curr_heading = heading_from_vector(center[0] - curr_pos[0], center[2] - curr_pos[2])
+                        perf.add_look_at(center, t_start, t_end, weight=0.9)
 
                     # Auto-face target at start of attack
                     if target and math.hypot(target.position[0] - curr_pos[0], target.position[2] - curr_pos[2]) > 0.05:
@@ -1480,13 +2160,13 @@ class MotionSynthesizer:
                             "LeftUpLeg", "RightUpLeg", "LeftToeBase", "RightToeBase",
                         ])
 
-                    for a_tgt in set(filter(None, [t_target, target_asset])):
+                    if t_target:
                         perf.allowed_contacts.append({
                             "actor": actor_id,
-                            "asset": a_tgt,
+                            "asset": t_target,
                             "joints": attack_joints,
-                            "t0": round(t_start, 3),
-                            "t1": round(t_end + 0.5, 3),
+                            "t0": t_start,
+                            "t1": t_end,
                             "max_depth_m": 0.35,
                         })
 
@@ -1524,8 +2204,8 @@ class MotionSynthesizer:
                             "actor": actor_id,
                             "asset": a_tgt,
                             "shape": "door",
-                            "t0": round(t_start, 3),
-                            "t1": round(t_end + 1.5, 3),
+                            "t0": float(t_start),
+                            "t1": float(t_end + 1.5),
                             "max_depth_m": 0.30,
                         })
                     n_frames = max(1, int(round(dur * self.fps)))
@@ -1544,7 +2224,8 @@ class MotionSynthesizer:
                     if target and target.height_m:
                         surface_height = target.height_m
 
-                    max_jump = 0.90
+                    # Maximum character jump height: standing jump ~0.9m, running jump/vault up to 1.50m (e.g. car roof at 1.47m)
+                    max_jump = 1.50
                     if fn == "jump_on" and surface_height > max_jump:
                         return None, StructuredError(
                             error_code="INFEASIBLE_JUMP_HEIGHT",
@@ -1582,15 +2263,24 @@ class MotionSynthesizer:
                         perf.allowed_contacts.append({
                             "actor": actor_id,
                             "asset": target_obj,
-                            "t0": round(t_start, 3),
-                            "t1": round(t_end + 10.0, 3),
+                            "t0": float(t_start),
+                            "t1": float(t_end + 10.0),
                             "max_depth_m": 0.50,
                         })
 
-                    perf.add_action("jump", t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.1)
-
                     dist = math.hypot(end_pos[0] - curr_pos[0], end_pos[2] - curr_pos[2])
                     jump_heading = heading_from_vector(end_pos[0] - curr_pos[0], end_pos[2] - curr_pos[2]) if dist > 0.05 else curr_heading
+
+                    from support_surfaces import STANDING_BODY_HEIGHT_M
+                    long_drop = fn == "jump_down" and y_start - y_end > STANDING_BODY_HEIGHT_M
+                    takeoff_duration = min(JUMP_TAKEOFF_S, dur * 0.25)
+                    if long_drop:
+                        perf.add_action("jumping_down", t_start, t_start + takeoff_duration,
+                                        fps=self.fps, speed=1.0, blend_s=0.1)
+                        perf.add_action("falling_in_air_idle", t_start + takeoff_duration,
+                                        t_end, fps=self.fps, speed=1.0, blend_s=0.1)
+                    else:
+                        perf.add_action("jump", t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.1)
 
                     chord_mid = (y_start + y_end) / 2.0
                     h_lift = max(0.10, y_apex - chord_mid)
@@ -1601,12 +2291,23 @@ class MotionSynthesizer:
                         u = frame_idx / float(n_frames)
                         px = curr_pos[0] + (end_pos[0] - curr_pos[0]) * u
                         pz = curr_pos[2] + (end_pos[2] - curr_pos[2]) * u
-                        py = y_start + (y_end - y_start) * u + 4.0 * h_lift * u * (1.0 - u)
+                        if long_drop:
+                            takeoff_u = takeoff_duration / dur
+                            if u <= takeoff_u:
+                                py = y_start + (y_apex - y_start) * (u / takeoff_u)
+                                clip = "jumping_down"
+                            else:
+                                fall_u = (u - takeoff_u) / (1.0 - takeoff_u)
+                                py = y_apex - (y_apex - y_end) * fall_u * fall_u
+                                clip = "falling_in_air_idle"
+                        else:
+                            py = y_start + (y_end - y_start) * u + 4.0 * h_lift * u * (1.0 - u)
+                            clip = "jump"
                         perf.keyframes.append(Keyframe(
                             time_s=f_time,
                             position=[px, py, pz],
                             heading_deg=jump_heading,
-                            action_clip="jump",
+                            action_clip=clip,
                         ))
                     curr_pos = [end_pos[0], y_end, end_pos[2]]
                     curr_heading = jump_heading
@@ -1624,8 +2325,11 @@ class MotionSynthesizer:
                         t_start, actor_id, curr_pos, curr_heading, other_performances, all_initial_states
                     )
                     other_positions: List[List[float]] = []
+                    staged_positions = beat.params.get("interaction_positions") or {}
                     for pid in participants:
-                        if pid != actor_id and pid in live_states:
+                        if pid != actor_id and pid in staged_positions:
+                            other_positions.append(list(staged_positions[pid]))
+                        elif pid != actor_id and pid in live_states:
                             other_positions.append(list(live_states[pid].get("position", [0.0, 0.0, 0.0])))
                     if not other_positions and target:
                         other_positions.append(list(target.position))
@@ -1656,8 +2360,7 @@ class MotionSynthesizer:
                         perf.add_look_at(look_pos, t_start, t_end, weight=0.85)
 
                     # Expressive non-combat gesture pools (never use head_hit_during_fight for dialogue!)
-                    mood = "heated" if fn in ("argue",) or str(beat.params.get("mood", "")).lower() in ("heated", "angry", "tense") else "calm"
-                    clip_pool = ["pointing_forward", "reaction", "acknowledging"] if mood == "heated" else ["acknowledging", "pointing_forward", "clapping"]
+                    clip_pool = dialogue_clips(fn, beat.params)
 
                     # Turn-taking schedule for multi-second social beats
                     if dur >= 3.2:
@@ -1777,8 +2480,8 @@ class MotionSynthesizer:
                             perf.allowed_contacts.append({
                                 "actor": actor_id,
                                 "asset": t_obj,
-                                "t0": round(t_start, 3),
-                                "t1": round(t_end + 1.0, 3),
+                                "t0": float(t_start),
+                                "t1": float(t_end + 1.0),
                                 "max_depth_m": 0.55,
                             })
                         perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.15)
@@ -1835,8 +2538,8 @@ class MotionSynthesizer:
                             perf.allowed_contacts.append({
                                 "actor": actor_id,
                                 "asset": t_obj,
-                                "t0": round(t_start, 3),
-                                "t1": round(t_end + 1.0, 3),
+                                "t0": float(t_start),
+                                "t1": float(t_end + 1.0),
                                 "max_depth_m": 0.65,
                             })
                         perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.15)
@@ -2013,13 +2716,7 @@ class MotionSynthesizer:
                         clip_name = em_map.get(em, em if em in self.clips else "shrugging")
                     elif fn == "dance":
                         st = str(beat.params.get("style", "groove")).lower()
-                        dance_map = {
-                            "groove": "groving_to_music_energetically",
-                            "silly": "silly_dancing",
-                            "breakdance": "breakdance_freeze_var_3",
-                            "moonwalk": "moonwalk",
-                        }
-                        clip_name = dance_map.get(st, "groving_to_music_energetically")
+                        clip_name = DANCE_STYLE_CLIPS.get(st, DANCE_STYLE_CLIPS["groove"])
                     elif fn == "perform_activity":
                         act = str(beat.params.get("activity", "guitar")).lower()
                         act_map = {
@@ -2039,8 +2736,7 @@ class MotionSynthesizer:
                         }
                         clip_name = act_map.get(act, act if act in self.clips else "guitar_playing")
                     elif fn == "defend_or_block":
-                        st = str(beat.params.get("style", "block")).lower()
-                        clip_name = "dodging_back" if "back" in st else ("dodging_right" if "right" in st or "dodge" in st else "boxing_block")
+                        clip_name = defense_clip(beat.params)
                     elif fn == "use_weapon":
                         wpn = str(beat.params.get("weapon", "pistol")).lower()
                         w_act = str(beat.params.get("action", "fire")).lower()
@@ -2072,22 +2768,25 @@ class MotionSynthesizer:
 
                     if fn in ("shake_hands", "hug_or_kiss", "medical_aid", "defend_or_block", "use_weapon", "collapse_or_knockout", "lie_down"):
                         t_target = str(beat.params.get("target") or beat.params.get("patient") or "")
-                        perf.allowed_contacts.append({
-                            "actor": actor_id,
-                            "asset": t_target if t_target else None,
-                            "t0": round(t_start, 3),
-                            "t1": round(t_end + 1.0, 3),
-                            "max_depth_m": 0.45,
-                        })
+                        if t_target:
+                            perf.allowed_contacts.append({
+                                "actor": actor_id,
+                                "asset": t_target,
+                                "t0": t_start,
+                                "t1": t_end,
+                                "max_depth_m": 0.45,
+                            })
 
                     perf.add_action(clip_name, t_start, t_end, fps=self.fps, speed=1.0, blend_s=0.2)
                     n_frames = max(1, int(round(dur * self.fps)))
-                    is_moonwalk = (clip_name == "moonwalk")
+                    from crowd_spacing import dance_root_speed
+                    root_speed = dance_root_speed(beat.params) if fn == 'dance' else 0.0
                     fwd_x, fwd_z = vector_from_heading(curr_heading)
-                    end_pos = [curr_pos[0] - fwd_x * (0.9 * dur), curr_pos[1], curr_pos[2] - fwd_z * (0.9 * dur)] if is_moonwalk else list(curr_pos)
+                    end_pos = [curr_pos[0] + fwd_x * root_speed * dur, curr_pos[1],
+                               curr_pos[2] + fwd_z * root_speed * dur]
 
                     for frame_idx in range(n_frames + 1):
-                        f_time = t_start + frame_idx * dt
+                        f_time = t_start + dur * frame_idx / n_frames
                         u = frame_idx / float(n_frames)
                         px = curr_pos[0] + (end_pos[0] - curr_pos[0]) * u
                         pz = curr_pos[2] + (end_pos[2] - curr_pos[2]) * u
@@ -2095,7 +2794,7 @@ class MotionSynthesizer:
                             time_s=f_time,
                             position=[px, curr_pos[1], pz],
                             heading_deg=curr_heading,
-                            speed_mps=0.9 if is_moonwalk else 0.0,
+                            speed_mps=abs(root_speed),
                             action_clip=clip_name,
                             clip_phase=u,
                         ))

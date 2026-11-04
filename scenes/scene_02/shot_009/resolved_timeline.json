@@ -1,0 +1,634 @@
+{
+  "total_duration_s": 80.0,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "walk_to_1",
+      "actor_id": "human_1",
+      "function": "walk_to",
+      "start_time": 0.0,
+      "end_time": 78.284,
+      "duration": 78.284,
+      "params": {
+        "spatial_intent": "protest_march",
+        "wait_for": [],
+        "spatial_via_points": [
+          [
+            -15.124904782067857,
+            -0.019999999552965164,
+            15.124904782067857
+          ]
+        ],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          70.31240186201615
+        ],
+        "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+        "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+        "brief_path": {
+          "points": [
+            [
+              -67.5,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              70.31240186201615
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_1",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          70.31240186201615
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_1",
+          "function": "walk_to",
+          "actor_id": "human_1",
+          "params": {
+            "spatial_intent": "protest_march",
+            "wait_for": [],
+            "spatial_via_points": [
+              [
+                -15.124904782067857,
+                -0.019999999552965164,
+                15.124904782067857
+              ]
+            ],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              70.31240186201615
+            ],
+            "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+            "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 78.2840469662732
+          },
+          "source_function": "stage_region_approach"
+        }
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_1.started": 0.0,
+        "walk_to_1.finished": 78.284,
+        "human_1.started": 0.0,
+        "human_1.finished": 78.284,
+        "human_1.arrived": 78.284,
+        "walk_to_1.arrived": 78.284
+      }
+    },
+    {
+      "beat_id": "walk_to_2",
+      "actor_id": "human_2",
+      "function": "walk_to",
+      "start_time": 0.0,
+      "end_time": 78.962,
+      "duration": 78.962,
+      "params": {
+        "spatial_intent": "protest_march",
+        "wait_for": [],
+        "spatial_via_points": [
+          [
+            -15.053799068991928,
+            -0.019999999552965164,
+            15.053799068991928
+          ]
+        ],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          67.5
+        ],
+        "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+        "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+        "brief_path": {
+          "points": [
+            [
+              -71.03723868519425,
+              -0.019999999552965164,
+              15.053799068991928
+            ],
+            [
+              -15.053799068991928,
+              -0.019999999552965164,
+              15.053799068991928
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              67.5
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_2",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          67.5
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_2",
+          "function": "walk_to",
+          "actor_id": "human_2",
+          "params": {
+            "spatial_intent": "protest_march",
+            "wait_for": [],
+            "spatial_via_points": [
+              [
+                -15.053799068991928,
+                -0.019999999552965164,
+                15.053799068991928
+              ]
+            ],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              67.5
+            ],
+            "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+            "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 78.96239640562993
+          },
+          "source_function": "stage_region_approach"
+        }
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_2.started": 0.0,
+        "walk_to_2.finished": 78.962,
+        "human_2.started": 0.0,
+        "human_2.finished": 78.962,
+        "human_2.arrived": 78.962,
+        "walk_to_2.arrived": 78.962
+      }
+    },
+    {
+      "beat_id": "walk_to_3",
+      "actor_id": "human_3",
+      "function": "walk_to",
+      "start_time": 0.0,
+      "end_time": 79.478,
+      "duration": 79.478,
+      "params": {
+        "spatial_intent": "protest_march",
+        "wait_for": [],
+        "spatial_via_points": [
+          [
+            -15.124904782067857,
+            -0.019999999552965164,
+            15.124904782067857
+          ]
+        ],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          64.68759813798385
+        ],
+        "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+        "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+        "brief_path": {
+          "points": [
+            [
+              -74.57447737038851,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              64.68759813798385
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_3",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          64.68759813798385
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_3",
+          "function": "walk_to",
+          "actor_id": "human_3",
+          "params": {
+            "spatial_intent": "protest_march",
+            "wait_for": [],
+            "spatial_via_points": [
+              [
+                -15.124904782067857,
+                -0.019999999552965164,
+                15.124904782067857
+              ]
+            ],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              64.68759813798385
+            ],
+            "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+            "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 79.47765217286425
+          },
+          "source_function": "stage_region_approach"
+        }
+      },
+      "is_idle_fill": false,
+      "events": {
+        "walk_to_3.started": 0.0,
+        "walk_to_3.finished": 79.478,
+        "human_3.started": 0.0,
+        "human_3.finished": 79.478,
+        "human_3.arrived": 79.478,
+        "walk_to_3.arrived": 79.478
+      }
+    },
+    {
+      "beat_id": "idle_human_1_7828",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 78.284,
+      "end_time": 80.0,
+      "duration": 1.716,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_2_7896",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 78.962,
+      "end_time": 80.0,
+      "duration": 1.038,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_3_7947",
+      "actor_id": "human_3",
+      "function": "wait",
+      "start_time": 79.478,
+      "end_time": 80.0,
+      "duration": 0.522,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "walk_to_1.started": 0.0,
+    "walk_to_1.finished": 78.284,
+    "human_1.started": 0.0,
+    "human_1.finished": 78.284,
+    "human_1.arrived": 78.284,
+    "walk_to_1.arrived": 78.284,
+    "walk_to_2.started": 0.0,
+    "walk_to_2.finished": 78.962,
+    "human_2.started": 0.0,
+    "human_2.finished": 78.962,
+    "human_2.arrived": 78.962,
+    "walk_to_2.arrived": 78.962,
+    "walk_to_3.started": 0.0,
+    "walk_to_3.finished": 79.478,
+    "human_3.started": 0.0,
+    "human_3.finished": 79.478,
+    "human_3.arrived": 79.478,
+    "walk_to_3.arrived": 79.478
+  },
+  "actor_schedules": {
+    "human_1": [
+      {
+        "beat_id": "walk_to_1",
+        "actor_id": "human_1",
+        "function": "walk_to",
+        "start_time": 0.0,
+        "end_time": 78.284,
+        "duration": 78.284,
+        "params": {
+          "spatial_intent": "protest_march",
+          "wait_for": [],
+          "spatial_via_points": [
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ]
+          ],
+          "target": [
+            0.0,
+            -0.019999999552965164,
+            70.31240186201615
+          ],
+          "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+          "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "brief_path": {
+            "points": [
+              [
+                -67.5,
+                -0.019999999552965164,
+                15.124904782067857
+              ],
+              [
+                -15.124904782067857,
+                -0.019999999552965164,
+                15.124904782067857
+              ],
+              [
+                0.0,
+                -0.019999999552965164,
+                70.31240186201615
+              ]
+            ]
+          },
+          "action": "walk_to",
+          "auto_crowd_movement": "walk_to_1",
+          "arrival_position": [
+            0.0,
+            -0.019999999552965164,
+            70.31240186201615
+          ],
+          "crowd_movement_source": {
+            "beat_id": "walk_to_1",
+            "function": "walk_to",
+            "actor_id": "human_1",
+            "params": {
+              "spatial_intent": "protest_march",
+              "wait_for": [],
+              "spatial_via_points": [
+                [
+                  -15.124904782067857,
+                  -0.019999999552965164,
+                  15.124904782067857
+                ]
+              ],
+              "target": [
+                0.0,
+                -0.019999999552965164,
+                70.31240186201615
+              ],
+              "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+              "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+            },
+            "duration_condition": {
+              "type": "for_duration",
+              "value": 78.2840469662732
+            },
+            "source_function": "stage_region_approach"
+          }
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_1.started": 0.0,
+          "walk_to_1.finished": 78.284,
+          "human_1.started": 0.0,
+          "human_1.finished": 78.284,
+          "human_1.arrived": 78.284,
+          "walk_to_1.arrived": 78.284
+        }
+      },
+      {
+        "beat_id": "idle_human_1_7828",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 78.284,
+        "end_time": 80.0,
+        "duration": 1.716,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "walk_to_2",
+        "actor_id": "human_2",
+        "function": "walk_to",
+        "start_time": 0.0,
+        "end_time": 78.962,
+        "duration": 78.962,
+        "params": {
+          "spatial_intent": "protest_march",
+          "wait_for": [],
+          "spatial_via_points": [
+            [
+              -15.053799068991928,
+              -0.019999999552965164,
+              15.053799068991928
+            ]
+          ],
+          "target": [
+            0.0,
+            -0.019999999552965164,
+            67.5
+          ],
+          "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+          "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "brief_path": {
+            "points": [
+              [
+                -71.03723868519425,
+                -0.019999999552965164,
+                15.053799068991928
+              ],
+              [
+                -15.053799068991928,
+                -0.019999999552965164,
+                15.053799068991928
+              ],
+              [
+                0.0,
+                -0.019999999552965164,
+                67.5
+              ]
+            ]
+          },
+          "action": "walk_to",
+          "auto_crowd_movement": "walk_to_2",
+          "arrival_position": [
+            0.0,
+            -0.019999999552965164,
+            67.5
+          ],
+          "crowd_movement_source": {
+            "beat_id": "walk_to_2",
+            "function": "walk_to",
+            "actor_id": "human_2",
+            "params": {
+              "spatial_intent": "protest_march",
+              "wait_for": [],
+              "spatial_via_points": [
+                [
+                  -15.053799068991928,
+                  -0.019999999552965164,
+                  15.053799068991928
+                ]
+              ],
+              "target": [
+                0.0,
+                -0.019999999552965164,
+                67.5
+              ],
+              "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+              "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+            },
+            "duration_condition": {
+              "type": "for_duration",
+              "value": 78.96239640562993
+            },
+            "source_function": "stage_region_approach"
+          }
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_2.started": 0.0,
+          "walk_to_2.finished": 78.962,
+          "human_2.started": 0.0,
+          "human_2.finished": 78.962,
+          "human_2.arrived": 78.962,
+          "walk_to_2.arrived": 78.962
+        }
+      },
+      {
+        "beat_id": "idle_human_2_7896",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 78.962,
+        "end_time": 80.0,
+        "duration": 1.038,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_3": [
+      {
+        "beat_id": "walk_to_3",
+        "actor_id": "human_3",
+        "function": "walk_to",
+        "start_time": 0.0,
+        "end_time": 79.478,
+        "duration": 79.478,
+        "params": {
+          "spatial_intent": "protest_march",
+          "wait_for": [],
+          "spatial_via_points": [
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ]
+          ],
+          "target": [
+            0.0,
+            -0.019999999552965164,
+            64.68759813798385
+          ],
+          "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+          "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "brief_path": {
+            "points": [
+              [
+                -74.57447737038851,
+                -0.019999999552965164,
+                15.124904782067857
+              ],
+              [
+                -15.124904782067857,
+                -0.019999999552965164,
+                15.124904782067857
+              ],
+              [
+                0.0,
+                -0.019999999552965164,
+                64.68759813798385
+              ]
+            ]
+          },
+          "action": "walk_to",
+          "auto_crowd_movement": "walk_to_3",
+          "arrival_position": [
+            0.0,
+            -0.019999999552965164,
+            64.68759813798385
+          ],
+          "crowd_movement_source": {
+            "beat_id": "walk_to_3",
+            "function": "walk_to",
+            "actor_id": "human_3",
+            "params": {
+              "spatial_intent": "protest_march",
+              "wait_for": [],
+              "spatial_via_points": [
+                [
+                  -15.124904782067857,
+                  -0.019999999552965164,
+                  15.124904782067857
+                ]
+              ],
+              "target": [
+                0.0,
+                -0.019999999552965164,
+                64.68759813798385
+              ],
+              "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+              "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+            },
+            "duration_condition": {
+              "type": "for_duration",
+              "value": 79.47765217286425
+            },
+            "source_function": "stage_region_approach"
+          }
+        },
+        "is_idle_fill": false,
+        "events": {
+          "walk_to_3.started": 0.0,
+          "walk_to_3.finished": 79.478,
+          "human_3.started": 0.0,
+          "human_3.finished": 79.478,
+          "human_3.arrived": 79.478,
+          "walk_to_3.arrived": 79.478
+        }
+      },
+      {
+        "beat_id": "idle_human_3_7947",
+        "actor_id": "human_3",
+        "function": "wait",
+        "start_time": 79.478,
+        "end_time": 80.0,
+        "duration": 0.522,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

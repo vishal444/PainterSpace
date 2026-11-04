@@ -1,0 +1,182 @@
+[
+  {
+    "actor": "human_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_1",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_1",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_2",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_2",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_3",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_3",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_3",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_3",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_3",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_3",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  }
+]

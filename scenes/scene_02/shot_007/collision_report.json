@@ -1,15 +1,20 @@
 {
   "ok": true,
-  "time_steps": 371,
+  "actor_contact_policy": "full_body",
+  "time_steps": 3997,
   "actors": [
-    "Parkour_Runner"
+    "human_1",
+    "human_2",
+    "human_3",
+    "human_4",
+    "human_5"
   ],
   "assets": [
-    "OakTree",
-    "Sedan1",
-    "Coupe2",
-    "Sedan3"
+    "ResidentialIntersection",
+    "Ground"
   ],
   "unprotected_assets": [],
-  "violations": []
+  "unprotected_actors": [],
+  "violations": [],
+  "level_violations": []
 }

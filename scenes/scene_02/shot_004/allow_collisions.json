@@ -1,0 +1,954 @@
+[
+  {
+    "actor": "car_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_car_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "car_1",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_car_1",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "car_1",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_car_1",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_car_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "car_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_car_2",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "car_2",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_car_2",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "car_2",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "driver_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_2",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "driver_2",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_2",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "driver_2",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "cars.car2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "cars.car2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "human_2",
+    "asset": "cars.car2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "driver_2",
+    "asset": "cars.car2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "car_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "Human_driver_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "Human_driver_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "car_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "Human_human_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "Human_human_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "human_2",
+    "asset": "car_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "human_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "human_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "driver_2",
+    "asset": "car_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "driver_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_2",
+    "asset": "driver_2",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "Human_driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "Human_driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_driver_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "Human_driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "Human_driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "Human_human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "Human_human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_human_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "Human_human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "Human_human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "driver_1",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_1",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "environment.residential_avenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "driver_1",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "human_1",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "ResidentialAvenue",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
+  },
+  {
+    "actor": "driver_1",
+    "asset": "car_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "driver_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "driver_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "human_1",
+    "asset": "car_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "human_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "human_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "car_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "Human_human_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "Human_human_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "car_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "Human_driver_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "car_1",
+    "asset": "Human_driver_1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "driver_1",
+    "asset": "cars.car1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "human_1",
+    "asset": "cars.car1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "cars.car1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "cars.car1",
+    "is_occupant": true,
+    "t0": 0.0,
+    "t1": 1.0,
+    "max_depth_m": 0.5
+  },
+  {
+    "actor": "driver_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "Human_human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "Human_human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_human_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "Human_human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "Human_human_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "human_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "Human_driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "Human_driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "Human_driver_1",
+    "asset": "driver_2",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "human_2",
+    "asset": "Human_driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  },
+  {
+    "actor": "driver_2",
+    "asset": "Human_driver_1",
+    "t0": 2.0,
+    "t1": 4.0,
+    "max_depth_m": 0.45
+  }
+]

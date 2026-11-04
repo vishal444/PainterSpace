@@ -1,0 +1,24 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "walk",
+      "start_s": 0.0,
+      "end_s": 78.96239640562993,
+      "speed": 1.0,
+      "blend_s": 0.25,
+      "start_frame": 0,
+      "end_frame": 1895
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 78.96239640562993,
+      "end_s": 80.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 1895,
+      "end_frame": 1920
+    }
+  ],
+  "exact_windows": false
+}

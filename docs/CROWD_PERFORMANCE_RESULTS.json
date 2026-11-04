@@ -1,0 +1,177 @@
+{
+  "method": "Interleaved seven-repeat medians on the same process; component timings, not rendering benchmarks.",
+  "components": [
+    {
+      "case": "2_stationary_conflicts",
+      "baseline_ms": 0.004563331604003906,
+      "updated_ms": 0.004442089702934027,
+      "speedup": 1.0272938885024763,
+      "repeats": 7,
+      "iterations_per_repeat": 100
+    },
+    {
+      "case": "4_stationary_conflicts",
+      "baseline_ms": 0.03263874910771847,
+      "updated_ms": 0.01290332991629839,
+      "speedup": 2.5294826466842464,
+      "repeats": 7,
+      "iterations_per_repeat": 100
+    },
+    {
+      "case": "20_stationary_conflicts",
+      "baseline_ms": 1.0904179187491536,
+      "updated_ms": 0.2199145802296698,
+      "speedup": 4.958370279998559,
+      "repeats": 7,
+      "iterations_per_repeat": 100
+    },
+    {
+      "case": "40_stationary_conflicts",
+      "baseline_ms": 4.95005417149514,
+      "updated_ms": 0.8394675003364682,
+      "speedup": 5.896659691424744,
+      "repeats": 7,
+      "iterations_per_repeat": 100
+    },
+    {
+      "case": "short_interval_queries_100_keys",
+      "baseline_ms": 0.011856333585456014,
+      "updated_ms": 0.005878687486983836,
+      "speedup": 2.0168334533358765,
+      "repeats": 7,
+      "iterations_per_repeat": 2000
+    },
+    {
+      "case": "2_camera_subjects",
+      "baseline_ms": 0.7070508180186152,
+      "updated_ms": 0.38042834028601646,
+      "speedup": 1.8585650519281374,
+      "repeats": 7,
+      "iterations_per_repeat": 50
+    },
+    {
+      "case": "4_camera_subjects",
+      "baseline_ms": 1.2735266610980034,
+      "updated_ms": 0.3293150011450052,
+      "speedup": 3.867199054613487,
+      "repeats": 7,
+      "iterations_per_repeat": 50
+    },
+    {
+      "case": "20_camera_subjects",
+      "baseline_ms": 6.652775839902461,
+      "updated_ms": 0.37806916050612926,
+      "speedup": 17.596716513444914,
+      "repeats": 7,
+      "iterations_per_repeat": 50
+    },
+    {
+      "case": "2_point_path_sampling",
+      "baseline_ms": 0.9094916516914964,
+      "updated_ms": 0.8670708513818681,
+      "speedup": 1.048924260620711,
+      "repeats": 7,
+      "iterations_per_repeat": 20
+    },
+    {
+      "case": "40_point_path_sampling",
+      "baseline_ms": 1.618214591871947,
+      "updated_ms": 1.01701250532642,
+      "speedup": 1.5911452252522356,
+      "repeats": 7,
+      "iterations_per_repeat": 20
+    }
+  ],
+  "measurement_limits": [
+    "Component timings are interleaved medians of seven repeats in one process; the machine was not isolated from other work.",
+    "The historical full-compile comparison is one recorded baseline and one updated run, not a statistical performance guarantee.",
+    "No rendering or playback benchmark is claimed."
+  ],
+  "tests": {
+    "full_suite_passed": 230,
+    "full_suite_elapsed_s": 28.23,
+    "final_path_focused_passed": 50,
+    "final_path_focused_elapsed_s": 2.31,
+    "deduplication_focused_passed": 12
+  },
+  "replay": {
+    "baseline_compile_s": 125.66670529195108,
+    "updated_compile_s": 124.45470029208809,
+    "search_limits_increased": false,
+    "validation_samples": 3379,
+    "validation_samples_increased": false,
+    "validation": {
+      "success": true,
+      "lint_passed": true,
+      "collision_passed": true,
+      "camera_passed": true,
+      "bake_errors": [],
+      "lint_warnings": [],
+      "collision_report": {
+        "ok": true,
+        "actor_contact_policy": "core_body",
+        "time_steps": 3379,
+        "actors": [
+          "Human_1",
+          "Human_2",
+          "Human_3",
+          "Human_4",
+          "Human_5",
+          "Human_6",
+          "Human_7",
+          "Human_8",
+          "Human_9",
+          "Human_10",
+          "Human_11",
+          "Human_12",
+          "Human_13",
+          "Human_14",
+          "Human_15",
+          "Human_16",
+          "Human_17",
+          "Human_18",
+          "Human_19",
+          "Human_20"
+        ],
+        "assets": [
+          "GrandNightClub",
+          "Ground"
+        ],
+        "unprotected_assets": [],
+        "unprotected_actors": [],
+        "violations": [],
+        "level_violations": []
+      },
+      "camera_warnings": [],
+      "prompt_adherence": {
+        "passed": true,
+        "violations": [],
+        "checks": {}
+      }
+    },
+    "final_compile_s": 123.72563091712072
+  },
+  "scope": {
+    "implemented": [
+      "Reservation timing/reach indexes reused across queries",
+      "Conservative swept-bounds broad phase with continuous narrow phase retained",
+      "Deduplicate equivalent transitive priority orders within the existing budget",
+      "Indexed polyline lookup and corner headings aligned to sampled travel",
+      "Camera frame/basis reuse and actual projection instead of a fixed distance rejection"
+    ],
+    "not_implemented": [
+      "Full joint interaction/layout backtracking",
+      "Automatic temporal arena reuse",
+      "Orientation-aware body envelopes",
+      "Swept/adaptive skeletal validation",
+      "Validator-driven localized repair"
+    ],
+    "reason": "These require additional algorithms and potentially additional search/checks; universal zero additional compute cost cannot be guaranteed. Existing safety checks and budgets were preserved."
+  },
+  "source_sha256": {
+    "tools/shot_library/crowd/st_planner.py": "da3cb6f67a374e82d0a62424f2d3959b36be5cf1def90a01e8a3c9bb94ec76a5",
+    "tools/shot_library/crowd/joint.py": "56edd596b10c15f82566a1683d8f8a8972a67e5c4ae594ecb9b5524bbcac2d6f",
+    "tools/shot_library/director_brief.py": "47d1d728e9d2b7f01dac412f76839f28aaf2088beb99614660fc945a4e9d9351",
+    "tools/shot_library/camera_controller.py": "ca78fd926868f6668f702d26994c8a3438136e32807f1d05998c6425e50a4740"
+  }
+}

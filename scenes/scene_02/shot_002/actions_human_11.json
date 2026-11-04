@@ -1,0 +1,33 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "walk",
+      "start_s": 0.0,
+      "end_s": 9.714285714285715,
+      "speed": 1.0,
+      "blend_s": 0.25,
+      "start_frame": 0,
+      "end_frame": 233
+    },
+    {
+      "clip": "groving_to_music_energetically",
+      "start_s": 9.714285714285715,
+      "end_s": 12.714285714285715,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 233,
+      "end_frame": 305
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 12.714285714285715,
+      "end_s": 13.25,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 305,
+      "end_frame": 318
+    }
+  ],
+  "exact_windows": false
+}

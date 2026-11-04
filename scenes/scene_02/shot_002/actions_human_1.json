@@ -2,85 +2,32 @@
   "fps": 24,
   "actions": [
     {
-      "clip": "sitting",
+      "clip": "walk",
       "start_s": 0.0,
-      "end_s": 3.5,
-      "speed": 1.0,
-      "blend_s": 0.2,
+      "end_s": 9.714285714285715,
+      "speed": 0.9411764705882354,
+      "blend_s": 0.25,
       "start_frame": 0,
-      "end_frame": 84
+      "end_frame": 233
     },
     {
-      "clip": "opening_door_inwards",
-      "start_s": 3.5,
-      "end_s": 5.0,
+      "clip": "groving_to_music_energetically",
+      "start_s": 9.714285714285715,
+      "end_s": 12.714285714285715,
       "speed": 1.0,
       "blend_s": 0.2,
-      "start_frame": 84,
-      "end_frame": 120
-    },
-    {
-      "clip": "walk",
-      "start_s": 5.0,
-      "end_s": 6.5,
-      "speed": 1.0,
-      "blend_s": 0.2,
-      "start_frame": 120,
-      "end_frame": 156
-    },
-    {
-      "clip": "walk",
-      "start_s": 6.5,
-      "end_s": 8.0,
-      "speed": 1.0,
-      "blend_s": 0.2,
-      "start_frame": 156,
-      "end_frame": 192
-    },
-    {
-      "clip": "pointing_forward",
-      "start_s": 8.0,
-      "end_s": 11.0,
-      "speed": 1.0,
-      "blend_s": 0.2,
-      "start_frame": 192,
-      "end_frame": 264
-    },
-    {
-      "clip": "left_hook",
-      "start_s": 11.0,
-      "end_s": 12.5,
-      "speed": 1.0,
-      "blend_s": 0.15,
-      "start_frame": 264,
-      "end_frame": 300
-    },
-    {
-      "clip": "reaction",
-      "start_s": 12.5,
-      "end_s": 14.0,
-      "speed": 1.0,
-      "blend_s": 0.1,
-      "start_frame": 300,
-      "end_frame": 336
-    },
-    {
-      "clip": "kick_to_the_groin",
-      "start_s": 14.0,
-      "end_s": 15.5,
-      "speed": 1.0,
-      "blend_s": 0.15,
-      "start_frame": 336,
-      "end_frame": 372
+      "start_frame": 233,
+      "end_frame": 305
     },
     {
       "clip": "acknowledging",
-      "start_s": 15.5,
-      "end_s": 16.0,
+      "start_s": 12.714285714285715,
+      "end_s": 13.25,
       "speed": 1.0,
       "blend_s": 0.2,
-      "start_frame": 372,
-      "end_frame": 384
+      "start_frame": 305,
+      "end_frame": 318
     }
-  ]
+  ],
+  "exact_windows": false
 }

@@ -218,7 +218,7 @@ def main() -> None:
     parser.add_argument("--clip", action="append", type=Path, default=[], help="a Mixamo FBX downloaded Without Skin")
     parser.add_argument("--all-clips", action="store_true", help="export every FBX clip in output directory")
     parser.add_argument("--skip-existing", action="store_true", help="skip export if destination .usdc already exists")
-    parser.add_argument("--output-dir", type=Path, default=Path("assets/usdc_assets/humans"), help="default: assets/usdc_assets/humans")
+    parser.add_argument("--output-dir", type=Path, default=Path("assets/usdc_assets/human_actions"), help="default: assets/usdc_assets/human_actions")
     parser.add_argument("--manifest", type=Path, help="update its top-level clips object")
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--translation-scale", type=float, default=1.0,
@@ -226,7 +226,7 @@ def main() -> None:
     args = parser.parse_args(blender_args())
     if args.fps <= 0:
         parser.error("--fps must be positive")
-    output_dir = (args.output_dir or (args.character.parent if args.character else Path("assets/usdc_assets/humans"))).resolve()
+    output_dir = args.output_dir.resolve()
     clips = list(args.clip)
     if args.all_clips:
         clips.extend(sorted(path for path in output_dir.iterdir() if is_skinless_fbx(path)))
@@ -236,7 +236,7 @@ def main() -> None:
     if any(not path.is_file() for path in clip_sources):
         parser.error("one or more clip FBX files do not exist")
 
-    character_output = output_dir / "human.usdc"
+    character_output = (output_dir.parent / "humans" / "human.usdc") if output_dir.name == "human_actions" else (output_dir / "human.usdc")
     height = None
     if args.character:
         character = args.character.resolve()

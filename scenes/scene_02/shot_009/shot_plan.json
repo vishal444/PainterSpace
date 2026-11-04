@@ -1,0 +1,472 @@
+{
+  "schema_version": "1.0",
+  "prompt": "a group of protestors comes in from the west road, with hands raising in protest slogans, takes the corner goes towards the south road.",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "human_1",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "position": [
+        -67.5,
+        -0.019999999552965164,
+        15.124904782067857
+      ],
+      "facing_deg": 90.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.human",
+      "label": "human_2",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "position": [
+        -71.03723868519425,
+        -0.019999999552965164,
+        15.053799068991928
+      ],
+      "facing_deg": 90.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_3",
+      "asset_id": "character.human",
+      "label": "human_3",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "position": [
+        -74.57447737038851,
+        -0.019999999552965164,
+        15.124904782067857
+      ],
+      "facing_deg": 90.0
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "walk_to_1",
+      "function": "walk_to",
+      "actor_id": "human_1",
+      "params": {
+        "spatial_intent": "protest_march",
+        "wait_for": [],
+        "spatial_via_points": [
+          [
+            -15.124904782067857,
+            -0.019999999552965164,
+            15.124904782067857
+          ]
+        ],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          70.31240186201615
+        ],
+        "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+        "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+        "brief_path": {
+          "points": [
+            [
+              -67.5,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              70.31240186201615
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_1",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          70.31240186201615
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_1",
+          "function": "walk_to",
+          "actor_id": "human_1",
+          "params": {
+            "spatial_intent": "protest_march",
+            "wait_for": [],
+            "spatial_via_points": [
+              [
+                -15.124904782067857,
+                -0.019999999552965164,
+                15.124904782067857
+              ]
+            ],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              70.31240186201615
+            ],
+            "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+            "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 78.2840469662732
+          },
+          "source_function": "stage_region_approach"
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 78.2840469662732
+      }
+    },
+    {
+      "beat_id": "walk_to_2",
+      "function": "walk_to",
+      "actor_id": "human_2",
+      "params": {
+        "spatial_intent": "protest_march",
+        "wait_for": [],
+        "spatial_via_points": [
+          [
+            -15.053799068991928,
+            -0.019999999552965164,
+            15.053799068991928
+          ]
+        ],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          67.5
+        ],
+        "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+        "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+        "brief_path": {
+          "points": [
+            [
+              -71.03723868519425,
+              -0.019999999552965164,
+              15.053799068991928
+            ],
+            [
+              -15.053799068991928,
+              -0.019999999552965164,
+              15.053799068991928
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              67.5
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_2",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          67.5
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_2",
+          "function": "walk_to",
+          "actor_id": "human_2",
+          "params": {
+            "spatial_intent": "protest_march",
+            "wait_for": [],
+            "spatial_via_points": [
+              [
+                -15.053799068991928,
+                -0.019999999552965164,
+                15.053799068991928
+              ]
+            ],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              67.5
+            ],
+            "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+            "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 78.96239640562993
+          },
+          "source_function": "stage_region_approach"
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 78.96239640562993
+      }
+    },
+    {
+      "beat_id": "walk_to_3",
+      "function": "walk_to",
+      "actor_id": "human_3",
+      "params": {
+        "spatial_intent": "protest_march",
+        "wait_for": [],
+        "spatial_via_points": [
+          [
+            -15.124904782067857,
+            -0.019999999552965164,
+            15.124904782067857
+          ]
+        ],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          64.68759813798385
+        ],
+        "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+        "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+        "brief_path": {
+          "points": [
+            [
+              -74.57447737038851,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              64.68759813798385
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_3",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          64.68759813798385
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_3",
+          "function": "walk_to",
+          "actor_id": "human_3",
+          "params": {
+            "spatial_intent": "protest_march",
+            "wait_for": [],
+            "spatial_via_points": [
+              [
+                -15.124904782067857,
+                -0.019999999552965164,
+                15.124904782067857
+              ]
+            ],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              64.68759813798385
+            ],
+            "spatial_source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+            "spatial_destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 79.47765217286425
+          },
+          "source_function": "stage_region_approach"
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 79.47765217286425
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "interaction_id": "protest_march",
+      "participants": [
+        "human_1",
+        "human_2",
+        "human_3"
+      ],
+      "actions": [
+        "walk_to_1",
+        "walk_to_2",
+        "walk_to_3"
+      ],
+      "timing": "simultaneous",
+      "intent": "",
+      "after": []
+    }
+  ],
+  "brief_conflicts": [],
+  "spatial_intents": [
+    {
+      "intent_id": "protest_march",
+      "actors": [
+        "human_1",
+        "human_2",
+        "human_3"
+      ],
+      "movements": {
+        "human_1": "walk_to_1",
+        "human_2": "walk_to_2",
+        "human_3": "walk_to_3"
+      },
+      "source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+      "destination_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+      "departure_timing": "simultaneous",
+      "gait": "walk",
+      "bindings": {
+        "human_1": {
+          "source": [
+            -67.5,
+            -0.019999999552965164,
+            15.124904782067857
+          ],
+          "destination": [
+            0.0,
+            -0.019999999552965164,
+            70.31240186201615
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+          "via_points": [
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_2": {
+          "source": [
+            -71.03723868519425,
+            -0.019999999552965164,
+            15.053799068991928
+          ],
+          "destination": [
+            0.0,
+            -0.019999999552965164,
+            67.5
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+          "via_points": [
+            [
+              -15.053799068991928,
+              -0.019999999552965164,
+              15.053799068991928
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2562009310080706,
+          "destination_radius_m": 1.2562009310080706,
+          "source_solid_radius_m": 1.2562009310080706,
+          "destination_solid_radius_m": 1.2562009310080706
+        },
+        "human_3": {
+          "source": [
+            -74.57447737038851,
+            -0.019999999552965164,
+            15.124904782067857
+          ],
+          "destination": [
+            0.0,
+            -0.019999999552965164,
+            64.68759813798385
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_80fa7c7b3bc4f127",
+          "via_points": [
+            [
+              -15.124904782067857,
+              -0.019999999552965164,
+              15.124904782067857
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "_search": {
+          "attempts": 1,
+          "variant": 0
+        }
+      },
+      "source_regions": [],
+      "via_regions": [
+        "ResidentialIntersection:corner_e862c1b1cfbc99d4"
+      ],
+      "origin_layout": "specified"
+    }
+  ]
+}

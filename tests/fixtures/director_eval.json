@@ -1,0 +1,4 @@
+[
+  {"id":"authored_walk","prompt":"One person walks north.","brief":{"version":1,"tracks":{"human_1":{"segments":[{"id":"walk","t":[0,1],"action":"walk_to","path":"walk_path","lock":"locked"}]}},"paths":{"walk_path":{"owner":"human_1","points":[[0,0,0],[0,0,-1.4]],"speed_profile":"constant"}}}},
+  {"id":"exact_walk_run","prompt":"One person walks north then runs south.","brief":{"version":1,"tracks":{"human_1":{"segments":[{"id":"walk","t":[0,1],"action":"walk_to","path":"walk_path","lock":"locked"},{"id":"run","t":[1,2],"action":"run_to","path":"run_path","lock":"locked"}]}},"paths":{"walk_path":{"owner":"human_1","points":[[0,0,0],[0,0,-1.4]],"speed_profile":"constant"},"run_path":{"owner":"human_1","points":[[0,0,-1.4],[0,0,2.8]],"speed_profile":"constant"}}}}
+]

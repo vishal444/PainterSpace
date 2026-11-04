@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    over "ResidentialAvenue" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+    }
+
+    def Xform "ResidentialIntersection" (
+        customData = {
+            string asset_id = "environment.residential_intersection"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/environments/residential_intersection.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    over "Ground"
+    {
+        float3 xformOp:scale = (310, 0.08, 180)
+        double3 xformOp:translate = (0, -0.04, 0)
+    }
+}
+

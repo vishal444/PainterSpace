@@ -1,0 +1,70 @@
+{
+  "success": true,
+  "lint_passed": true,
+  "collision_passed": true,
+  "collision_skipped": false,
+  "camera_passed": true,
+  "bake_errors": [],
+  "lint_warnings": [],
+  "collision_report": {
+    "ok": true,
+    "actor_contact_policy": "full_body",
+    "time_steps": 613,
+    "actors": [
+      "driver_2",
+      "driver_1"
+    ],
+    "assets": [
+      "ResidentialAvenue",
+      "car_1",
+      "car_2",
+      "Ground"
+    ],
+    "unprotected_assets": [],
+    "unprotected_actors": [],
+    "violations": [],
+    "level_violations": []
+  },
+  "camera_warnings": [],
+  "prompt_adherence": {
+    "passed": true,
+    "violations": [],
+    "checks": {
+      "car": {
+        "required": true,
+        "found": true,
+        "asset_id": "cars.car1"
+      }
+    }
+  },
+  "crowd_repair": {
+    "retries": 0,
+    "attempts": [
+      {
+        "attempt": 0,
+        "planning_buffer_m": 0.3,
+        "success": true,
+        "error": null,
+        "collision_report": {
+          "ok": true,
+          "actor_contact_policy": "full_body",
+          "time_steps": 613,
+          "actors": [
+            "driver_2",
+            "driver_1"
+          ],
+          "assets": [
+            "ResidentialAvenue",
+            "car_1",
+            "car_2",
+            "Ground"
+          ],
+          "unprotected_assets": [],
+          "unprotected_actors": [],
+          "violations": [],
+          "level_violations": []
+        }
+      }
+    ]
+  }
+}

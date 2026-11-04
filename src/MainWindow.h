@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QVector>
 
+#include "ActionTimelineWidget.h"
 #include "AssetTypes.h"
 
 class QLabel;
@@ -21,6 +22,9 @@ class QWidget;
 class QLineEdit;
 class QComboBox;
 class QVBoxLayout;
+class QCheckBox;
+class QSlider;
+class QToolButton;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -28,6 +32,14 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     UsdViewportWidget* usdViewport() const { return myUsdViewport; }
+
+    enum class ShotMode {
+        PromptLlm,
+        DirectorManual,
+        Hybrid
+    };
+    ShotMode shotMode() const { return myShotMode; }
+    void setShotMode(ShotMode mode);
 
 private slots:
     void addHuman();
@@ -74,6 +86,9 @@ private:
     struct StoryboardPanel;
     struct AssetEntry;
 
+    void setupCameraInspector(QVBoxLayout* parentLayout);
+    void updateCameraInspectorUi();
+
     QPushButton* makeAssetButton(const QString& text, const QString& objectName);
     void populateAssetEntries();
     void refreshAssetList();
@@ -91,6 +106,27 @@ private:
     void showPlaybackDialog(const QStringList& frames, int fps, const QString& title);
     QString ensureSceneStageFile(int sceneIndex) const;
     QString ensureShotStageFile(int sceneIndex, int panelIndex) const;
+    void toggleDrawPathForSelectedPrim();
+    void clearPathForSelectedPrim();
+    void updatePrimPathControls();
+    void saveShotActions(int sceneIndex, int panelIndex);
+    QJsonObject runDirectorTool(const QStringList& arguments) const;
+    void refreshDirectorState();
+    void inspectDirectorBrief();
+    void applyDirectorBrief(const QJsonObject& brief);
+    void renderCameraTakes(bool allTakes);
+    void editCameraKeys();
+    void loadShotActions(int sceneIndex, int panelIndex);
+    void refreshGeneratedShotTimeline(const QString& stagePath);
+    void syncTimelineMovementDistances(bool recordUndo = true);
+
+    enum class UndoActionSource {
+        Viewport,
+        Timeline
+    };
+    QVector<UndoActionSource> myGlobalUndoStack;
+    void performGlobalUndo();
+    void updateEditorUndoButtonState();
 
     struct AssetEntry {
         QString name;
@@ -112,6 +148,9 @@ private:
         QImage render;
         QString prompt;
         QString usdStagePath;
+        QVector<ActionSegment> actionTimeline;
+        QHash<QString, QVector<QVector3D>> assetPaths;
+        double durationS = 15.0;
     };
 
     struct StoryboardScene {
@@ -133,6 +172,12 @@ private:
     QLabel* myCanvasStatus;
     QPlainTextEdit* myScenePrompt = nullptr;
     QPushButton* myGenerateUsdButton = nullptr;
+    QPushButton* myRerenderCameraButton = nullptr;
+    QComboBox* myCameraTakes = nullptr;
+    QComboBox* myGenerationMode = nullptr;
+    bool myPickingBriefTarget = false;
+    QListWidget* myBriefLint = nullptr;
+    QLabel* myDirectorState = nullptr;
     QProcess* myUsdGenerationProcess = nullptr;
     QDoubleSpinBox* myPositionX;
     QDoubleSpinBox* myPositionY;
@@ -141,6 +186,7 @@ private:
     QDoubleSpinBox* myRotationY;
     QDoubleSpinBox* myRotationZ;
     QDoubleSpinBox* myScaleSpin;
+    QPushButton* myRemoveAssetButton = nullptr;
     QStackedWidget* myViewStack = nullptr;
     QWidget* myProjectPage = nullptr;
     QWidget* myScenesPage = nullptr;
@@ -161,10 +207,42 @@ private:
     QLabel* myPromptHintLabel = nullptr;
     QPushButton* myEditorPlayClipButton = nullptr;
     QPushButton* myEditorSaveSceneButton = nullptr;
+    QPushButton* myEditorUndoButton = nullptr;
     QPushButton* myEditorPrimaryActionButton = nullptr;
     QString myProjectTitle = QStringLiteral("Storyboard Project");
     QVector<StoryboardScene> myStoryboardScenes;
     int myCurrentScene = -1;
     int myCurrentPanel = -1;
     int myLastEditedPanel = -1;
+
+    // Director Mode & Camera Inspector
+    ShotMode myShotMode = ShotMode::DirectorManual;
+    QPushButton* myCameraViewModeButton = nullptr;
+    QGroupBox* myCameraInspectorBox = nullptr;
+    QComboBox* myShotModeCombo = nullptr;
+    QComboBox* myCameraShotSizeCombo = nullptr;
+    QCheckBox* myCameraFramingModeCheck = nullptr;
+    QSlider* myCameraZoomSlider = nullptr;
+    QLabel* myCameraZoomValueLabel = nullptr;
+    QComboBox* myCameraSensorCombo = nullptr;
+    QComboBox* myCameraAspectCombo = nullptr;
+    QComboBox* myCameraAimModeCombo = nullptr;
+    QComboBox* myCameraAimTargetCombo = nullptr;
+    QPushButton* myCenterAimButton = nullptr;
+    QCheckBox* myDollyZoomCheck = nullptr;
+    QPushButton* myResetCameraEditsButton = nullptr;
+    QLabel* myPathJointsCountLabel = nullptr;
+    QPushButton* myCameraDrawPathButton = nullptr;
+    QPushButton* myExtendPathButton = nullptr;
+    QPushButton* myDeleteLastJointButton = nullptr;
+    QPushButton* myClearPathButton = nullptr;
+
+    // Action Timeline System
+    ActionTimelineWidget* myActionTimeline = nullptr;
+    bool mySyncingTimelineMovementDistances = false;
+
+    // Prim Movement Path Controls (inside Prim Control Panel)
+    QPushButton* myPrimDrawPathButton = nullptr;
+    QPushButton* myPrimClearPathButton = nullptr;
+    QLabel* myPrimPathInfoLabel = nullptr;
 };

@@ -17,11 +17,13 @@ import copy
 import inspect
 import json
 import math
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import re
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 from actor_registry import ActorAppearance, ActorRegistry
 from manifest_schema import enrich_manifest
-from plan_model import Beat, SetupAction, ShotPlan, StructuredError, TimingCondition
+from plan_model import (Beat, InteractionPlan, SetupAction, ShotPlan, StructuredError,
+                        TimingCondition, InteractionTiming, INTERACTION_TIMINGS, SpatialIntent)
 from semantic_references import ReferenceResolver
 
 
@@ -49,9 +51,138 @@ class FunctionCatalog:
         """Return the constructed ShotPlan."""
         return self.plan
 
+    def declare_interaction(
+        self,
+        interaction_id: str,
+        participants: List[str],
+        actions: List[str],
+        timing: InteractionTiming = "sequence",
+        intent: str = "",
+        after: Optional[List[str]] = None,
+    ) -> Tuple[bool, Union[Dict[str, Any], StructuredError]]:
+        """Declare actor.function actions using the emitted action name or recorded originating catalog tool; number repeats as actor.function#1, #2, etc. Bare references resolve in declaration order only when they cover all occurrences not selected by explicit numbers or beat IDs. simultaneous means the same start time, overlap means a shared interval, parallel permits staggered starts, sequence means one by one. after lists preceding interaction IDs, all of whose actions must finish first. overlap and simultaneous permit at most one full-body action per actor; split an actor's successive actions into separate interactions linked by after, retaining concurrent actions for different actors in the same phase."""
+        if not interaction_id or any(i.interaction_id == interaction_id for i in self.plan.interactions):
+            return False, StructuredError("INTERACTION_ID", "Interaction IDs must be nonempty and unique.")
+        if timing not in INTERACTION_TIMINGS or len(actions) < 1 or len(set(participants)) < 1:
+            return False, StructuredError("INTERACTION_SCHEMA", "Provide participants, actions, and sequence, overlap, parallel or simultaneous timing.")
+        after = [] if after is None else after
+        if not isinstance(after, list) or any(not isinstance(parent, str) or not parent for parent in after):
+            return False, StructuredError('INTERACTION_SCHEMA', 'after must be a list of nonempty interaction IDs.')
+        interaction = InteractionPlan(
+            interaction_id, list(participants), list(actions), timing, intent, list(after))
+        from interaction_plan import check_overlap_actors
+        states = {state['actor_id']: state for state in self.scene_data.get('existing_actors', [])}
+        states.update({state['actor_id']: state for state in self.registry.list_actors()})
+        error = check_overlap_actors(interaction, self.plan, states)
+        if error:
+            return False, error
+        self.plan.interactions.append(interaction)
+        return True, {"interaction_id": interaction_id}
+
     # -------------------------------------------------------------------------
     # 7.1 Queries (no side effects)
     # -------------------------------------------------------------------------
+    def list_spatial_regions(self) -> List[Dict[str, Any]]:
+        """List measured floor, boundary entry, obstacle-side approach and exterior corner area IDs for origins, destinations and ordered route constraints. These are not doors or interiors."""
+        from spatial_regions import derive_spatial_regions, region_descriptors
+        regions = self.scene_data.get('spatial_regions')
+        return region_descriptors(regions if regions is not None else derive_spatial_regions(self.scene_data, self.manifest))
+
+    def stage_region_approach(
+        self, intent_id: str, actors: List[str], source_region: str, destination_region: str,
+        departure_timing: InteractionTiming = 'simultaneous', gait: Literal['walk', 'run', 'jog'] = 'walk',
+        after: Optional[List[str]] = None,
+        asset_id: Optional[str] = None,
+        source_regions: Optional[List[str]] = None,
+        via_regions: Optional[List[str]] = None,
+        origin_layout: Literal['specified', 'opposite', 'surrounding'] = 'specified',
+    ) -> Tuple[bool, Any]:
+        """Stage ground arrivals from any listed floor, entry, corner or approach area. destination_region accepts a listed floor or boundary entry area; use an entry destination to keep arrivals on the requested side, and a floor for an interior gathering. source_regions optionally matches actors in order; otherwise source_region applies to everyone. origin_layout=opposite or surrounding distributes actors across measured destination-floor entries instead. via_regions lists route areas to visit in order (use corner areas for around-corner paths). Reuse placed/listed existing actors. asset_id creates new actor IDs; only a wholly new cast may use the manifest default or sole character asset. Compiler selects clear positions and routes. Link later phases with after=[intent_id]; do not duplicate movements."""
+        from spatial_intents import GAIT_FUNCTIONS
+        from spatial_regions import valid_destination
+        if (not actors or any(not isinstance(actor, str) or not actor for actor in actors)
+                or len({actor.lower() for actor in actors}) != len(actors)):
+            return False, StructuredError('SPATIAL_INTENT_ACTORS',
+                                         'Provide distinct nonempty actor references.').to_dict()
+        regions = {region['id']: region for region in self.list_spatial_regions()}
+        # Resolve and validate against a temporary registry: failed declarations
+        # must not leave behind actors, setup actions or half a group.
+        registry = copy.deepcopy(self.registry)
+        character_assets = {asset['id'] for asset in self.manifest.get('assets', [])
+                            if 'character' in asset.get('tags', []) or asset['id'].startswith('character.')}
+        existing = [item for item in self.scene_data.get('existing_actors', [])
+                    if item.get('asset_id') in character_assets]
+        for actor in actors:
+            if registry.get(actor):
+                continue
+            matches = [item for item in existing if actor.lower() in
+                       (str(item['actor_id']).lower(), str(item['label']).lower())]
+            if len(matches) == 1:
+                item = matches[0]
+                registry.register(item['asset_id'], actor_id=item['actor_id'], label=item['label'],
+                                  prim_path=item.get('prim_path'),
+                                  appearance=ActorAppearance.from_dict(item.get('appearance', {})))
+        missing = [actor for actor in actors if not registry.get(actor)]
+        if missing:
+            chosen_asset = asset_id
+            if chosen_asset is None and not registry.list_actors() and not existing and not self.plan.beats:
+                chosen_asset = self.manifest.get('defaults', {}).get('character_asset_id')
+                if chosen_asset is None and len(character_assets) == 1:
+                    chosen_asset = next(iter(character_assets))
+            if (chosen_asset not in character_assets
+                    or any(not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', actor) for actor in missing)):
+                return False, StructuredError('SPATIAL_INTENT_ACTORS',
+                    'Unresolved actors require a character asset_id; a fresh cast may use defaults.character_asset_id. '
+                    'New IDs must be identifiers. Reuse listed existing actor IDs or place actors first.',
+                    details={'unresolved_actors': missing, 'character_assets': sorted(character_assets),
+                             'default_asset_id': self.manifest.get('defaults', {}).get('character_asset_id')},
+                    ).to_dict()
+            for actor in missing:
+                registry.register(chosen_asset, actor_id=actor, label=actor)
+        records = [registry.get(actor) for actor in actors]
+        participants = [record.actor_id for record in records if record is not None]
+        if (not actors or len(records) != len(participants) or len(set(participants)) != len(participants)
+                or any(record.asset_id not in character_assets for record in records if record)):
+            return False, StructuredError('SPATIAL_INTENT_ACTORS', 'Provide distinct placed ground characters.').to_dict()
+        if (not intent_id or any(item.intent_id == intent_id for item in self.plan.spatial_intents)
+                or any(item.interaction_id == intent_id for item in self.plan.interactions)
+                or gait not in GAIT_FUNCTIONS or departure_timing not in INTERACTION_TIMINGS):
+            return False, StructuredError('SPATIAL_INTENT_SCHEMA', 'Provide a unique ID, supported gait and departure timing.').to_dict()
+        source, destination = regions.get(source_region), regions.get(destination_region)
+        if not source or not valid_destination(destination, regions):
+            return False, StructuredError('SPATIAL_REGION_REFERENCE', 'Use a current listed source and a floor or boundary entry destination ID.',
+                details={'source_region': source_region, 'destination_region': destination_region,
+                         'destination_kind': destination.get('kind') if destination else None,
+                         'allowed_destination_kinds': ['floor', 'entry']}).to_dict()
+        if (origin_layout not in ('specified', 'opposite', 'surrounding')
+                or (source_regions and (origin_layout != 'specified' or len(source_regions) != len(actors)))
+                or any(region not in regions for region in (source_regions or []) + (via_regions or []))):
+            return False, StructuredError('SPATIAL_INTENT_SCHEMA',
+                'source_regions must match actors in order; use them with specified layout. via_regions are ordered current region IDs.').to_dict()
+        if origin_layout != 'specified' and len(actors) < (2 if origin_layout == 'opposite' else 4):
+            return False, StructuredError('SPATIAL_INTENT_SCHEMA', 'Not enough actors to populate the requested origin layout.').to_dict()
+        if after is not None and (not isinstance(after, list) or any(not isinstance(item, str) or not item for item in after)):
+            return False, StructuredError('SPATIAL_INTENT_SCHEMA', 'after must name preceding interaction IDs.').to_dict()
+        if any(beat.actor_id in participants and beat.function not in ('wait', 'idle', 'turn_to_face') for beat in self.plan.beats):
+            return False, StructuredError('SPATIAL_INTENT_SOURCE', 'Region placement applies to an initial approach only.').to_dict()
+        self.registry = registry
+        placed = {setup.actor_id for setup in self.plan.setup if setup.action_type == 'place'}
+        for record in records:
+            if record.actor_id not in placed:
+                self.plan.add_setup(SetupAction('place', record.actor_id, asset_id=record.asset_id,
+                                               label=record.label, appearance=record.appearance.to_dict()))
+        movements = {}
+        for actor in participants:
+            _, result = self._create_beat(GAIT_FUNCTIONS[gait], actor, {'spatial_intent': intent_id})
+            movements[actor] = result['beat_id']
+        self.plan.spatial_intents.append(SpatialIntent(intent_id, participants, movements,
+            source_region, destination_region, departure_timing, gait,
+            source_regions=list(source_regions or []), via_regions=list(via_regions or []), origin_layout=origin_layout))
+        self.plan.interactions.append(InteractionPlan(intent_id, participants, list(movements.values()),
+                                                       departure_timing, after=list(after or [])))
+        return True, {'interaction_id': intent_id, 'movement_beats': movements,
+                      'finished_events': [f'{beat}.finished' for beat in movements.values()]}
+
     def list_assets(self) -> List[Dict[str, Any]]:
         """List all valid asset IDs and placeable assets in the project library."""
         return [
@@ -285,11 +416,23 @@ class FunctionCatalog:
         until: Optional[str] = None,
         for_duration: Optional[Union[str, float]] = None,
         at_time: Optional[float] = None,
+        source_function: Optional[str] = None,
     ) -> Tuple[bool, Union[Dict[str, Any], StructuredError]]:
         rec = self.registry.get(actor)
         aid = rec.actor_id if rec else actor
 
+        # Plans use stable actor IDs internally. Labels are useful to callers,
+        # but leaving them in beat parameters breaks shared-action scheduling.
+        params = dict(params)
+        for key in ("target", "threat", "patient"):
+            value = params.get(key)
+            target_rec = self.registry.get(value) if isinstance(value, str) else None
+            if target_rec:
+                params[key] = target_rec.actor_id
+
         # Check if duration/timing helpers were passed in kwargs
+        if at_time is None and "at_time" in params:
+            at_time = params.pop("at_time")
         if for_duration is None and "for_duration" in params:
             for_duration = params.pop("for_duration")
         if until is None and "until" in params:
@@ -332,6 +475,7 @@ class FunctionCatalog:
             params=params,
             start_condition=start_cond,
             duration_condition=dur_cond,
+            source_function=source_function,
         )
         self.plan.add_beat(beat)
         return True, {"beat_id": beat_id, "function": function, "actor_id": aid}
@@ -339,10 +483,21 @@ class FunctionCatalog:
     # -------------------------------------------------------------------------
     # 7.3 Character locomotion
     # -------------------------------------------------------------------------
+    def follow_path(self, actor: str, path_id: str, style: Optional[str] = None, after: Optional[str] = None) -> Tuple[bool, Any]:
+        """Follow an authored route by ID; geometry is resolved only by the compiler."""
+        return self._create_beat("follow_path", actor, {"path_id": path_id, "style": style}, after=after)
+
+    def perform(self, actor: str, action: str, during: Optional[str] = None, target: Optional[str] = None, variant: Optional[str] = None, after: Optional[str] = None) -> Tuple[bool, Any]:
+        """Choose an action for a named user segment, or after a segment completion. Interaction references may use actor.perform or actor.<action>, with occurrence numbers for repeats."""
+        params = {k: v for k, v in {"action": action, "during": during, "target": target, "variant": variant}.items() if v is not None}
+        return self._create_beat(action, actor, params, after=after, source_function='perform')
+
     def walk_to(self, actor: str, target: str, after: Optional[str] = None, with_event: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
+        """Walk to a semantic target; actor targets resolve at arrival, so use an actor ID for a moving person."""
         return self._create_beat("walk_to", actor, {"target": target, **kwargs}, after=after, with_event=with_event)
 
     def run_to(self, actor: str, target: str, after: Optional[str] = None, with_event: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
+        """Run to a semantic target; actor targets resolve at arrival, so use an actor ID for a moving person."""
         return self._create_beat("run_to", actor, {"target": target, **kwargs}, after=after, with_event=with_event)
 
     def sneak_to(self, actor: str, target: str, after: Optional[str] = None, with_event: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
@@ -492,7 +647,12 @@ class FunctionCatalog:
                 self.place(asset_id=char_asset, at_reference=tgt, label=occ, in_vehicle=veh_name, seat=seat_name)
                 results.append({"actor_id": occ, "vehicle": veh_name, "seat": seat_name, "action": "placed_in_vehicle"})
             else:
-                _, b_res = self._create_beat("sit_in", occ, {"target": tgt, "vehicle": veh_name, **kwargs}, after=after, at_time=at_time)
+                ok, b_res = self._create_beat(
+                    "enter_vehicle", occ,
+                    {"target": tgt, "vehicle": veh_name, "seat": seat_name, **kwargs},
+                    after=after, at_time=at_time)
+                if not ok:
+                    return False, b_res
                 results.append(b_res)
         return True, results
 
@@ -560,7 +720,7 @@ class FunctionCatalog:
         after: Optional[str] = None,
         **kwargs,
     ) -> Tuple[bool, Any]:
-        """Actor opens vehicle door, rises from seat, and steps out onto the roadway stand anchor.
+        """Actor moves out seated, then stands after reaching a clear roadway position.
         
         If vehicle or door_part is omitted, automatically looks up the actor's current vehicle and seat,
         routing to the corresponding door (fl for driver, fr for passenger, rl for rear-left, rr for rear-right).
@@ -792,15 +952,19 @@ class FunctionCatalog:
     # -------------------------------------------------------------------------
     def converse(self, actors: List[str], center: Optional[str] = None, duration: Union[str, float] = "short", after: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
         results = []
+        group_id = f"prompt_interaction_{len(self.plan.beats) + 1}"
         for aid in actors:
-            _, res = self._create_beat("converse", aid, {"actors": actors, "center": center, **kwargs}, after=after, for_duration=duration)
+            _, res = self._create_beat("converse", aid, {"actors": actors, "participants": actors,
+                                                          "group_id": group_id, "center": center, **kwargs}, after=after, for_duration=duration)
             results.append(res)
         return True, results
 
     def argue(self, actors: List[str], center: Optional[str] = None, intensity: str = "heated", duration: Union[str, float] = "short", after: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
         results = []
+        group_id = f"prompt_interaction_{len(self.plan.beats) + 1}"
         for aid in actors:
-            _, res = self._create_beat("argue", aid, {"actors": actors, "center": center, "intensity": intensity, **kwargs}, after=after, for_duration=duration)
+            _, res = self._create_beat("argue", aid, {"actors": actors, "participants": actors,
+                                                       "group_id": group_id, "center": center, "intensity": intensity, **kwargs}, after=after, for_duration=duration)
             results.append(res)
         return True, results
 
@@ -861,10 +1025,13 @@ class FunctionCatalog:
         style: str = "groove",
         duration: Union[str, float] = "medium",
         after: Optional[str] = None,
+        travel: str = "in_place",
         **kwargs,
     ) -> Tuple[bool, Any]:
-        """Actor dances (`groove`, `silly`, `breakdance`, `moonwalk`)."""
-        return self._create_beat("dance", actor, {"style": style, **kwargs}, after=after, for_duration=duration)
+        """Actor dances (`groove`, `silly`, `breakdance`, `moonwalk`); travel is `in_place` or `travel`."""
+        if travel not in ('in_place', 'travel'):
+            return False, StructuredError('DANCE_TRAVEL', 'Dance travel must be in_place or travel.').to_dict()
+        return self._create_beat("dance", actor, {"style": style, "travel": travel, **kwargs}, after=after, for_duration=duration)
 
     def perform_activity(
         self,
@@ -880,10 +1047,39 @@ class FunctionCatalog:
 
     def huddle(self, actors: List[str], center: Optional[str] = None, after: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
         results = []
+        group_id = f"prompt_interaction_{len(self.plan.beats) + 1}"
         for aid in actors:
-            _, res = self._create_beat("huddle", aid, {"actors": actors, "center": center, **kwargs}, after=after)
+            _, res = self._create_beat("huddle", aid, {"actors": actors, "participants": actors,
+                                                        "group_id": group_id, "center": center, **kwargs}, after=after)
             results.append(res)
         return True, results
+
+    def stage_pair(
+        self,
+        actors: List[str],
+        spacing: str = "combat",
+        center: Optional[str] = None,
+        after: Optional[str] = None,
+    ) -> Tuple[bool, Any]:
+        """Route two actors to a shared meeting point, face them, and synchronize their arrival (`combat`, `contact`, `conversational`)."""
+        if spacing not in ("combat", "contact", "conversational"):
+            return False, StructuredError("PAIR_SPACING", f"Unknown pair spacing '{spacing}'").to_dict()
+        records = [self.registry.get(actor) for actor in actors]
+        if len(records) != 2 or any(record is None for record in records) or records[0].actor_id == records[1].actor_id:
+            return False, StructuredError("PAIR_ACTORS", "stage_pair needs two distinct placed actors.").to_dict()
+        ids = [record.actor_id for record in records]
+        group_id = f"prompt_pair_{len(self.plan.beats) + 1}"
+        results = []
+        for actor, target in ((ids[0], ids[1]), (ids[1], ids[0])):
+            _, result = self._create_beat(
+                "turn_to_face", actor,
+                {"target": target, "participants": ids, "group_id": group_id,
+                 "center": center, "spacing": spacing},
+                after=after,
+            )
+            results.append(result)
+        return True, {"beat_ids": [result["beat_id"] for result in results],
+                      "ready_event": f"{results[-1]['beat_id']}.finished"}
 
     def disperse(self, actors: List[str], after: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
         results = []
@@ -895,8 +1091,85 @@ class FunctionCatalog:
     # -------------------------------------------------------------------------
     # 7.7 Combat and contact
     # -------------------------------------------------------------------------
+    def group_fight(
+        self,
+        group_a: List[str],
+        group_b: List[str],
+        destinations_a: Optional[List[str]] = None,
+        destinations_b: Optional[List[str]] = None,
+        moves: Optional[List[str]] = None,
+        duration: Union[str, float] = "long",
+        after: Optional[str] = None,
+    ) -> Tuple[bool, Any]:
+        """Fight as opposing groups without fixed opponents; optional destinations give each member a separate run-in spot, in membership order."""
+        from combat_moves import resolve_attack_moves
+
+        character_assets = {asset["id"] for asset in self.manifest.get("assets", [])
+                            if "character" in asset.get("tags", [])
+                            or asset.get("category") == "character"
+                            or asset.get("id", "").startswith("character.")}
+        groups = []
+        for members in (group_a, group_b):
+            records = [self.registry.get(member) for member in members]
+            if not records or any(record is None or record.asset_id not in character_assets for record in records):
+                return False, StructuredError("FIGHT_GROUPS", "Each fight group needs placed characters.").to_dict()
+            groups.append([record.actor_id for record in records])
+        participants = groups[0] + groups[1]
+        if len(set(participants)) != len(participants):
+            return False, StructuredError("FIGHT_GROUPS", "Fight groups must have distinct, disjoint members.").to_dict()
+        destinations = []
+        for members, references in zip(groups, (destinations_a, destinations_b)):
+            if references is not None and (len(references) != len(members)
+                                           or any(not isinstance(ref, str) or not ref.strip() for ref in references)):
+                return False, StructuredError("FIGHT_DESTINATIONS", "Provide one semantic destination per group member, or omit destinations to fight at current positions.").to_dict()
+            destinations.extend(references or [])
+        if len(destinations) != len(set(destinations)):
+            return False, StructuredError("FIGHT_DESTINATIONS", "Crowd arrivals need distinct destinations.").to_dict()
+        try:
+            clips = resolve_attack_moves(moves, self.manifest.get("clips", {}))
+        except ValueError as exc:
+            return False, StructuredError("ATTACK_CLIP", str(exc)).to_dict()
+
+        # A shared phase waits for every participant's preceding action before
+        # any participant begins running in, and then waits for all run-ins
+        # before starting the fight. This is a temporal barrier only: it never
+        # assigns a formation or partner.
+        phase_preceding = {beat.actor_id: beat.beat_id for beat in self.plan.beats
+                           if beat.actor_id in participants}
+        phase_wait_for = list(phase_preceding.values())
+        # Keep run-ins in the normal crowd routing system, without contact arenas.
+        arrivals = []
+        for members, references in zip(groups, (destinations_a, destinations_b)):
+            for actor, reference in zip(members, references or []):
+                run_kwargs = {"wait_for": phase_wait_for} if phase_wait_for else {}
+                _, result = self.run_to(actor, reference, after=after, **run_kwargs)
+                arrivals.append(result["beat_id"])
+        preceding = {beat.actor_id: beat.beat_id for beat in self.plan.beats
+                     if beat.actor_id in participants}
+        wait_for = list(preceding.values())
+        results = []
+        for side, members in enumerate(groups):
+            for index, actor in enumerate(members):
+                offset = index % len(clips)
+                _, result = self._create_beat(
+                    "group_fight", actor,
+                    {"opponents": groups[1 - side], "moves": clips[offset:] + clips[:offset],
+                     "wait_for": wait_for},
+                    after=after, for_duration=duration,
+                )
+                results.append(result)
+        return True, {"beat_ids": [result["beat_id"] for result in results],
+                      "arrival_beat_ids": arrivals,
+                      "ready_event": f"{results[0]['beat_id']}.started",
+                      "finished_event": f"{results[-1]['beat_id']}.finished"}
+
     def attack(self, actor: str, target: str, moves: Optional[List[str]] = None, after: Optional[str] = None, **kwargs) -> Tuple[bool, Any]:
-        moves = moves or ["left_hook", "elbow_punch"]
+        """Attack using manifest clips, such as left_hook, elbow_punch or punching."""
+        from combat_moves import resolve_attack_moves
+        try:
+            moves = resolve_attack_moves(moves, self.manifest.get("clips", {}))
+        except ValueError as exc:
+            return False, StructuredError("ATTACK_CLIP", str(exc)).to_dict()
         return self._create_beat("attack", actor, {"target": target, "moves": moves, **kwargs}, after=after)
 
     def defend_or_block(
@@ -905,10 +1178,21 @@ class FunctionCatalog:
         threat: Optional[str] = None,
         style: str = "block",
         after: Optional[str] = None,
+        attacker: Optional[str] = None,
         **kwargs,
     ) -> Tuple[bool, Any]:
-        """Actor guards, blocks, or evades a combat strike (`block`, `dodge_back`, `dodge_right`)."""
-        return self._create_beat("defend_or_block", actor, {"target": threat, "style": style, **kwargs}, after=after)
+        """Guard or evade (`block`, `dodge_back`, `dodge_right`); `threat`, `attacker`, and `target` name the opponent."""
+        opponents = []
+        for value in (threat, attacker, kwargs.pop("target", None)):
+            if value is not None:
+                record = self.registry.get(value)
+                opponents.append(record.actor_id if record else value)
+        if len(set(opponents)) > 1:
+            return False, StructuredError(
+                "DEFENSE_TARGET", "Defense target aliases must name the same opponent."
+            ).to_dict()
+        target = opponents[0] if opponents else None
+        return self._create_beat("defend_or_block", actor, {"target": target, "style": style, **kwargs}, after=after)
 
     def use_weapon(
         self,

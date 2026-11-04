@@ -1,13 +1,34 @@
 {
   "ok": true,
-  "time_steps": 433,
+  "actor_contact_policy": "full_body",
+  "time_steps": 637,
   "actors": [
-    "Partner_A",
-    "Partner_B"
+    "human_1",
+    "human_2",
+    "human_3",
+    "human_4",
+    "human_5",
+    "human_6",
+    "human_7",
+    "human_8",
+    "human_9",
+    "human_10",
+    "human_11",
+    "human_12",
+    "human_13",
+    "human_14",
+    "human_15",
+    "human_16",
+    "human_17",
+    "human_18",
+    "human_19"
   ],
   "assets": [
-    "Car1"
+    "ResidentialAvenue",
+    "Ground"
   ],
   "unprotected_assets": [],
-  "violations": []
+  "unprotected_actors": [],
+  "violations": [],
+  "level_violations": []
 }

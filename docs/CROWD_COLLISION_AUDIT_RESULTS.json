@@ -1,0 +1,183 @@
+{
+  "method": "Recompiled the saved plan and editor composition in a private copy of the scene and shot, using the current compiler and unchanged default crowd configuration. Continuously checked synthesized root envelopes, baked every character, validated posed bodies at the default two substeps per frame, then independently revalidated the published private-copy stage at four substeps per frame without repair.",
+  "scope": "Character contacts use the existing core_body policy: incidental limbs and scoped intentional interactions are allowed; character-to-object checks retain all body parts. Continuous checking covers piecewise-linear root envelopes; posed skeletal validation remains sampled.",
+  "inputs_and_implementation_sha256": {
+    "scenes/scene_02/shot_009/shot_plan.json": "eb08266dacbd52319b8847218b324b05498e5f56537969432e28e88dc7f9c978",
+    "scenes/scene_02/shot_009/user_edits.usda": "5097a38165689a5a584a36399a40ed3d1c28cbb98ec8c656ca9f0fd578ee24c7",
+    "scenes/scene_02/scene.usda": "3f2b7975d81914e3c0ea02be26b3107d760404fc81385be6934d2d8a91c8aca5",
+    "manifest.json": "2de9e3c0d44c5896319df6cab134c27e01adadff150eafd7d1c4bdff28f8559f",
+    "tools/shot_library/crowd/conformance.py": "4b700de1ba67a0eb621954617f22e3fe073eff57251c1a82081046e0fd63b116",
+    "tools/shot_library/crowd/joint.py": "febb0eb72cdf6115aca3161a6d800ae4f70d5a958c36a76c51e680a255fb9a46",
+    "tools/shot_library/motion_synthesis.py": "722fb4d4d44c76f5a12715428133a05a22d92b2bfa147f46a472640b62aa7925"
+  },
+  "crowd_config": {
+    "buffer_m": 0.12,
+    "cell_size_m": 0.4,
+    "departure_step_s": 0.25,
+    "max_delay_s": 8.0,
+    "max_expansions": 4096,
+    "layout_beam_width": 48,
+    "layout_candidates": 128,
+    "arena_perimeter_samples": 32,
+    "max_formations": 4096,
+    "priority_retries": 4,
+    "max_joint_nodes": 128,
+    "level_tolerance_m": 0.12,
+    "destination_rings": 6,
+    "destination_candidates": 256,
+    "arrival_tolerance_m": 2.0,
+    "arrival_route_candidates": 8,
+    "allow_actor_limb_contacts": true,
+    "max_repair_attempts": 3,
+    "max_repair_clearance_m": 1.0
+  },
+  "tests": {
+    "command": ".venv/bin/python -m pytest tests tools/shot_library/test_all_phases.py -q --disable-warnings --tb=short",
+    "passed": 332,
+    "elapsed_s": 30.43,
+    "followup": ".venv/bin/python -m pytest tests/test_crowd_performance_contracts.py -q --tb=short: 12 passed after adding detailed-overlap assertions"
+  },
+  "compile_success": true,
+  "audit": {
+    "original_shot": "/Users/vishaljose/PainterSpace/scenes/scene_02/shot_009",
+    "output": "/var/folders/pn/h5dtc9kj5p55zc47fjjk_cd40000gn/T/painterspace_collision_audit_xd5_eblm/scenes/scene_02/shot_009",
+    "elapsed_s": 89.70711229206063,
+    "original_unchanged": true
+  },
+  "validation": {
+    "success": true,
+    "lint_passed": true,
+    "collision_passed": true,
+    "camera_passed": true,
+    "bake_errors": [],
+    "lint_warnings": [],
+    "collision_report": {
+      "ok": true,
+      "actor_contact_policy": "core_body",
+      "time_steps": 1277,
+      "actors": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17",
+        "human_18",
+        "human_19",
+        "human_20"
+      ],
+      "assets": [
+        "GrandNightClub",
+        "Ground"
+      ],
+      "unprotected_assets": [],
+      "unprotected_actors": [],
+      "violations": [],
+      "level_violations": []
+    },
+    "camera_warnings": [],
+    "prompt_adherence": {
+      "passed": true,
+      "violations": [],
+      "checks": {}
+    },
+    "crowd_repair": {
+      "retries": 0,
+      "attempts": [
+        {
+          "attempt": 0,
+          "planning_buffer_m": 0.12,
+          "success": true,
+          "error": null,
+          "collision_report": {
+            "ok": true,
+            "actor_contact_policy": "core_body",
+            "time_steps": 1277,
+            "actors": [
+              "human_1",
+              "human_2",
+              "human_3",
+              "human_4",
+              "human_5",
+              "human_6",
+              "human_7",
+              "human_8",
+              "human_9",
+              "human_10",
+              "human_11",
+              "human_12",
+              "human_13",
+              "human_14",
+              "human_15",
+              "human_16",
+              "human_17",
+              "human_18",
+              "human_19",
+              "human_20"
+            ],
+            "assets": [
+              "GrandNightClub",
+              "Ground"
+            ],
+            "unprotected_assets": [],
+            "unprotected_actors": [],
+            "violations": [],
+            "level_violations": []
+          }
+        }
+      ]
+    }
+  },
+  "independent_validation": {
+    "substeps_per_frame": 4,
+    "workers": 4,
+    "exit_code": 0,
+    "report": {
+      "ok": true,
+      "actor_contact_policy": "core_body",
+      "time_steps": 2553,
+      "actors": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17",
+        "human_18",
+        "human_19",
+        "human_20"
+      ],
+      "assets": [
+        "GrandNightClub",
+        "Ground"
+      ],
+      "unprotected_assets": [],
+      "unprotected_actors": [],
+      "violations": [],
+      "level_violations": []
+    }
+  },
+  "artifact_lifetime": "The replay USD and animation files live in temporary storage; this JSON preserves the validation evidence in the repository."
+}

@@ -24,6 +24,7 @@
 #include "MainWindow.h"
 #include "ShotEngine.h"
 #include "UsdViewportWidget.h"
+#include "ActionTimelineWidget.h"
 
 namespace {
 constexpr auto kPromptVersion = "2.0";
@@ -326,7 +327,8 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
                          const QString& existingShotLayerText,
                          const QString& worldStateText,
                          const QStringList& worldStateImages,
-                         const QByteArray& manifestBytes) {
+                         const QByteArray& manifestBytes,
+                         bool cameraLocked = false) {
     const QDir projectRootDir(projectRootPath);
     const QDir queueDir(projectRootDir.filePath("task_queue"));
     queueDir.mkpath(".");
@@ -372,28 +374,63 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
     task["manifest_summary"] = QJsonDocument::fromJson(manifestBytes).object();
     task["instructions"] = QStringLiteral(
         "CRITICAL INSTRUCTION FOR IDE CHATBOT / LLM: You are acting STRICTLY as the LLM API endpoint. "
-        "ONLY write the JSON tool-call response ({\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}) "
-        "to task_queue/llm_response.json, display that JSON in chat, and END YOUR RESPONSE IMMEDIATELY THERE. "
+        "The LLM must respond ONLY with the tools call JSON ({\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}), "
+        "write that JSON to task_queue/llm_response.json, display that JSON in chat, and END EXECUTION IMMEDIATELY THERE. "
+        "Use the prompt when present, combine it with relevant drawn routes and explicit timeline segments, "
+        "and use timeline segments alone when the prompt is empty. An empty timeline adds no constraint. "
         "DO NOT run compile_shot.py, DO NOT execute any Python/shell scripts, and DO NOT author or edit .usda files directly. "
         "The PainterSpace C++ desktop application watches task_queue/llm_response.json and will execute the function calls, "
         "resolve semantic coordinates, compile the USD stage, and run collision validation itself.");
+    task["llm_call"] = QStringLiteral(
+        "Respond ONLY with the tools call JSON matching schema: {\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}. "
+        "Write the JSON to task_queue/llm_response.json and END EXECUTION THERE. "
+        "Do not run the queue processor, planner, compiler, validator, renderer, or shell commands.");
+    if (cameraLocked) {
+        task["camera_locked"] = true;
+    }
 
     // Write task_queue/pending_request.json
     QFile taskFile(queueDir.filePath("pending_request.json"));
-    if (taskFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        taskFile.write(QJsonDocument(task).toJson(QJsonDocument::Indented));
-        taskFile.close();
+    if (!taskFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qCritical("Unable to write task_queue/pending_request.json");
+        return false;
     }
+    taskFile.write(QJsonDocument(task).toJson(QJsonDocument::Indented));
+    taskFile.close();
 
     // Enrich pending_request.json with the 76-function FunctionCatalog schemas
     {
         const QString prepScript = projectRootDir.filePath("tools/process_agent_queue.py");
         const QString py = worldStatePython(projectRootPath);
-        if (QFileInfo::exists(prepScript) && !py.isEmpty()) {
-            QProcess prepProc;
-            prepProc.setWorkingDirectory(projectRootPath);
-            prepProc.start(py, {prepScript, QStringLiteral("prepare")});
-            prepProc.waitForFinished(10000);
+        if (!QFileInfo::exists(prepScript) || py.isEmpty()) {
+            qCritical("Queue preparation unavailable; request was not sent");
+            QFile::remove(queueDir.filePath("pending_request.json"));
+            return false;
+        }
+        QProcess prepProc;
+        prepProc.setWorkingDirectory(projectRootPath);
+        prepProc.start(py, {prepScript, QStringLiteral("prepare")});
+        const bool prepared = prepProc.waitForFinished(30000);
+        if (!prepared) {
+            prepProc.kill();
+            prepProc.waitForFinished(1000);
+        }
+        if (!prepared || prepProc.exitStatus() != QProcess::NormalExit || prepProc.exitCode() != 0) {
+            qCritical().noquote() << "Queue preparation failed:" << QString::fromUtf8(prepProc.readAllStandardError());
+            QFile::remove(queueDir.filePath("pending_request.json"));
+            return false;
+        }
+        QFile preparedFile(queueDir.filePath("pending_request.json"));
+        if (!preparedFile.open(QIODevice::ReadOnly)) {
+            qCritical("Prepared shot request cannot be read");
+            return false;
+        }
+        const QJsonObject preparedTask = QJsonDocument::fromJson(preparedFile.readAll()).object();
+        if (!preparedTask.contains("scene_context") || preparedTask.value("planner_rules").toString().isEmpty()) {
+            qCritical("Prepared shot request is missing current scene context");
+            preparedFile.close();
+            QFile::remove(queueDir.filePath("pending_request.json"));
+            return false;
         }
     }
 
@@ -406,21 +443,21 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
         ts << "- **Type**: " << (isSceneStage ? "Scene Layer" : "Shot Layer") << "\n";
         ts << "- **Target Stage**: `" << task["target_stage"].toString() << "`\n";
         ts << "- **Response File**: `task_queue/llm_response.json`\n";
-        ts << "- **Prompt**: \"" << prompt << "\"\n\n";
+        ts << "- **Prompt**: \"" << prompt << "\"\n";
+        ts << "\n";
         ts << "## STRICT PROTOCOL FOR IDE CHATBOT / LLM\n";
         ts << "1. **Act strictly as the LLM API endpoint.**\n";
-        ts << "2. Read `task_queue/pending_request.json` (which includes `function_catalog_schemas` and `world_state`).\n";
-        ts << "3. Write **ONLY** the JSON tool-call plan to `task_queue/llm_response.json`:\n";
+        ts << "2. Read `task_queue/pending_request.json` (which includes `function_catalog_schemas` and `director_brief_digest`).\n";
+        ts << "3. The LLM must respond **ONLY with the tools call JSON**, and execution **MUST END THERE**.\n";
+        ts << "4. Write **ONLY** the tools call JSON response to `task_queue/llm_response.json`:\n";
         ts << "```json\n{\n  \"calls\": [\n    {\"function\": \"...\", \"args\": {...}}\n  ]\n}\n```\n";
-        ts << "4. Output that JSON in chat and **STOP IMMEDIATELY**.\n";
-        ts << "5. **NEVER** run `compile_shot.py`, Python scripts, shell commands, or write `.usda` files directly. "
+        ts << "5. Output that JSON in chat and **STOP IMMEDIATELY — END EXECUTION**.\n";
+        ts << "6. **NEVER** run `compile_shot.py`, Python scripts, shell commands, or write `.usda` files directly. "
            << "The running `PainterSpace` C++ application watches `task_queue/llm_response.json` and executes the function calls itself.\n";
         mdFile.close();
     }
 
-    if (!isSceneStage) {
-        writeShotMetadata(outputInfo.absoluteFilePath(), prompt, QStringLiteral("ide-llm-endpoint"), false);
-    }
+    // Compiler metadata remains authoritative until a new generation succeeds.
 
     qInfo().noquote() << QStringLiteral("[AGENT_DISPATCH] Task queued in task_queue/pending_request.json for target: %1")
                             .arg(task["target_stage"].toString());
@@ -428,7 +465,7 @@ bool writeAgentTaskQueue(const QString& projectRootPath,
     return true;
 }
 
-int generateUsda(const QString& prompt, const QString& outputPath) {
+int generateUsda(const QString& prompt, const QString& outputPath, bool cameraLocked = false) {
     const bool agentMode = qgetenv("OPENAI_API_KEY").isEmpty() ||
                            qEnvironmentVariable("PAINTERSPACE_LLM_PROVIDER") == "agent" ||
                            qEnvironmentVariable("PAINTERSPACE_AGENT_MODE") == "1";
@@ -498,7 +535,7 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
             "You are a film production designer authoring an OpenUSD ASCII SCENE LAYER (scene.usda). Return only valid USDA text beginning #usda 1.0; never return markdown, code fences, URLs, scripts, or Python. "
             "This layer must set defaultPrim = \"World\", upAxis = \"Y\", and metersPerUnit = 1, and define `def Xform \"World\"` containing the shared environment, buildings, static props, and base lighting (such as DomeLight and DistantLight). "
             "Do not use subLayers in scene.usda. "
-            "Use only USD references from the manifest that have usd_reference_ready=true; because scene.usda lives at scenes/scene_XX/scene.usda, asset references MUST start with ../../assets/ (for example @../../assets/usdc_assets/environments/downtown_art_deco_tower.usdc@</root> or @../../assets/usdc_assets/humans/walking.usdc@</root>). "
+            "Use only USD references from the manifest that have usd_reference_ready=true; because scene.usda lives at scenes/scene_XX/scene.usda, asset references MUST start with ../../assets/ (for example @../../assets/usdc_assets/environments/downtown_art_deco_tower.usdc@</root> or @../../assets/usdc_assets/humans/human.norm.usda@</root>). "
             "On every prim that references a manifest asset, add customData = { string asset_id = \"<manifest id>\" }. "
             "Keep stages below 1000 prims.\n" +
             (worldStateText.isEmpty() ? QString() : QString::fromLatin1(kWorldStateInstructions)) +
@@ -524,10 +561,9 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         }
 
         if (agentMode) {
-            writeAgentTaskQueue(projectRootPath, outputInfo, true, prompt, QString(),
-                                existingSceneLayerText, QString(), worldStateText,
-                                worldStateImages, manifestBytes);
-            return 0;
+            return writeAgentTaskQueue(projectRootPath, outputInfo, true, prompt, QString(),
+                                       existingSceneLayerText, QString(), worldStateText,
+                                       worldStateImages, manifestBytes) ? 0 : 1;
         }
 
         const QJsonObject body{
@@ -638,32 +674,10 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         qWarning().noquote() << "World state record unavailable; generating without it:" << prepared.error;
     }
 
-    const QString systemPrompt =
-        "You are a film director authoring one OpenUSD ASCII SHOT LAYER (shot.usda). Return only valid USDA text beginning #usda 1.0; never return markdown, code fences, URLs, scripts, or Python. "
-        "This layer must set defaultPrim = \"World\" and subLayers = [ @../scene.usda@ ], and must not redefine the shared World. Use `over \"World\"` for shot-specific actors, movement, camera, and lighting overrides. "
-        "Use Y-up, metersPerUnit = 1, timeCodesPerSecond = 24, startTimeCode = 0, and endTimeCode matching the shot duration. "
-        "Define a Camera prim named \"ShotCam\" inside `over \"World\"` (at /World/ShotCam). "
-        "Use only USD references from the manifest that have usd_reference_ready=true; asset references must start with ../../../assets/ (for example @../../../assets/usdc_assets/humans/human.norm.usda@). "
-        "Keep stages below 1000 prims and 600 seconds.\n" +
-        (worldStateText.isEmpty() ? QString() : QString::fromLatin1(kWorldStateInstructions)) +
-        (sceneDescriptionPrompt.isEmpty() ? QString() : ("Overall scene description:\n" + sceneDescriptionPrompt + "\n")) +
-        "Shared scene.usda layer:\n" + existingSceneLayerText + "\n"
-        "Asset manifest:\n" + QString::fromUtf8(manifestBytes);
-
-    QString userContent = prompt;
-    if (!existingShotLayerText.isEmpty()) {
-        userContent = "Current shot.usda:\n" + existingShotLayerText + "\n\nRevision / prompt:\n" + prompt;
-    }
-    if (!worldStateText.isEmpty()) {
-        userContent = "WORLD STATE RECORD (state_start.json, what is in the scene right now):\n" + worldStateText +
-                      "\n\n" + userContent;
-    }
-
     if (agentMode && qEnvironmentVariable("PAINTERSPACE_OFFLINE_COMPILER") != QStringLiteral("1")) {
-        writeAgentTaskQueue(projectRootPath, outputInfo, false, prompt, sceneDescriptionPrompt,
-                            existingSceneLayerText, existingShotLayerText, worldStateText,
-                            worldStateImages, manifestBytes);
-        return 0;
+        return writeAgentTaskQueue(projectRootPath, outputInfo, false, prompt, sceneDescriptionPrompt,
+                                   existingSceneLayerText, existingShotLayerText, worldStateText,
+                                   worldStateImages, manifestBytes, cameraLocked) ? 0 : 1;
     }
 
     // Primary Shot Generation Pipeline: Declarative Shot Function Library Compiler (compile_shot.py)
@@ -674,15 +688,18 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         if (QFileInfo::exists(compileScript) && !py.isEmpty()) {
             QProcess compileProc;
             compileProc.setWorkingDirectory(projectRootPath);
-            compileProc.start(py, {
+            QStringList compileArgs{
                 compileScript,
                 QStringLiteral("--prompt"), prompt,
                 QStringLiteral("--output"), outputInfo.absoluteFilePath(),
                 QStringLiteral("--scene"), sceneStagePath
-            });
+            };
+            if (cameraLocked) {
+                compileArgs << QStringLiteral("--camera-locked");
+            }
+            compileProc.start(py, compileArgs);
             if (compileProc.waitForFinished(180000) && compileProc.exitCode() == 0 &&
                 QFileInfo::exists(outputInfo.absoluteFilePath())) {
-                writeShotMetadata(outputInfo.absoluteFilePath(), prompt, modelName, true);
                 qInfo().noquote() << "Generated and validated" << outputInfo.absoluteFilePath() << "via ShotCompiler";
                 const WorldStateRun finalized = runWorldStateTool("finalize-shot", projectRootPath, outputInfo.absoluteFilePath());
                 if (finalized.ok) {
@@ -693,105 +710,11 @@ int generateUsda(const QString& prompt, const QString& outputPath) {
         }
     }
 
-    QNetworkAccessManager manager;
-    QString feedback;
-    QString lastValidationError;
-    constexpr int kMaxRetries = 3;
+    // A failed symbolic compilation must never fall through to raw USDA generation.
+    qCritical("Shot compilation failed; authored director intent has been preserved");
+    return 1;
 
-    for (int attempt = 0; attempt <= kMaxRetries; ++attempt) {
-        QString attemptContent = userContent;
-        if (!feedback.isEmpty()) {
-            attemptContent += "\n\nVALIDATION / COLLISION FEEDBACK FROM PREVIOUS ATTEMPT (fix this violation):\n" + feedback;
-        }
-        QJsonValue userMessageContent = attemptContent;
-        if (!worldStateImages.isEmpty()) {
-            QJsonArray parts{QJsonObject{{"type", "text"}, {"text", attemptContent}}};
-            for (const QString& imagePath : worldStateImages) {
-                const QJsonObject part = imagePart(imagePath);
-                if (part.isEmpty()) continue;
-                parts.append(QJsonObject{{"type", "text"}, {"text", imagePath.endsWith("_topdown.png")
-                    ? QStringLiteral("Top-down map of the world state (north up, object ids labelled):")
-                    : QStringLiteral("Current camera view:")}});
-                parts.append(part);
-            }
-            userMessageContent = parts;
-        }
 
-        const QJsonObject body{
-            {"model", modelName},
-            {"messages", QJsonArray{
-                QJsonObject{{"role", "system"}, {"content", systemPrompt}},
-                QJsonObject{{"role", "user"}, {"content", userMessageContent}}
-            }},
-            {"temperature", 0.7}
-        };
-        QNetworkRequest request(QUrl("https://api.openai.com/v1/chat/completions"));
-        request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-        request.setRawHeader("Authorization", "Bearer " + apiKey);
-        QNetworkReply* reply = manager.post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
-        QEventLoop loop;
-        QTimer timeout;
-        timeout.setSingleShot(true);
-        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-        timeout.start(120000);
-        loop.exec();
-        if (!reply->isFinished()) {
-            reply->abort();
-            qCritical("USD generation request timed out");
-            reply->deleteLater();
-            return 1;
-        }
-        const QByteArray response = reply->readAll();
-        if (reply->error() != QNetworkReply::NoError) {
-            qCritical().noquote() << "USD generation request failed:" << reply->errorString() << response;
-            reply->deleteLater();
-            return 1;
-        }
-        reply->deleteLater();
-        QJsonParseError parseError;
-        const QJsonDocument responseDoc = QJsonDocument::fromJson(response, &parseError);
-        QString stageText = responseDoc.object().value("choices").toArray().at(0).toObject()
-                                .value("message").toObject().value("content").toString().trimmed();
-        stageText.remove(QRegularExpression("^```(?:usda)?\\s*", QRegularExpression::CaseInsensitiveOption));
-        stageText.remove(QRegularExpression("\\s*```$"));
-        stageText = stageText.trimmed();
-        if (parseError.error != QJsonParseError::NoError || !stageText.startsWith("#usda 1.0")) {
-            lastValidationError = QStringLiteral("Model response did not contain a USDA stage");
-            feedback = lastValidationError;
-            continue;
-        }
-        QSaveFile output(outputInfo.absoluteFilePath());
-        const QByteArray stageBytes = (stageText + "\n").toUtf8();
-        if (!output.open(QIODevice::WriteOnly | QIODevice::Text) || output.write(stageBytes) != stageBytes.size() || !output.commit()) {
-            qCritical("Unable to save generated USDA stage");
-            return 1;
-        }
-        lastValidationError = ShotEngine::validateAuthoredUsdStage(output.fileName());
-        if (lastValidationError.isEmpty()) {
-            break;
-        }
-        feedback = lastValidationError;
-    }
-
-    writeShotMetadata(outputInfo.absoluteFilePath(), prompt, modelName, lastValidationError.isEmpty());
-    if (!lastValidationError.isEmpty()) {
-        qCritical().noquote() << "Generated stage failed validation:" << lastValidationError;
-        return 1;
-    }
-    qInfo().noquote() << "Generated and validated" << outputInfo.absoluteFilePath();
-
-    // The world state at the end of this shot is the next shot's starting point.
-    const WorldStateRun finalized = runWorldStateTool("finalize-shot", projectRootPath, outputInfo.absoluteFilePath());
-    if (finalized.ok) {
-        qInfo().noquote() << "Wrote" << finalized.result.value("state").toString();
-        for (const QJsonValue& warning : finalized.result.value("warnings").toArray()) {
-            qWarning().noquote() << "World state warning:" << warning.toString();
-        }
-    } else {
-        qWarning().noquote() << "Unable to write state_end.json:" << finalized.error;
-    }
-    return 0;
 }
 }
 
@@ -803,10 +726,11 @@ int main(int argc, char** argv) {
     const int generateUsdArgument = arguments.indexOf("--generate-usda");
     if (generateUsdArgument >= 0) {
         if (arguments.size() <= generateUsdArgument + 2) {
-            qCritical("Usage: PainterSpace --generate-usda <prompt> <scenes/scene_XX/scene.usda|scenes/scene_XX/shot_XXX/shot.usda>");
+            qCritical("Usage: PainterSpace --generate-usda <prompt> <scenes/scene_XX/scene.usda|scenes/scene_XX/shot_XXX/shot.usda> [--camera-locked]");
             return 2;
         }
-        return generateUsda(arguments.at(generateUsdArgument + 1), arguments.at(generateUsdArgument + 2));
+        const bool cameraLocked = arguments.contains("--camera-locked");
+        return generateUsda(arguments.at(generateUsdArgument + 1), arguments.at(generateUsdArgument + 2), cameraLocked);
     }
     const int validateUsdArgument = arguments.indexOf("--validate-usda");
     if (validateUsdArgument >= 0) {
@@ -1170,6 +1094,92 @@ int main(int argc, char** argv) {
     }
 
     // Regression test: simulate real mouse clicks / drags over the USD viewport inside MainWindow.
+    const int briefTestArg = arguments.indexOf("--usd-brief-test");
+    if (briefTestArg >= 0) {
+        QTemporaryDir isolated;
+        if (!isolated.isValid()) return 1;
+        const QString shot = isolated.filePath("shot.usda");
+        { QFile file(shot); if (!file.open(QIODevice::WriteOnly)) return 1;
+          file.write(R"USD(#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 24
+    timeCodesPerSecond = 24
+)
+def Xform "World"
+{
+    def Xform "Hero" (
+        customData = { string actor_id = "human_1" }
+    )
+    {
+        def Cube "Body"
+        {
+            double size = 1
+        }
+    }
+    def Camera "ShotCam" {}
+}
+)USD"); }
+        MainWindow window;
+        auto* viewport = window.findChild<UsdViewportWidget*>();
+        auto* timeline = window.findChild<ActionTimelineWidget*>();
+        if (!viewport || !timeline || !viewport->openStage(shot)) return 1;
+        viewport->resize(900,600);
+        const auto originalActions = QJsonDocument(timeline->toJson()).toJson();
+        ActionSegment action; action.id="test_segment"; action.actorPath="/World/Hero";action.actorLabel="Hero";action.action="walk_to";action.startS=0;action.endS=1;action.pathId="test_path";
+        timeline->addAction(action); timeline->selectAction(action.id);
+        auto changed=action;changed.endS=2;timeline->updateAction(changed);
+        if (!timeline->undo()) { qCritical("Brief test: timeline undo failed"); return 1; }
+        bool restored=false;for(const auto& seg:timeline->actions())if(seg.id==action.id && seg.endS==1)restored=true;
+        if(!restored){qCritical("Brief test: timeline window restore failed");return 1;}
+        if (!timeline->redo()) {qCritical("Brief test: timeline redo failed");return 1;}
+        viewport->persistPrimPaths();
+        QFile beforeFile(viewport->userEditsLayerPath());if (!beforeFile.open(QIODevice::ReadOnly)) return 1;const auto before=beforeFile.readAll();beforeFile.close();
+        viewport->startDrawingPath("/World/Paths/test_path");
+        for (int i=0;i<6;++i) {
+            const QPointF local(380+i*20,400-i*8);const auto global=viewport->mapToGlobal(local.toPoint());
+            QMouseEvent event(i==0?QEvent::MouseButtonPress:QEvent::MouseMove,local,global,i==0?Qt::LeftButton:Qt::NoButton,Qt::LeftButton,Qt::NoModifier);
+            QCoreApplication::sendEvent(viewport,&event);
+        }
+        const QPointF end(480,360);
+        QMouseEvent release(QEvent::MouseButtonRelease,end,viewport->mapToGlobal(end.toPoint()),Qt::LeftButton,Qt::NoButton,Qt::NoModifier);QCoreApplication::sendEvent(viewport,&release);
+        if (viewport->primPath("/World/Paths/test_path").size()<2) { qCritical("Brief test: synthetic stroke did not produce a path"); return 1; }
+        viewport->undo();
+        QFile afterFile(viewport->userEditsLayerPath());if (!afterFile.open(QIODevice::ReadOnly)) return 1;
+        if (afterFile.readAll()!=before) { qCritical("Brief test: viewport undo did not restore bytes");return 1; }
+        timeline->undo();timeline->undo();
+        if (QJsonDocument(timeline->toJson()).toJson()!=originalActions) { qCritical("Brief test: timeline bytes did not restore"); return 1; }
+        viewport->convertLlmCameraToManualRig();
+        const QString cameraFile=isolated.filePath("camera_rig.json");
+        QFile baselineCamera(cameraFile);if(!baselineCamera.open(QIODevice::ReadOnly))return 1;
+        const auto cameraBefore=baselineCamera.readAll();baselineCamera.close();
+        QFile baselineLayer(viewport->userEditsLayerPath());if(!baselineLayer.open(QIODevice::ReadOnly))return 1;
+        const auto layerBefore=baselineLayer.readAll();baselineLayer.close();
+        viewport->setCameraFocalLength(85);viewport->undo();
+        QFile restoredCamera(cameraFile);if(!restoredCamera.open(QIODevice::ReadOnly)||restoredCamera.readAll()!=cameraBefore){qCritical("Brief test: camera sidecar bytes did not restore");return 1;}
+        QFile restoredLayer(viewport->userEditsLayerPath());if(!restoredLayer.open(QIODevice::ReadOnly)||restoredLayer.readAll()!=layerBefore){qCritical("Brief test: camera layer bytes did not restore");return 1;}
+        viewport->redo();
+        if(std::abs(viewport->cameraFocalLength()-85)>.01){qCritical("Brief test: camera redo failed");return 1;}
+        const auto rig=createCameraRigPreset("dolly_in"); const auto json=cameraRigToJson(rig);
+        const auto loaded=cameraRigFromJson(json);
+        if (loaded.points.size()!=rig.points.size() || loaded.focalStart!=rig.focalStart) return 1;
+        ActionTimelineWidget movementTimeline;
+        ActionSegment walk; walk.id="walk"; walk.actorPath="/World/Hero"; walk.action="walk_to"; walk.startS=0; walk.endS=2;
+        ActionSegment follow; follow.id="follow"; follow.actorPath=walk.actorPath; follow.action="wave"; follow.startS=2; follow.endS=3;
+        ActionSegment drive; drive.id="drive"; drive.actorPath="/World/Car"; drive.action="drive_to"; drive.startS=0; drive.endS=5;
+        movementTimeline.setActions({walk, follow, drive});
+        movementTimeline.setMovementDistances({{"walk", 13.0}, {"drive", 20.0}}, false);
+        const auto fitted=movementTimeline.actions();
+        if (std::abs(fitted[0].endS-9.3)>0.01 || !fitted[0].autoTiming ||
+            std::abs(fitted[1].startS-9.3)>0.01 || std::abs(fitted[1].endS-10.3)>0.01 ||
+            std::abs(fitted[2].endS-5.0)>0.01 || fitted[2].autoTiming ||
+            std::abs(fitted[2].distanceM-20.0)>0.01) {
+            qCritical("Brief test: movement timing or distance guide data is wrong"); return 1;
+        }
+        qInfo("Brief test PASS: synthetic path drawing, lane edits, undo/redo restore, camera JSON bridge, movement timing");
+        return 0;
+    }
+
     // Usage: PainterSpace --usd-pick-test [stage.usda]
     const int pickTestArg = arguments.indexOf("--usd-pick-test");
     if (pickTestArg >= 0) {

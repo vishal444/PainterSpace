@@ -1,0 +1,75 @@
+{
+  "prompt": "a group of protestors comes in from the west road, with hands raising in protest slogans, takes the corner goes towards the south road.",
+  "version": "1.0",
+  "scene_version": "scene_v1.usda",
+  "fps": 24,
+  "duration_s": 80.0,
+  "end_frame": 1920,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "c2719e1b4306b130",
+  "actors": [
+    {
+      "actor_id": "human_1",
+      "label": "human_1",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "prim_path": "/World/human_1"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "human_2",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "prim_path": "/World/human_2"
+    },
+    {
+      "actor_id": "human_3",
+      "label": "human_3",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "prim_path": "/World/human_3"
+    }
+  ]
+}

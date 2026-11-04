@@ -16,6 +16,44 @@ from pathlib import Path
 from pxr import Sdf, Usd, UsdSkel
 
 
+def release_user_transform_overrides(shot: Path, character_path: str) -> bool:
+    """Let a generated trajectory win over an earlier manual placement.
+
+    The shot's user_edits.usda is opened as a session layer by the viewport.
+    A placement written there has stronger xformOp values and xformOpOrder
+    than the sampled transform in shot.usda, so it otherwise pins the mesh
+    while the generated route marker moves.
+    """
+    shot = shot.resolve()
+    edits = shot.parent / "user_edits.usda"
+    if not edits.is_file():
+        return False
+    root_stage = Usd.Stage.Open(str(shot))
+    character = root_stage.GetPrimAtPath(character_path) if root_stage else None
+    if not character:
+        return False
+    translate = character.GetAttribute("xformOp:translate")
+    if not translate or translate.GetNumTimeSamples() < 2:
+        return False
+    root_layer = root_stage.GetRootLayer()
+    edits_layer = Sdf.Layer.FindOrOpen(str(edits))
+    edit_spec = edits_layer.GetPrimAtPath(character_path) if edits_layer else None
+    if not edit_spec:
+        return False
+    names = [attr.name for attr in edit_spec.attributes
+             if (attr.name == "xformOpOrder" or attr.name.startswith("xformOp:"))
+             and attr.HasDefaultValue() and attr.GetNumTimeSamples() == 0]
+    if not names:
+        return False
+    composed = Usd.Stage.Open(root_layer, edits_layer)
+    composed.SetEditTarget(edits_layer)
+    prim = composed.GetPrimAtPath(character_path)
+    for name in names:
+        prim.GetAttribute(name).Clear()
+    edits_layer.Save()
+    return True
+
+
 def bind(shot: Path, character_path: str, animation_file: Path, name: str = "BakedAnim") -> tuple[str, str]:
     """Author the portable animation reference and return animation/skeleton paths."""
     shot = shot.resolve()
@@ -39,6 +77,7 @@ def bind(shot: Path, character_path: str, animation_file: Path, name: str = "Bak
     animation.GetPrim().GetReferences().AddReference(str(relative))
     UsdSkel.BindingAPI(skeletons[0]).CreateAnimationSourceRel().SetTargets([animation_path])
     stage.GetRootLayer().Save()
+    release_user_transform_overrides(shot, character_path)
     return str(animation_path), str(skeletons[0].GetPath())
 
 

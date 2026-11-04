@@ -1,87 +1,54 @@
 #usda 1.0
 (
     defaultPrim = "World"
-    upAxis = "Y"
     metersPerUnit = 1
+    upAxis = "Y"
 )
 
 def Xform "World"
 {
-    def DomeLight "LateAfternoonAmbient"
+    def DomeLight "BaseAmbient"
     {
-        color3f inputs:color = (0.42, 0.38, 0.48)
-        float inputs:intensity = 0.55
+        color3f inputs:color = (0.35, 0.42, 0.55)
+        float inputs:intensity = 0.45
     }
 
-    def DistantLight "LateAfternoonSun"
+    def DistantLight "BaseKeyLight"
     {
-        color3f inputs:color = (1.00, 0.82, 0.65)
-        float inputs:intensity = 2.4
         float angle = 0.53
-        float3 xformOp:rotateXYZ = (-25, -45, 0)
+        color3f inputs:color = (0.95, 0.88, 0.78)
+        float inputs:intensity = 1.6
+        float3 xformOp:rotateXYZ = (-35, -25, 0)
         uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
     }
 
-    def Xform "StreetAvenue" (
+    def Xform "Ground"
+    {
+        float3 xformOp:scale = (310, 0.08, 89.035)
+        double3 xformOp:translate = (0, -0.04, -0.31749916076660156)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+
+        def Cube "Floor"
+        {
+            color3f[] primvars:displayColor = [(0.16, 0.2, 0.24)] (
+                interpolation = "constant"
+            )
+            double size = 1
+        }
+    }
+
+    def Xform "ResidentialAvenue" (
         customData = {
             string asset_id = "environment.residential_avenue"
-            string world_state_role = "environment"
             string forward_axis = "-Z"
-        }
-        references = @../../assets/usdc_assets/environments/residential_avenue.usdc@</root>
-    )
-    {
-        double3 xformOp:translate = (0.0, 0.0, 0.0)
-        float3 xformOp:rotateXYZ = (0.0, 0.0, 0.0)
-        double3 xformOp:scale = (0.25, 0.25, 0.25)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
-    }
-
-    def Xform "Car1" (
-        customData = {
-            string asset_id = "cars.car1"
             string world_state_role = "object"
-            string forward_axis = "-Z"
         }
-        references = @../../assets/usdc_assets/cars/car1.usdc@</Car>
+        prepend references = @../../assets/usdc_assets/environments/residential_avenue.usdc@
     )
     {
-        double3 xformOp:translate = (1.65, 0.0, 0.0)
-        float3 xformOp:rotateXYZ = (0.0, 180.0, 0.0)
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
-        color3f[] primvars:displayColor = [(0.78, 0.14, 0.12)] (
-            interpolation = "constant"
-        )
-    }
-
-    def Scope "Zones"
-    {
-        def Cube "sidewalk" (
-            customData = {
-                string description = "Sidewalk along the curb where Driver walks"
-            }
-        )
-        {
-            float size = 1
-            uniform token purpose = "guide"
-            token visibility = "invisible"
-            double3 xformOp:translate = (3.10, 0.01, 0.0)
-            double3 xformOp:scale = (1.60, 0.02, 24.0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-        }
-
-        def Cube "roadway" (
-            customData = {
-                string description = "Roadway beside parked car where Runner sprints"
-            }
-        )
-        {
-            float size = 1
-            uniform token purpose = "guide"
-            token visibility = "invisible"
-            double3 xformOp:translate = (-0.60, 0.01, 0.0)
-            double3 xformOp:scale = (2.80, 0.02, 24.0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-        }
     }
 }
+

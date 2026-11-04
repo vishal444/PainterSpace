@@ -27,10 +27,16 @@ add_executable(PainterSpace
     src/MainWindow.cpp
     src/MainWindow.h
     src/AssetTypes.h
+    src/CameraRig.cpp
+    src/CameraRig.h
+    src/CameraTools.cpp
+    src/CameraTools.h
     src/UsdViewportWidget.cpp
     src/UsdViewportWidget.h
     src/ShotEngine.cpp
     src/ShotEngine.h
+    src/ActionTimelineWidget.cpp
+    src/ActionTimelineWidget.h
     assets/facial_expressions/README.md
     assets/facial_expressions/happy.obj
     assets/facial_expressions/happy.mtl

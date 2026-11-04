@@ -383,6 +383,25 @@ def joint_leaf(path):
     return re.sub(r"^mixamorig\d*[:_]", "", str(path).split("/")[-1])
 
 
+def is_limb_segment(label):
+    """Classify arm/leg bones; unknown labels stay protected as main body.
+
+    Either endpoint makes a segment a limb, including hip-to-thigh and
+    spine-to-shoulder connections. Head, neck, spine and pelvis stay protected.
+    """
+    endings = ('shoulder', 'clavicle', 'arm', 'forearm', 'hand', 'wrist', 'elbow',
+               'upleg', 'upperleg', 'lowerleg', 'leg', 'thigh', 'calf', 'knee',
+               'ankle', 'foot', 'toe', 'toebase', 'thumb', 'index', 'middle', 'ring', 'pinky')
+    for endpoint in str(label).split('>'):
+        name = re.sub('[^a-z]', '', joint_leaf(endpoint).lower())
+        if name.endswith('end'):
+            name = name[:-3]
+        if (name.endswith(endings) or
+                (name.endswith(('l', 'r')) and name[:-1].endswith(endings))):
+            return True
+    return False
+
+
 def segment_radius(parent_leaf, child_leaf):
     p, c = parent_leaf.lower(), child_leaf.lower()
     if _FINGER.search(p) or _FINGER.search(c):
@@ -457,29 +476,31 @@ class CharacterModel:
         P = np.array([[*m.ExtractTranslation()] for m in xf], float)
         return apply(l2w(xc, self.skel), P)
 
-    def samples(self, tc, xc, step=0.06):
+    def samples(self, tc, xc, step=0.06, joints=None):
         """points along all capsules: (points, radii, labels)."""
-        J = self.joint_world(tc, xc)
+        J = self.joint_world(tc, xc) if joints is None else joints
         pts, rad, lab = [], [], []
         for pi, ci, r, label in self.segs:
             a, b = J[pi], J[ci]
             n = max(2, int(math.ceil(np.linalg.norm(b - a) / step)) + 1)
-            for f in np.linspace(0, 1, n):
-                pts.append(a + (b - a) * f)
-                rad.append(r)
-                lab.append(label)
+            fractions = np.linspace(0.0, 1.0, n)[:, None]
+            pts.append(a[None, :] + (b - a)[None, :] * fractions)
+            rad.append(np.full(n, r, dtype=float))
+            lab.extend([label] * n)
         for ji, r, label in self.spheres:
-            pts.append(J[ji])
-            rad.append(r)
+            pts.append(J[ji:ji + 1])
+            rad.append(np.array([r], dtype=float))
             lab.append(label)
-        return np.array(pts), np.array(rad), lab
+        if not pts:
+            return np.empty((0, 3), dtype=float), np.empty(0, dtype=float), lab
+        return np.concatenate(pts), np.concatenate(rad), lab
 
     def torso_capsules(self, tc, xc):
         J = self.joint_world(tc, xc)
         return [(J[a], J[b], r, label) for a, b, r, label in self.torso]
 
-    def body_capsules(self, tc, xc):
-        J = self.joint_world(tc, xc)
+    def body_capsules(self, tc, xc, joints=None):
+        J = self.joint_world(tc, xc) if joints is None else joints
         return [(J[a], J[b], r, label) for a, b, r, label in self.segs]
 
 

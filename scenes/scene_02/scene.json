@@ -3,15 +3,11 @@
     "has_3d_editor_layout": true,
     "prompt": "",
     "scene_id": "scene_02",
+    "stage": "scene.usda",
     "snapshots": [
         {
             "file": "scene_v1.usda",
             "version": 1
-        },
-        {
-            "file": "scene_v2.usda",
-            "version": 2
         }
-    ],
-    "stage": "scene.usda"
+    ]
 }

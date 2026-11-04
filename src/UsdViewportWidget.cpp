@@ -58,6 +58,7 @@
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 
 #include "UsdViewportWidget.h"
+#include "CameraTools.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -77,10 +78,13 @@
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSaveFile>
+#include <QSet>
+#include <QRegularExpression>
 #include <QSignalBlocker>
 #include <QSlider>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <QVector2D>
 #include <QOpenGLContext>
 #include <QWheelEvent>
 #include <QJsonDocument>
@@ -92,6 +96,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <utility>
 
 #if defined(__APPLE__)
 PXR_NAMESPACE_OPEN_SCOPE
@@ -108,6 +113,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
+// Playback redraws every frame; a smaller Hydra buffer keeps dense skinned
+// scenes responsive. Paused editing and explicit captures retain full size.
+constexpr double kPlaybackPreviewScale = 0.75;
+
+// Free-view zoom stays inside its projection's clipping range. The dolly
+// gesture can travel beyond the orbit point without changing this distance.
+constexpr double kFreeViewNearClip = 0.1;
+constexpr double kFreeViewFarClip = 1000.0;
+constexpr double kZoomFactorPerStep = 0.88;
+constexpr double kZoomDragPixelsPerStep = 100.0;
 
 void ensureSystemUsdInitialized() {
     static bool initialized = false;
@@ -202,6 +218,75 @@ void collectEditedPrimsInSpec(const SdfPrimSpecHandle& spec, QStringList& outPat
     }
 }
 
+// A manual asset reference can survive shot generation as a prepended session
+// reference. If the generated shot already references that same asset, USD
+// composes both references and draws two copies under one actor prim.
+bool reconcileGeneratedActorOpinions(const SdfPrimSpecHandle& sessionPrim,
+                                     const SdfLayerRefPtr& shotLayer,
+                                     const SdfLayerRefPtr& userLayer) {
+    if (!sessionPrim || !shotLayer) return false;
+    bool changed = false;
+    const SdfPrimSpecHandle shotPrim = shotLayer->GetPrimAtPath(sessionPrim->GetPath());
+    if (shotPrim && shotPrim->GetCustomData().count("actor_id")) {
+        const auto shotRefs = shotPrim->GetReferenceList().GetAddedOrExplicitItems();
+        const auto manualRefs = sessionPrim->GetReferenceList().GetPrependedItems();
+        if (!shotRefs.empty() && !manualRefs.empty()) {
+            auto assetWithoutExtension = [](const SdfReference& ref) {
+                const QString path = QString::fromStdString(ref.GetAssetPath());
+                const QFileInfo info(path);
+                return info.path() + "/" + info.completeBaseName();
+            };
+            const bool allRedundant = std::all_of(manualRefs.begin(), manualRefs.end(),
+                [&](const SdfReference& manual) {
+                    return std::any_of(shotRefs.begin(), shotRefs.end(),
+                        [&](const SdfReference& generated) {
+                            return assetWithoutExtension(manual) == assetWithoutExtension(generated);
+                        });
+                });
+            if (allRedundant) {
+                sessionPrim->GetReferenceList().ClearEdits();
+                changed = true;
+            }
+        }
+        // A manually placed actor has a static transform in user_edits.usda.
+        // Once the generated shot animates that same prim, the stronger static
+        // value and xformOpOrder would hide every generated position and heading.
+        bool generatedMotion = false;
+        for (const auto& attr : shotPrim->GetAttributes()) {
+            if (attr->GetName().rfind("xformOp:", 0) == 0 &&
+                shotLayer->GetNumTimeSamplesForPath(attr->GetPath()) > 1) {
+                generatedMotion = true;
+                break;
+            }
+        }
+        bool manualMotion = false;
+        for (const auto& attr : sessionPrim->GetAttributes()) {
+            if (attr->GetName().rfind("xformOp:", 0) == 0 &&
+                userLayer->GetNumTimeSamplesForPath(attr->GetPath()) > 1) {
+                manualMotion = true;
+                break;
+            }
+        }
+        if (generatedMotion && !manualMotion) {
+            std::vector<SdfPropertySpecHandle> staticTransformOpinions;
+            for (const auto& attr : sessionPrim->GetAttributes()) {
+                if (attr->GetName().rfind("xformOp:", 0) == 0 ||
+                    attr->GetName() == "xformOpOrder") {
+                    staticTransformOpinions.push_back(attr);
+                }
+            }
+            for (const auto& attr : staticTransformOpinions) {
+                sessionPrim->RemoveProperty(attr);
+                changed = true;
+            }
+        }
+    }
+    for (const SdfPrimSpecHandle& child : sessionPrim->GetNameChildren()) {
+        changed = reconcileGeneratedActorOpinions(child, shotLayer, userLayer) || changed;
+    }
+    return changed;
+}
+
 // IMPORTANT (ABI safety): PainterSpace compiles against OpenUSD 25.08 headers staged in
 // third_party/openusd, but links against Apple's private system build (/usr/lib/usd/libusd_ms).
 // Those two do NOT agree on the private member layout of every class. UsdGeomBBoxCache is one
@@ -218,6 +303,57 @@ GfBBox3d computeWorldBoundSafe(const UsdPrim& prim, const UsdTimeCode& time) {
     UsdGeomImageable imageable(prim);
     if (!imageable) return GfBBox3d();
     return imageable.ComputeWorldBound(time, UsdGeomTokens->default_, UsdGeomTokens->proxy, UsdGeomTokens->render);
+}
+
+// Grow the standard scene floor to include a newly placed asset. Keep its top
+// height and thickness; author the override in the active edit layer.
+void includeAssetInGround(const UsdStageRefPtr& stage, const UsdPrim& asset, const UsdTimeCode& time) {
+    const UsdPrim ground = stage->GetPrimAtPath(SdfPath("/World/Ground"));
+    const UsdGeomCube floor(stage->GetPrimAtPath(SdfPath("/World/Ground/Floor")));
+    if (!ground || !floor) return;
+
+    UsdGeomXformable groundXf(ground);
+    bool resets = false;
+    UsdGeomXformOp translateOp, scaleOp;
+    for (const auto& op : groundXf.GetOrderedXformOps(&resets)) {
+        if (op.GetOpType() == UsdGeomXformOp::TypeTranslate) translateOp = op;
+        else if (op.GetOpType() == UsdGeomXformOp::TypeScale) scaleOp = op;
+        else return; // A rotated or otherwise customized floor needs manual sizing.
+    }
+    if (!translateOp || !scaleOp || resets) return;
+
+    const GfRange3d groundRange = computeWorldBoundSafe(ground, time).ComputeAlignedRange();
+    const GfRange3d assetRange = computeWorldBoundSafe(asset, time).ComputeAlignedRange();
+    if (groundRange.IsEmpty() || assetRange.IsEmpty()) return;
+
+    const double minX = std::min(groundRange.GetMin()[0], assetRange.GetMin()[0]);
+    const double maxX = std::max(groundRange.GetMax()[0], assetRange.GetMax()[0]);
+    const double minZ = std::min(groundRange.GetMin()[2], assetRange.GetMin()[2]);
+    const double maxZ = std::max(groundRange.GetMax()[2], assetRange.GetMax()[2]);
+    if (minX == groundRange.GetMin()[0] && maxX == groundRange.GetMax()[0] &&
+        minZ == groundRange.GetMin()[2] && maxZ == groundRange.GetMax()[2]) return;
+
+    double cubeSize = 0.0;
+    GfVec3d translation(0.0), scale(1.0);
+    if (!floor.GetSizeAttr().Get(&cubeSize) || cubeSize <= 0.0) return;
+    if (translateOp.GetPrecision() == UsdGeomXformOp::PrecisionFloat) {
+        GfVec3f value;
+        if (!translateOp.Get(&value, time)) return;
+        translation = GfVec3d(value);
+    } else if (!translateOp.Get(&translation, time)) return;
+    if (scaleOp.GetPrecision() == UsdGeomXformOp::PrecisionFloat) {
+        GfVec3f value;
+        if (!scaleOp.Get(&value, time)) return;
+        scale = GfVec3d(value);
+    } else if (!scaleOp.Get(&scale, time)) return;
+    const GfVec3d newTranslation((minX + maxX) / 2.0, translation[1], (minZ + maxZ) / 2.0);
+    const GfVec3d newScale((maxX - minX) / cubeSize, scale[1], (maxZ - minZ) / cubeSize);
+    if (translateOp.GetPrecision() == UsdGeomXformOp::PrecisionFloat)
+        translateOp.Set(GfVec3f(newTranslation));
+    else translateOp.Set(newTranslation);
+    if (scaleOp.GetPrecision() == UsdGeomXformOp::PrecisionFloat)
+        scaleOp.Set(GfVec3f(newScale));
+    else scaleOp.Set(newScale);
 }
 
 } // namespace
@@ -241,8 +377,22 @@ struct UsdViewportWidget::Impl {
     QTimer* playTimer = nullptr;
 
     // Camera state
-    bool useShotCam = true;
+    bool useShotCam = false;
     QString shotCamPath = QStringLiteral("/World/ShotCam");
+    QJsonObject cameraDocument;
+    QJsonObject directorBrief;
+    QStringList lintPaths;
+    ViewMode viewMode = ViewMode::World;
+    std::unique_ptr<CameraToolController> cameraTools;
+    QTimer* rigBakeDebounceTimer = nullptr;
+    QTimer* cameraPreviewTimer = nullptr;
+    QProcess* cameraPreviewProcess = nullptr;
+    QPushButton* viewModeButton = nullptr;
+    QComboBox* shotSizeCombo = nullptr;
+    QSlider* zoomSlider = nullptr;
+    QLabel* zoomLabel = nullptr;
+    QWidget* navigationBar = nullptr;
+    bool fixedOrbitCenter = true;
     double yaw = 0.45;
     double pitch = 0.32;
     double distance = 12.0;
@@ -250,21 +400,34 @@ struct UsdViewportWidget::Impl {
 
     // Interaction state
     PaintingTool activeTool = PaintingTool::Select;
-    UsdGizmoMode gizmoMode = UsdGizmoMode::Move;
     QString selectedPrimPath;
+    bool selectedAimTarget = false;
     bool orbiting = false;
     bool panning = false;
+    bool zooming = false;
+    bool dollying = false;
     bool draggingGizmo = false;
     bool draggingObjectGround = false;
+    bool dragUndoCaptured = false;
+    bool draggingAimTarget = false;
     bool paintingStroke = false;
     int activeGizmoAxis = -1; // 0=X, 1=Y, 2=Z
     QPointF lastMousePos;
     QVector3D dragStartPrimPos;
-    QVector3D dragStartPrimRot;
-    double dragStartPrimScale = 1.0;
+    QVector3D dragStartAimPos;
     QVector3D dragStartWorldHit;
     QVector<QVector3D> currentStrokePoints;
     int nextStrokeIndex = 1;
+
+    // General Asset Movement Paths (Characters, Vehicles, Animals, and Camera)
+    bool drawPathActive = false;
+    QString drawingPrimPath;
+    QHash<QString, QVector<QVector3D>> primPaths;
+    QSet<QString> explicitlyDrawnPrimPaths;
+    QString lastDrawnPrimPath;
+    QHash<QString, QColor> primPathColors;
+    QVector<QVector3D> activePrimStroke;
+    bool isDrawingPrimStroke = false;
 
     // Visual settings
     QColor backgroundColor = QColor("#262f38");
@@ -383,10 +546,10 @@ struct UsdViewportWidget::Impl {
     QSlider* timelineSlider = nullptr;
     QLabel* frameLabel = nullptr;
     QComboBox* cameraCombo = nullptr;
-    QComboBox* gizmoCombo = nullptr;
     QLabel* userEditsBadge = nullptr;
     QCheckBox* userEditsCheck = nullptr;
     QPushButton* resetEditsButton = nullptr;
+    QPushButton* undoButton = nullptr;
 };
 
 UsdViewportWidget::UsdViewportWidget(QWidget* parent)
@@ -397,6 +560,43 @@ UsdViewportWidget::UsdViewportWidget(QWidget* parent)
     setMinimumSize(480, 320);
 
     myImpl->playTimer = new QTimer(this);
+    myImpl->cameraTools = std::make_unique<CameraToolController>(this);
+    myImpl->rigBakeDebounceTimer = new QTimer(this);
+    myImpl->rigBakeDebounceTimer->setSingleShot(true);
+    connect(myImpl->cameraTools.get(), &CameraToolController::rigChanged, this, [this]() {
+        if (myImpl->suppressWatcherReload) return;
+        if (myImpl->rigBakeDebounceTimer) {
+            myImpl->rigBakeDebounceTimer->start(100);
+        }
+        myImpl->hydraDirty = true;
+        update();
+    });
+    connect(myImpl->rigBakeDebounceTimer, &QTimer::timeout, this, [this]() {
+        bakeCurrentCameraRig();
+    });
+    myImpl->cameraPreviewTimer = new QTimer(this); myImpl->cameraPreviewTimer->setSingleShot(true); myImpl->cameraPreviewTimer->setInterval(250);
+    connect(myImpl->cameraPreviewTimer, &QTimer::timeout, this, [this]() {
+        if (myImpl->cameraPreviewProcess) { myImpl->cameraPreviewTimer->start(); return; }
+        const auto dir = QFileInfo(myImpl->stagePath).dir();
+        if (!QFileInfo::exists(dir.filePath("shot.json")) || !QFileInfo::exists(dir.filePath("camera_rig.json"))) return;
+        QDir candidate = dir;
+        while (!QFileInfo::exists(candidate.filePath("tools/shot_library/compile_shot.py")) && candidate.cdUp()) {}
+        const QString root = QFileInfo::exists(candidate.filePath("tools/shot_library/compile_shot.py")) ? candidate.absolutePath() : QDir::currentPath();
+        auto* process = new QProcess(this); myImpl->cameraPreviewProcess = process;
+        const QString currentStage = myImpl->stagePath;
+        connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, process, currentStage, dir](int code, QProcess::ExitStatus) {
+            myImpl->cameraPreviewProcess = nullptr; process->deleteLater();
+            if (code != 0 || myImpl->stagePath != currentStage) return;
+            const auto doc = myImpl->cameraDocument; const auto cameras = doc["cameras"].toObject();
+            for (auto it = cameras.begin(); it != cameras.end(); ++it) {
+                auto layer = SdfLayer::FindOrOpen(dir.filePath("cam_" + it.key() + ".usda").toStdString()); if (layer) layer->Reload();
+            }
+            setCameraDocument(myImpl->cameraDocument);
+            myImpl->hydraDirty = true; update();
+        });
+        connect(process, &QProcess::errorOccurred, this, [this, process](QProcess::ProcessError e) { if (e == QProcess::FailedToStart) { myImpl->cameraPreviewProcess = nullptr; process->deleteLater(); } });
+        process->start(QDir(root).filePath(".venv/bin/python"), {QDir(root).filePath("tools/shot_library/compile_shot.py"), "--out", dir.filePath("shot.usda"), "--camera-preview"});
+    });
     connect(myImpl->playTimer, &QTimer::timeout, this, [this]() {
         if (!myImpl->stage) return;
         double next = myImpl->currentFrame + 1.0;
@@ -409,6 +609,11 @@ UsdViewportWidget::UsdViewportWidget(QWidget* parent)
     myImpl->fileWatcher = new QFileSystemWatcher(this);
     connect(myImpl->fileWatcher, &QFileSystemWatcher::fileChanged, this, [this](const QString& changedPath) {
         if (myImpl->suppressWatcherReload) return;
+        if (changedPath.endsWith("camera_rig.json")) {
+            QFile file(changedPath);
+            if (file.open(QIODevice::ReadOnly)) setCameraDocument(QJsonDocument::fromJson(file.readAll()).object());
+            myImpl->cameraPreviewTimer->start(); syncWatchedFiles(); return;
+        }
         // Re-add path in case atomic save replaced the inode
         QTimer::singleShot(80, this, [this, changedPath]() {
             syncWatchedFiles();
@@ -433,12 +638,48 @@ void UsdViewportWidget::setupOverlayControls() {
     myImpl->bottomBar = new QWidget(this);
     myImpl->bottomBar->setObjectName("usdBottomBar");
     myImpl->bottomBar->setStyleSheet(
-        "QWidget#usdBottomBar { background: rgba(21, 25, 30, 225); border: 1px solid #343e4b; border-radius: 8px; }"
+        "QWidget#usdBottomBar, QWidget#usdNavigationBar { background: rgba(21, 25, 30, 225); border: 1px solid #343e4b; border-radius: 8px; }"
         "QPushButton { background: #242c35; color: #e3e8ed; border: 1px solid #3c4856; border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 600; }"
         "QPushButton:hover { background: #313d4b; border-color: #73b5da; }"
         "QComboBox { background: #20262e; color: #e3e8ed; border: 1px solid #3c4856; border-radius: 5px; padding: 3px 8px; font-size: 11px; min-height: 22px; }"
         "QLabel { color: #cfd8e2; font-size: 11px; }"
         "QCheckBox { color: #cfd8e2; font-size: 11px; spacing: 5px; }");
+
+    myImpl->navigationBar = new QWidget(this);
+    myImpl->navigationBar->setObjectName("usdNavigationBar");
+    myImpl->navigationBar->setStyleSheet(myImpl->bottomBar->styleSheet());
+    auto* navigation = new QHBoxLayout(myImpl->navigationBar);
+    navigation->setContentsMargins(8, 6, 8, 6);
+    for (const auto& control : {std::pair<const char*, double>{"Zoom In", 1.0},
+                               std::pair<const char*, double>{"Zoom Out", -1.0}}) {
+        auto* button = new QPushButton(QString::fromLatin1(control.first), myImpl->navigationBar);
+        button->setAccessibleName(button->text());
+        button->setToolTip(button->text() + " around the editor's center");
+        button->setCursor(Qt::PointingHandCursor);
+        button->setFocusPolicy(Qt::NoFocus);
+        button->setAutoRepeat(true);
+        connect(button, &QPushButton::clicked, this, [this, steps = control.second]() {
+            zoomFreeCamera(steps, QPointF(width() * 0.5, height() * 0.5), false, false);
+            setFocus(Qt::MouseFocusReason);
+        });
+        navigation->addWidget(button);
+    }
+    auto* fixedCenter = new QCheckBox("Fixed Center", myImpl->navigationBar);
+    fixedCenter->setChecked(myImpl->fixedOrbitCenter);
+    fixedCenter->setFocusPolicy(Qt::NoFocus);
+    fixedCenter->setToolTip("Keep the orbit center and vertical axis fixed while rotating, tilting and zooming. "
+                           "Turn off to pan, dolly or zoom toward the pointer. F deliberately centers on the selection.");
+    connect(fixedCenter, &QCheckBox::toggled, this, [this](bool checked) {
+        myImpl->fixedOrbitCenter = checked;
+        myImpl->panning = false;
+        update();
+    });
+    navigation->addWidget(fixedCenter);
+    auto* navigationRow = new QHBoxLayout;
+    navigationRow->addStretch();
+    navigationRow->addWidget(myImpl->navigationBar);
+    navigationRow->addStretch();
+    mainLayout->insertLayout(0, navigationRow);
 
     QHBoxLayout* barLayout = new QHBoxLayout(myImpl->bottomBar);
     barLayout->setContentsMargins(10, 6, 10, 6);
@@ -464,22 +705,47 @@ void UsdViewportWidget::setupOverlayControls() {
     myImpl->frameLabel->setMinimumWidth(125);
     barLayout->addWidget(myImpl->frameLabel);
 
+    myImpl->viewModeButton = new QPushButton(myImpl->viewMode == ViewMode::CameraViewfinder ? "🌐 Switch to 3D World (Tab)" : "🎥 Switch to Viewfinder (Tab)", myImpl->bottomBar);
+    myImpl->viewModeButton->setToolTip("Toggle World 3D editing view and Camera Viewfinder (Tab)");
+    myImpl->viewModeButton->setCursor(Qt::PointingHandCursor);
+    connect(myImpl->viewModeButton, &QPushButton::clicked, this, &UsdViewportWidget::toggleViewMode);
+    barLayout->addWidget(myImpl->viewModeButton);
+
+    myImpl->shotSizeCombo = new QComboBox(myImpl->bottomBar);
+    myImpl->shotSizeCombo->addItem("Shot: Wide", static_cast<int>(CameraShotSize::Wide));
+    myImpl->shotSizeCombo->addItem("Shot: Medium", static_cast<int>(CameraShotSize::Medium));
+    myImpl->shotSizeCombo->addItem("Shot: Medium Close", static_cast<int>(CameraShotSize::MediumCloseUp));
+    myImpl->shotSizeCombo->addItem("Shot: Close-Up", static_cast<int>(CameraShotSize::CloseUp));
+    myImpl->shotSizeCombo->addItem("Shot: Extreme Wide", static_cast<int>(CameraShotSize::ExtremeWide));
+    myImpl->shotSizeCombo->addItem("Shot: Extreme Close", static_cast<int>(CameraShotSize::ExtremeCloseUp));
+    myImpl->shotSizeCombo->setCurrentIndex(1); // Medium default
+    connect(myImpl->shotSizeCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int idx) {
+        setShotSize(static_cast<CameraShotSize>(myImpl->shotSizeCombo->itemData(idx).toInt()));
+    });
+    barLayout->addWidget(myImpl->shotSizeCombo);
+
+    myImpl->zoomSlider = new QSlider(Qt::Horizontal, myImpl->bottomBar);
+    myImpl->zoomSlider->setRange(12, 200);
+    myImpl->zoomSlider->setValue(35);
+    myImpl->zoomSlider->setFixedWidth(80);
+    myImpl->zoomSlider->setToolTip("Lens Zoom (Focal Length mm)");
+    connect(myImpl->zoomSlider, &QSlider::valueChanged, this, [this](int val) {
+        setCameraFocalLength(static_cast<double>(val));
+    });
+    barLayout->addWidget(myImpl->zoomSlider);
+
+    myImpl->zoomLabel = new QLabel("35 mm", myImpl->bottomBar);
+    myImpl->zoomLabel->setFixedWidth(46);
+    barLayout->addWidget(myImpl->zoomLabel);
+
     myImpl->cameraCombo = new QComboBox(myImpl->bottomBar);
     myImpl->cameraCombo->addItem("Camera: ShotCam", true);
     myImpl->cameraCombo->addItem("Camera: Free Orbit", false);
+    myImpl->cameraCombo->setVisible(false);
     connect(myImpl->cameraCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int idx) {
         setUseShotCamera(myImpl->cameraCombo->itemData(idx).toBool());
     });
-    barLayout->addWidget(myImpl->cameraCombo);
 
-    myImpl->gizmoCombo = new QComboBox(myImpl->bottomBar);
-    myImpl->gizmoCombo->addItem("Gizmo: Move (W)", static_cast<int>(UsdGizmoMode::Move));
-    myImpl->gizmoCombo->addItem("Gizmo: Rotate (E)", static_cast<int>(UsdGizmoMode::Rotate));
-    myImpl->gizmoCombo->addItem("Gizmo: Scale (R)", static_cast<int>(UsdGizmoMode::Scale));
-    connect(myImpl->gizmoCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](int idx) {
-        setGizmoMode(static_cast<UsdGizmoMode>(myImpl->gizmoCombo->itemData(idx).toInt()));
-    });
-    barLayout->addWidget(myImpl->gizmoCombo);
 
     myImpl->userEditsBadge = new QLabel("Your changes: 0", myImpl->bottomBar);
     myImpl->userEditsBadge->setStyleSheet(
@@ -491,6 +757,12 @@ void UsdViewportWidget::setupOverlayControls() {
     myImpl->userEditsCheck->setToolTip("Toggle applying the separate user_edits.usda layer over shot.usda");
     connect(myImpl->userEditsCheck, &QCheckBox::toggled, this, &UsdViewportWidget::setUserEditsEnabled);
     barLayout->addWidget(myImpl->userEditsCheck);
+
+    myImpl->undoButton = new QPushButton("↶ Undo", myImpl->bottomBar);
+    myImpl->undoButton->setToolTip("Undo last change (Cmd+Z / Ctrl+Z)");
+    myImpl->undoButton->setCursor(Qt::PointingHandCursor);
+    connect(myImpl->undoButton, &QPushButton::clicked, this, &UsdViewportWidget::undo);
+    barLayout->addWidget(myImpl->undoButton);
 
     myImpl->resetEditsButton = new QPushButton("Reset Edits", myImpl->bottomBar);
     myImpl->resetEditsButton->setToolTip("Discard manual overrides in user_edits.usda while keeping LLM shot.usda intact");
@@ -526,9 +798,26 @@ void UsdViewportWidget::updateOverlayUi() {
         QSignalBlocker blockCam(myImpl->cameraCombo);
         myImpl->cameraCombo->setCurrentIndex(myImpl->useShotCam ? 0 : 1);
     }
-    {
-        QSignalBlocker blockGizmo(myImpl->gizmoCombo);
-        myImpl->gizmoCombo->setCurrentIndex(static_cast<int>(myImpl->gizmoMode));
+    if (myImpl->viewModeButton) {
+        myImpl->viewModeButton->setText(myImpl->viewMode == ViewMode::CameraViewfinder ? "🌐 Switch to 3D World (Tab)" : "🎥 Switch to Viewfinder (Tab)");
+        myImpl->viewModeButton->setStyleSheet(myImpl->viewMode == ViewMode::CameraViewfinder
+            ? "background: #1d4ed8; color: #ffffff; border: 1px solid #60a5fa; font-weight: bold; border-radius: 5px; padding: 4px 10px;"
+            : "");
+    }
+    if (myImpl->navigationBar) {
+        myImpl->navigationBar->setVisible(myImpl->viewMode == ViewMode::World);
+    }
+    if (myImpl->shotSizeCombo && myImpl->cameraTools) {
+        QSignalBlocker b(myImpl->shotSizeCombo);
+        const int idx = myImpl->shotSizeCombo->findData(static_cast<int>(myImpl->cameraTools->rigData().shotSize));
+        if (idx >= 0) myImpl->shotSizeCombo->setCurrentIndex(idx);
+    }
+    if (myImpl->zoomSlider && myImpl->cameraTools) {
+        QSignalBlocker b(myImpl->zoomSlider);
+        myImpl->zoomSlider->setValue(static_cast<int>(std::round(myImpl->cameraTools->rigData().focalStart)));
+    }
+    if (myImpl->zoomLabel && myImpl->cameraTools) {
+        myImpl->zoomLabel->setText(QString("%1 mm").arg(static_cast<int>(std::round(myImpl->cameraTools->rigData().focalStart))));
     }
     const int editCount = userEditedPrimCount();
     const QStringList orphaned = orphanedUserEditPrims();
@@ -551,6 +840,9 @@ void UsdViewportWidget::updateOverlayUi() {
     {
         QSignalBlocker blockCheck(myImpl->userEditsCheck);
         myImpl->userEditsCheck->setChecked(myImpl->userEditsEnabled);
+    }
+    if (myImpl->undoButton) {
+        myImpl->undoButton->setEnabled(canUndo());
     }
     myImpl->resetEditsButton->setEnabled(editCount > 0);
     myImpl->resetEditsButton->setText(myImpl->selectedPrimPath.isEmpty() ? "Reset All" : "Reset Prim");
@@ -584,6 +876,10 @@ bool UsdViewportWidget::openStage(const QString& stagePath, bool isSceneStage) {
     SdfLayerRefPtr userLayer = SdfLayer::FindOrOpen(absUserEditsPath.toStdString());
     if (userLayer) {
         userLayer->Reload();
+        if (!isSceneStage && reconcileGeneratedActorOpinions(
+                userLayer->GetPrimAtPath(SdfPath("/World")), rootLayer, userLayer)) {
+            userLayer->Save();
+        }
     }
 
     UsdStageRefPtr newStage = userLayer
@@ -599,6 +895,29 @@ bool UsdViewportWidget::openStage(const QString& stagePath, bool isSceneStage) {
     myImpl->stagePath = absStagePath;
     myImpl->userEditsPath = absUserEditsPath;
     myImpl->isSceneStage = isSceneStage;
+    myImpl->primPaths.clear();
+    myImpl->explicitlyDrawnPrimPaths.clear();
+    myImpl->lastDrawnPrimPath.clear();
+    if (myImpl->userEditsLayer) {
+        const auto metadata = myImpl->userEditsLayer->GetCustomLayerData();
+        const auto savedPaths = metadata.find("director_actor_paths");
+        if (savedPaths != metadata.end() && savedPaths->second.IsHolding<std::string>()) {
+            const auto paths = QJsonDocument::fromJson(QByteArray::fromStdString(savedPaths->second.UncheckedGet<std::string>())).object();
+            for (auto it = paths.begin(); it != paths.end(); ++it) {
+                QVector<QVector3D> points;
+                for (const auto& value : it.value().toArray()) {
+                    const auto coords = value.toArray();
+                    if (coords.size() == 3) points.append(QVector3D(coords[0].toDouble(), coords[1].toDouble(), coords[2].toDouble()));
+                }
+                myImpl->primPaths[it.key()] = points;
+            }
+        }
+        const auto drawn = metadata.find("director_drawn_paths");
+        if (drawn != metadata.end() && drawn->second.IsHolding<std::string>()) {
+            const auto paths = QJsonDocument::fromJson(QByteArray::fromStdString(drawn->second.UncheckedGet<std::string>())).array();
+            for (const auto& path : paths) myImpl->explicitlyDrawnPrimPaths.insert(path.toString());
+        }
+    }
 
     if (myImpl->userEditsLayer) {
         if (!myImpl->userEditsEnabled) {
@@ -619,7 +938,7 @@ bool UsdViewportWidget::openStage(const QString& stagePath, bool isSceneStage) {
     myImpl->startFrame = startTc;
     myImpl->endFrame = std::max(startTc, endTc);
     myImpl->fps = tcps > 0.0 ? tcps : 24.0;
-    myImpl->currentFrame = std::clamp(myImpl->currentFrame, myImpl->startFrame, myImpl->endFrame);
+    myImpl->currentFrame = startTc;
     myImpl->playTimer->setInterval(std::max(1, static_cast<int>(std::round(1000.0 / myImpl->fps))));
 
     // Detect primary camera on stage
@@ -634,17 +953,61 @@ bool UsdViewportWidget::openStage(const QString& stagePath, bool isSceneStage) {
             }
         }
     }
-    myImpl->useShotCam = shotCamPrim && shotCamPrim.IsA<UsdGeomCamera>() && !isSceneStage;
+    // Opening a stage should land in the editable 3D world. The camera viewfinder
+    // remains available as an explicit toggle for framing and preview.
+    myImpl->viewMode = ViewMode::World;
+    myImpl->useShotCam = false;
+    myImpl->cameraTools->setTool(CameraToolType::None);
+
+    // Load camera rig if authored, or initialize from shot camera
+    CameraRigData rig;
+    if (loadCameraRigFromStage(myImpl->stage, rig)) {
+        if (!rig.hasCustomLookAt) {
+            QVector3D sceneMid(0.0f, 1.2f, 0.0f);
+            UsdPrim worldPrim = myImpl->stage->GetPrimAtPath(SdfPath("/World"));
+            if (worldPrim) {
+                GfBBox3d bbox = myImpl->cachedWorldBound(worldPrim);
+                GfRange3d range = bbox.ComputeAlignedRange();
+                if (!range.IsEmpty()) {
+                    GfVec3d m = range.GetMidpoint();
+                    sceneMid = QVector3D(float(m[0]), std::max(0.5f, float(m[1])), float(m[2]));
+                }
+            }
+            rig.lookAtPoint = sceneMid;
+        }
+        myImpl->cameraTools->setRigData(rig);
+    } else if (shotCamPrim && shotCamPrim.IsA<UsdGeomCamera>() && !isSceneStage) {
+        if (convertShotCamToRig(myImpl->stage, myImpl->startFrame, myImpl->endFrame, myImpl->fps, rig)) {
+            if (!rig.hasCustomLookAt) {
+                QVector3D sceneMid(0.0f, 1.2f, 0.0f);
+                UsdPrim worldPrim = myImpl->stage->GetPrimAtPath(SdfPath("/World"));
+                if (worldPrim) {
+                    GfBBox3d bbox = myImpl->cachedWorldBound(worldPrim);
+                    GfRange3d range = bbox.ComputeAlignedRange();
+                    if (!range.IsEmpty()) {
+                        GfVec3d m = range.GetMidpoint();
+                        sceneMid = QVector3D(float(m[0]), std::max(0.5f, float(m[1])), float(m[2]));
+                    }
+                }
+                rig.lookAtPoint = sceneMid;
+            }
+            myImpl->cameraTools->setRigData(rig);
+        }
+    }
+
+    QFile cameraFile(info.dir().filePath("camera_rig.json"));
+    myImpl->cameraDocument = {};
+    if (!isSceneStage && cameraFile.open(QIODevice::ReadOnly)) {
+        const QByteArray original = cameraFile.readAll();
+        setCameraDocument(QJsonDocument::fromJson(original).object());
+    }
 
     // Seed undo stack with initial user_edits.usda content
     myImpl->undoStack.clear();
     myImpl->redoStack.clear();
-    if (myImpl->userEditsLayer) {
-        std::string exported;
-        myImpl->userEditsLayer->ExportToString(&exported);
-        myImpl->undoStack.append(QString::fromStdString(exported));
-    }
+    if (myImpl->userEditsLayer) myImpl->undoStack.append(captureUndoState());
 
+    if (!myImpl->cameraDocument.isEmpty()) myImpl->cameraPreviewTimer->start();
     syncWatchedFiles();
     myImpl->suppressWatcherReload = false;
     myImpl->invalidateBound(QString());
@@ -660,6 +1023,11 @@ void UsdViewportWidget::reloadStage() {
     if (!myImpl->stage) return;
     myImpl->suppressWatcherReload = true;
     myImpl->stage->Reload();
+    if (!myImpl->isSceneStage && myImpl->userEditsLayer &&
+        reconcileGeneratedActorOpinions(myImpl->userEditsLayer->GetPrimAtPath(SdfPath("/World")),
+                                        myImpl->stage->GetRootLayer(), myImpl->userEditsLayer)) {
+        myImpl->userEditsLayer->Save();
+    }
     if (myImpl->userEditsLayer) {
         if (!myImpl->userEditsEnabled) {
             myImpl->stage->MuteLayer(myImpl->userEditsLayer->GetIdentifier());
@@ -704,6 +1072,8 @@ void UsdViewportWidget::syncWatchedFiles() {
     if (!myImpl->userEditsPath.isEmpty() && QFileInfo::exists(myImpl->userEditsPath)) {
         toWatch << myImpl->userEditsPath;
     }
+    const QString cameraFile = QFileInfo(myImpl->stagePath).dir().filePath("camera_rig.json");
+    if (QFileInfo::exists(cameraFile)) toWatch << cameraFile;
     if (!toWatch.isEmpty()) {
         myImpl->fileWatcher->addPaths(toWatch);
     }
@@ -889,6 +1259,8 @@ void UsdViewportWidget::setPlaying(bool playing) {
     } else {
         myImpl->playTimer->stop();
     }
+    myImpl->hydraDirty = true;
+    update();
     updateOverlayUi();
 }
 
@@ -909,21 +1281,225 @@ double UsdViewportWidget::startFrame() const { return myImpl->startFrame; }
 double UsdViewportWidget::endFrame() const { return myImpl->endFrame; }
 double UsdViewportWidget::fps() const { return myImpl->fps; }
 
-void UsdViewportWidget::setUseShotCamera(bool useShotCam) {
-    if (myImpl->useShotCam == useShotCam) return;
+void UsdViewportWidget::setViewMode(ViewMode mode) {
+    const bool useShotCam = (mode == ViewMode::CameraViewfinder);
+    if (myImpl->viewMode == mode && myImpl->useShotCam == useShotCam) return;
+    myImpl->viewMode = mode;
     myImpl->useShotCam = useShotCam;
+    if (mode == ViewMode::World && myImpl->cameraTools->tool() == CameraToolType::Aim) {
+        myImpl->cameraTools->setTool(CameraToolType::None);
+    }
     myImpl->hydraDirty = true;
     updateOverlayUi();
     update();
+    emit viewModeChanged(myImpl->viewMode);
+}
+
+ViewMode UsdViewportWidget::viewMode() const {
+    return myImpl->viewMode;
+}
+
+void UsdViewportWidget::toggleViewMode() {
+    setViewMode(myImpl->viewMode == ViewMode::World ? ViewMode::CameraViewfinder : ViewMode::World);
+}
+
+void UsdViewportWidget::setUseShotCamera(bool useShotCam) {
+    setViewMode(useShotCam ? ViewMode::CameraViewfinder : ViewMode::World);
 }
 
 bool UsdViewportWidget::useShotCamera() const { return myImpl->useShotCam; }
+
+CameraToolController* UsdViewportWidget::cameraTools() const {
+    return myImpl->cameraTools.get();
+}
+
+void UsdViewportWidget::setShotSize(CameraShotSize size) {
+    applyShotSizePreset(size, myImpl->cameraTools->rigData().framingMoveCamera);
+    emit shotSizeChanged(size);
+}
+
+CameraShotSize UsdViewportWidget::shotSize() const {
+    return myImpl->cameraTools->rigData().shotSize;
+}
+
+void UsdViewportWidget::applyShotSizePreset(CameraShotSize size, bool moveCamera) {
+    pushUndoSnapshot();
+    auto& rig = myImpl->cameraTools->rigData();
+    rig.shotSize = size;
+    rig.framingMoveCamera = moveCamera;
+
+    QString subject = !rig.aimTargets.isEmpty() ? rig.aimTargets.first() : myImpl->selectedPrimPath;
+    if (subject.isEmpty()) subject = rig.shotSubject;
+
+    double subjectHeight = 1.8;
+    QVector3D subjectPos(0.0f, 1.0f, 0.0f);
+    if (!subject.isEmpty() && myImpl->stage) {
+        UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(subject.toStdString()));
+        if (prim) {
+            GfBBox3d bbox = myImpl->cachedWorldBound(prim);
+            GfRange3d range = bbox.ComputeAlignedRange();
+            if (!range.IsEmpty()) {
+                subjectHeight = std::max(0.2, range.GetSize()[1]);
+                GfVec3d mid = range.GetMidpoint();
+                subjectPos = QVector3D(float(mid[0]), float(mid[1]), float(mid[2]));
+            }
+        }
+    }
+
+    CameraRigEvaluator eval(myImpl->fps);
+    double horizAp = 36.0, vertAp = 20.25;
+    CameraRigEvaluator::sensorDimensions(rig.sensorPreset, horizAp, vertAp);
+
+    if (moveCamera) {
+        const double dist = eval.computeShotSizeDistance(size, subjectHeight, rig.focalStart, vertAp);
+        QVector3D camPos = (rig.points.isEmpty()) ? QVector3D(subjectPos.x(), subjectPos.y() + 0.3f, subjectPos.z() + static_cast<float>(dist)) : rig.points.first().position;
+        QVector3D dir = (camPos - subjectPos).normalized();
+        if (dir.lengthSquared() < 0.1f) dir = QVector3D(0.0f, 0.2f, 1.0f).normalized();
+        QVector3D newPos = subjectPos + dir * static_cast<float>(dist);
+
+        if (rig.points.isEmpty()) {
+            rig.points.append({newPos});
+        } else {
+            rig.points[0].position = newPos;
+        }
+    } else {
+        QVector3D camPos = (rig.points.isEmpty()) ? QVector3D(0.0f, 1.6f, 5.0f) : rig.points.first().position;
+        const double curDist = (camPos - subjectPos).length();
+        const double newFocal = eval.computeShotSizeFocal(size, subjectHeight, curDist, vertAp);
+        rig.focalStart = newFocal;
+        rig.focalEnd = newFocal;
+        if (myImpl->zoomSlider) myImpl->zoomSlider->setValue(static_cast<int>(std::round(newFocal)));
+    }
+    bakeCurrentCameraRig();
+}
+
+void UsdViewportWidget::setCameraFocalLength(double focalMm) {
+    pushUndoSnapshot();
+    const double clamped = std::clamp(focalMm, 12.0, 200.0);
+    auto& rig = myImpl->cameraTools->rigData();
+    rig.focalStart = clamped;
+    rig.focalEnd = clamped;
+    if (myImpl->zoomSlider) {
+        QSignalBlocker b(myImpl->zoomSlider);
+        myImpl->zoomSlider->setValue(static_cast<int>(std::round(clamped)));
+    }
+    if (myImpl->zoomLabel) {
+        myImpl->zoomLabel->setText(QString("%1 mm").arg(static_cast<int>(std::round(clamped))));
+    }
+    bakeCurrentCameraRig();
+}
+
+double UsdViewportWidget::cameraFocalLength() const {
+    return myImpl->cameraTools->rigData().focalStart;
+}
+
+void UsdViewportWidget::setCameraAspectRatio(const QString& aspect) {
+    pushUndoSnapshot();
+    myImpl->cameraTools->rigData().aspectRatio = aspect;
+    bakeCurrentCameraRig();
+}
+
+QString UsdViewportWidget::cameraAspectRatio() const {
+    return myImpl->cameraTools->rigData().aspectRatio;
+}
+
+void UsdViewportWidget::bakeCurrentCameraRig() {
+    if (!myImpl->stage || !myImpl->userEditsLayer) return;
+    myImpl->suppressWatcherReload = true;
+    myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+    const QDir shotDir = QFileInfo(myImpl->stagePath).dir();
+    auto doc = myImpl->cameraDocument;
+    if (doc.isEmpty()) doc = QJsonObject{{"version", 1}, {"active_camera", "cam_1"}, {"cameras", QJsonObject()}};
+    const QString cid = doc["active_camera"].toString("cam_1");
+    auto cameras = doc["cameras"].toObject();
+    CameraRigData symbolic = myImpl->cameraTools->rigData();
+    const auto prims = primList();
+    for (auto& target : symbolic.aimTargets) {
+        for (const auto& prim : prims) if (prim.path == target && !prim.actorId.isEmpty()) { target = prim.actorId; break; }
+    }
+    cameras[cid] = cameraRigToJson(symbolic, cameras[cid].toObject());
+    doc["cameras"] = cameras; myImpl->cameraDocument = doc;
+    const QByteArray bytes = QJsonDocument(doc).toJson(QJsonDocument::Indented);
+    QSaveFile jsonFile(shotDir.filePath("camera_rig.json"));
+    if (jsonFile.open(QIODevice::WriteOnly)) { jsonFile.write(bytes); jsonFile.commit(); }
+    saveCameraRigToStage(myImpl->stage, myImpl->cameraTools->rigData(), myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+    const QString cameraFile = shotDir.filePath("cam_" + cid + ".usda");
+    auto cameraLayer = SdfLayer::FindOrOpen(cameraFile.toStdString());
+    if (!cameraLayer) cameraLayer = SdfLayer::CreateNew(cameraFile.toStdString());
+    if (cameraLayer) {
+        const auto paths = myImpl->userEditsLayer->GetSubLayerPaths();
+        if (std::find(paths.begin(), paths.end(), cameraFile.toStdString()) == paths.end())
+            myImpl->userEditsLayer->GetSubLayerPaths().push_back(cameraFile.toStdString());
+        cameraLayer->Clear();
+        myImpl->stage->SetEditTarget(UsdEditTarget(cameraLayer));
+        const QString cameraPath = "/World/Cameras/" + cid;
+        bakeCameraRigToShotCam(myImpl->stage, myImpl->cameraTools->rigData(), myImpl->startFrame, myImpl->endFrame, myImpl->fps, {}, cameraPath);
+        cameraLayer->Save(); myImpl->shotCamPath = cameraPath;
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+    }
+    myImpl->userEditsLayer->Save();
+    myImpl->suppressWatcherReload = false;
+    myImpl->hydraDirty = true;
+    update();
+    syncWatchedFiles();
+    myImpl->cameraPreviewTimer->start();
+    emit userEditsChanged(userEditedPrimCount());
+}
+
+void UsdViewportWidget::resetCameraEdits() {
+    if (!myImpl->stage || !myImpl->userEditsLayer) return;
+    pushUndoSnapshot();
+    myImpl->suppressWatcherReload = true;
+    myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+    resetCameraRigOnStage(myImpl->stage);
+    QFile::remove(QFileInfo(myImpl->stagePath).dir().filePath("camera_rig.json"));
+    myImpl->cameraDocument = {};
+    auto metadata = myImpl->userEditsLayer->GetCustomLayerData();
+    metadata.erase("director_camera_document");
+    myImpl->userEditsLayer->SetCustomLayerData(metadata);
+    myImpl->shotCamPath = "/World/ShotCam";
+    myImpl->userEditsLayer->Save();
+    myImpl->suppressWatcherReload = false;
+    myImpl->cameraTools->clearPath();
+    myImpl->hydraDirty = true;
+    update();
+    emit userEditsChanged(userEditedPrimCount());
+    emit statusMessageChanged(QStringLiteral("Camera overrides reset to baseline"));
+}
+
+void UsdViewportWidget::convertLlmCameraToManualRig() {
+    if (!myImpl->stage) return;
+    pushUndoSnapshot();
+    CameraRigData rig;
+    if (convertShotCamToRig(myImpl->stage, myImpl->startFrame, myImpl->endFrame, myImpl->fps, rig)) {
+        myImpl->cameraTools->setRigData(rig);
+        bakeCurrentCameraRig();
+        emit statusMessageChanged(QStringLiteral("Converted LLM camera to editable manual rig"));
+    }
+}
+
+QRectF UsdViewportWidget::viewfinderCropRect(double targetAspect) const {
+    const double w = std::max(64, width());
+    const double h = std::max(64, height());
+    const double currentAspect = w / h;
+    const double target = targetAspect > 0.1 ? targetAspect : (16.0 / 9.0);
+
+    if (currentAspect > target) {
+        const double cropW = h * target;
+        const double x = (w - cropW) * 0.5;
+        return QRectF(x, 0, cropW, h);
+    } else {
+        const double cropH = w / target;
+        const double y = (h - cropH) * 0.5;
+        return QRectF(0, y, w, cropH);
+    }
+}
 QString UsdViewportWidget::activeCameraPath() const {
     return myImpl->useShotCam ? myImpl->shotCamPath : QString();
 }
 
 void UsdViewportWidget::resetFreeCamera() {
-    myImpl->useShotCam = false;
+    setViewMode(ViewMode::World);
     myImpl->yaw = 0.45;
     myImpl->pitch = 0.32;
     myImpl->distance = 12.0;
@@ -934,7 +1510,17 @@ void UsdViewportWidget::resetFreeCamera() {
 }
 
 void UsdViewportWidget::frameSelectedPrim() {
-    if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return;
+    if (!myImpl->stage) return;
+    if (myImpl->selectedAimTarget) {
+        myImpl->target = resolvedAimTargetPosition();
+        myImpl->distance = 8.0;
+        setViewMode(ViewMode::World);
+        myImpl->hydraDirty = true;
+        updateOverlayUi();
+        update();
+        return;
+    }
+    if (myImpl->selectedPrimPath.isEmpty()) return;
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim) return;
     GfBBox3d bbox = myImpl->cachedWorldBound(prim);
@@ -944,11 +1530,501 @@ void UsdViewportWidget::frameSelectedPrim() {
         GfVec3d sz = range.GetSize();
         myImpl->target = QVector3D(float(c[0]), float(c[1]), float(c[2]));
         myImpl->distance = std::clamp(sz.GetLength() * 1.4, 2.5, 80.0);
-        myImpl->useShotCam = false;
+        setViewMode(ViewMode::World);
         myImpl->hydraDirty = true;
         updateOverlayUi();
         update();
     }
+}
+
+QVector3D UsdViewportWidget::cameraEvaluatedPosition() const {
+    if (myImpl->cameraTools) {
+        CameraRigEvaluator evaluator(myImpl->fps);
+        return evaluator.evaluate(myImpl->cameraTools->rigData(), myImpl->currentFrame / myImpl->fps).position;
+    }
+    return QVector3D(0.0f, 1.6f, 5.0f);
+}
+
+QVector3D UsdViewportWidget::cameraEvaluatedRotation() const {
+    if (myImpl->cameraTools) {
+        CameraRigEvaluator evaluator(myImpl->fps);
+        return evaluator.evaluate(myImpl->cameraTools->rigData(), myImpl->currentFrame / myImpl->fps).rotationDeg;
+    }
+    return QVector3D(0.0f, 0.0f, 0.0f);
+}
+
+QVector3D UsdViewportWidget::resolvedAimTargetPosition() const {
+    if (!myImpl->cameraTools) return QVector3D(0.0f, 1.2f, 0.0f);
+    const CameraRigData& rig = myImpl->cameraTools->rigData();
+    if (!rig.aimTargets.isEmpty() || !rig.shotSubject.isEmpty()) {
+        const QString tgt = !rig.aimTargets.isEmpty() ? rig.aimTargets.first() : rig.shotSubject;
+        if (myImpl->stage) {
+            UsdPrim tgtPrim = myImpl->stage->GetPrimAtPath(SdfPath(tgt.toStdString()));
+            if (tgtPrim) {
+                GfBBox3d bbox = myImpl->cachedWorldBound(tgtPrim);
+                GfRange3d range = bbox.ComputeAlignedRange();
+                if (!range.IsEmpty()) {
+                    GfVec3d m = range.GetMidpoint();
+                    return QVector3D(float(m[0]), float(m[1]), float(m[2])) + rig.aimOffset;
+                }
+            }
+        }
+    }
+    return rig.lookAtPoint + rig.aimOffset;
+}
+
+void UsdViewportWidget::setAimTargetPosition(const QVector3D& pos) {
+    if (!myImpl->cameraTools) return;
+    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingAimTarget);
+    if (!interactiveDrag) {
+        pushUndoSnapshot();
+    }
+    CameraRigData& rig = myImpl->cameraTools->rigData();
+    rig.aimTargets.clear();
+    rig.shotSubject.clear();
+    rig.lookAtPoint = pos - rig.aimOffset;
+    rig.hasCustomLookAt = true;
+    rig.aimMode = CameraAimMode::LookAt;
+
+    if (interactiveDrag) {
+        myImpl->pendingDragSave = true;
+        if (myImpl->stage && myImpl->userEditsLayer) {
+            myImpl->suppressWatcherReload = true;
+            myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+            bakeCameraRigToShotCam(myImpl->stage, rig, myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+            myImpl->suppressWatcherReload = false;
+        }
+        myImpl->hydraDirty = true;
+        update();
+        emit stageChanged();
+        return;
+    }
+
+    bakeCurrentCameraRig();
+    if (myImpl->stage && myImpl->userEditsLayer) {
+        myImpl->suppressWatcherReload = true;
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+        saveCameraRigToStage(myImpl->stage, rig, myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+        myImpl->userEditsLayer->Save();
+        myImpl->suppressWatcherReload = false;
+    }
+    myImpl->hydraDirty = true;
+    update();
+    emit stageChanged();
+    emit userEditsChanged(userEditedPrimCount());
+}
+
+bool UsdViewportWidget::isAimTargetSelected() const {
+    return myImpl->selectedAimTarget;
+}
+
+void UsdViewportWidget::setAimTargetSelected(bool selected) {
+    myImpl->selectedAimTarget = selected;
+    if (selected) {
+        myImpl->selectedPrimPath.clear();
+        if (myImpl->cameraTools) {
+            myImpl->cameraTools->setSelectedPointIndex(-1);
+        }
+    }
+    updateOverlayUi();
+    update();
+}
+
+void UsdViewportWidget::resetAimTargetToCenter() {
+    QVector3D center(0.0f, 1.2f, 0.0f);
+    if (myImpl->stage) {
+        UsdPrim worldPrim = myImpl->stage->GetPrimAtPath(SdfPath("/World"));
+        if (worldPrim) {
+            GfBBox3d bbox = myImpl->cachedWorldBound(worldPrim);
+            GfRange3d range = bbox.ComputeAlignedRange();
+            if (!range.IsEmpty()) {
+                GfVec3d m = range.GetMidpoint();
+                center = QVector3D(float(m[0]), std::max(0.5f, float(m[1])), float(m[2]));
+            }
+        }
+    }
+    pushUndoSnapshot();
+    setAimTargetPosition(center);
+}
+
+void UsdViewportWidget::extendCameraPath() {
+    if (!myImpl->cameraTools) return;
+    pushUndoSnapshot();
+    CameraRigData& rig = myImpl->cameraTools->rigData();
+    QVector3D newPt;
+    if (rig.points.isEmpty()) {
+        newPt = cameraEvaluatedPosition();
+    } else if (rig.points.size() == 1) {
+        CameraSample sample = CameraRigEvaluator(myImpl->fps).evaluate(rig, myImpl->currentFrame / myImpl->fps);
+        QMatrix4x4 m;
+        m.rotate(sample.rotationDeg.y(), 0.0f, 1.0f, 0.0f);
+        m.rotate(sample.rotationDeg.x(), 1.0f, 0.0f, 0.0f);
+        QVector3D fwd = m.mapVector(QVector3D(0.0f, 0.0f, -1.0f));
+        newPt = rig.points.last().position + fwd * 2.0f;
+    } else {
+        const int n = rig.points.size();
+        QVector3D dir = rig.points[n - 1].position - rig.points[n - 2].position;
+        if (dir.length() < 0.1f) {
+            dir = QVector3D(0.0f, 0.0f, -2.0f);
+        } else {
+            dir = dir.normalized() * std::clamp(dir.length(), 1.2f, 3.5f);
+        }
+        newPt = rig.points.last().position + dir;
+    }
+    CameraRigPoint rp;
+    rp.position = newPt;
+    rig.points.append(rp);
+    const int newIdx = rig.points.size() - 1;
+    myImpl->cameraTools->setSelectedPointIndex(newIdx);
+    selectPrim(myImpl->shotCamPath.isEmpty() ? QStringLiteral("/World/ShotCam") : myImpl->shotCamPath);
+    bakeCurrentCameraRig();
+    if (myImpl->stage && myImpl->userEditsLayer) {
+        myImpl->suppressWatcherReload = true;
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+        saveCameraRigToStage(myImpl->stage, rig, myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+        myImpl->userEditsLayer->Save();
+        myImpl->suppressWatcherReload = false;
+    }
+    updateOverlayUi();
+    update();
+    emit stageChanged();
+    emit userEditsChanged(userEditedPrimCount());
+    emit statusMessageChanged(QString("Extended camera path to Joint %1").arg(newIdx + 1));
+}
+
+void UsdViewportWidget::deleteLastCameraPathJoint() {
+    if (!myImpl->cameraTools) return;
+    CameraRigData& rig = myImpl->cameraTools->rigData();
+    if (rig.points.isEmpty()) return;
+
+    pushUndoSnapshot();
+    rig.points.removeLast();
+    const int newSel = rig.points.isEmpty() ? -1 : std::min(myImpl->cameraTools->selectedPointIndex(), static_cast<int>(rig.points.size()) - 1);
+    myImpl->cameraTools->setSelectedPointIndex(newSel);
+
+    bakeCurrentCameraRig();
+    if (myImpl->stage && myImpl->userEditsLayer) {
+        myImpl->suppressWatcherReload = true;
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+        saveCameraRigToStage(myImpl->stage, rig, myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+        myImpl->userEditsLayer->Save();
+        myImpl->suppressWatcherReload = false;
+    }
+    updateOverlayUi();
+    update();
+    emit stageChanged();
+    emit userEditsChanged(userEditedPrimCount());
+    emit statusMessageChanged(QString("Deleted last joint. Remaining: %1").arg(rig.points.size()));
+}
+
+void UsdViewportWidget::deleteSelectedCameraPathJoint() {
+    if (!myImpl->cameraTools) return;
+    CameraRigData& rig = myImpl->cameraTools->rigData();
+    if (rig.points.isEmpty()) return;
+
+    const int selIdx = myImpl->cameraTools->selectedPointIndex();
+    if (selIdx < 0 || selIdx >= rig.points.size()) {
+        deleteLastCameraPathJoint();
+        return;
+    }
+
+    pushUndoSnapshot();
+    rig.points.removeAt(selIdx);
+    const int newSel = rig.points.isEmpty() ? -1 : std::clamp(selIdx, 0, static_cast<int>(rig.points.size()) - 1);
+    myImpl->cameraTools->setSelectedPointIndex(newSel);
+
+    bakeCurrentCameraRig();
+    if (myImpl->stage && myImpl->userEditsLayer) {
+        myImpl->suppressWatcherReload = true;
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+        saveCameraRigToStage(myImpl->stage, rig, myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+        myImpl->userEditsLayer->Save();
+        myImpl->suppressWatcherReload = false;
+    }
+    updateOverlayUi();
+    update();
+    emit stageChanged();
+    emit userEditsChanged(userEditedPrimCount());
+    emit statusMessageChanged(QString("Deleted Joint %1. Remaining: %2").arg(selIdx + 1).arg(rig.points.size()));
+}
+
+void UsdViewportWidget::clearCameraPath() {
+    if (!myImpl->cameraTools) return;
+    CameraRigData& rig = myImpl->cameraTools->rigData();
+    if (rig.points.isEmpty()) return;
+
+    pushUndoSnapshot();
+    const QVector3D curPos = cameraEvaluatedPosition();
+    rig.points.clear();
+    rig.pathDrawn = false;
+    CameraRigPoint rp;
+    rp.position = curPos;
+    rig.points.append(rp);
+    myImpl->cameraTools->setSelectedPointIndex(-1);
+
+    bakeCurrentCameraRig();
+    if (myImpl->stage && myImpl->userEditsLayer) {
+        myImpl->suppressWatcherReload = true;
+        myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+        saveCameraRigToStage(myImpl->stage, rig, myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+        myImpl->userEditsLayer->Save();
+        myImpl->suppressWatcherReload = false;
+    }
+    updateOverlayUi();
+    update();
+    emit stageChanged();
+    emit userEditsChanged(userEditedPrimCount());
+    emit statusMessageChanged(QStringLiteral("Cleared entire camera path"));
+}
+
+int UsdViewportWidget::cameraPathJointCount() const {
+    if (!myImpl->cameraTools) return 0;
+    const auto& rig = myImpl->cameraTools->rigData();
+    return rig.pathDrawn ? rig.points.size() : 0;
+}
+
+int UsdViewportWidget::selectedCameraPathJointIndex() const {
+    if (!myImpl->cameraTools) return -1;
+    return myImpl->cameraTools->selectedPointIndex();
+}
+
+void UsdViewportWidget::selectCameraPathJoint(int index) {
+    if (!myImpl->cameraTools) return;
+    myImpl->cameraTools->setSelectedPointIndex(index);
+    if (index >= 0) {
+        myImpl->selectedAimTarget = false;
+        selectPrim(myImpl->shotCamPath.isEmpty() ? QStringLiteral("/World/ShotCam") : myImpl->shotCamPath);
+    }
+    updateOverlayUi();
+    update();
+}
+
+bool UsdViewportWidget::isDrawPathActive() const {
+    return myImpl->drawPathActive;
+}
+
+void UsdViewportWidget::startDrawingPath(const QString& primPath) {
+    QString target = primPath.isEmpty() ? myImpl->selectedPrimPath : primPath;
+    if (target.isEmpty()) {
+        target = myImpl->shotCamPath.isEmpty() ? QStringLiteral("/World/ShotCam") : myImpl->shotCamPath;
+    }
+    myImpl->drawingPrimPath = target;
+    myImpl->drawPathActive = true;
+    myImpl->isDrawingPrimStroke = false;
+    myImpl->activePrimStroke.clear();
+
+    // Ensure we are in shot designing stage at starting frame
+    setCurrentFrame(myImpl->startFrame);
+
+    if (myImpl->viewMode == ViewMode::CameraViewfinder) {
+        toggleViewMode();
+    }
+
+    const bool isCam = (target == myImpl->shotCamPath || target == QStringLiteral("/World/ShotCam") ||
+                        target.startsWith(QStringLiteral("/World/CameraRig")));
+    if (isCam) {
+        if (myImpl->cameraTools) {
+            myImpl->cameraTools->setTool(CameraToolType::DrawPath);
+        }
+    } else {
+        if (myImpl->cameraTools) {
+            myImpl->cameraTools->setTool(CameraToolType::None);
+        }
+    }
+
+    emit drawPathModeChanged(true, target);
+    emit statusMessageChanged(QString("Draw Path: Click & drag in 3D viewport to sketch path for %1").arg(target));
+    update();
+}
+
+void UsdViewportWidget::stopDrawingPath() {
+    const QString prev = myImpl->drawingPrimPath;
+    myImpl->drawPathActive = false;
+    myImpl->drawingPrimPath.clear();
+    myImpl->isDrawingPrimStroke = false;
+    myImpl->activePrimStroke.clear();
+    if (myImpl->cameraTools && myImpl->cameraTools->tool() == CameraToolType::DrawPath) {
+        myImpl->cameraTools->setTool(CameraToolType::None);
+    }
+    emit drawPathModeChanged(false, prev);
+    emit statusMessageChanged(QStringLiteral("Draw Path mode deactivated"));
+    update();
+}
+
+QString UsdViewportWidget::drawingPrimPath() const {
+    return myImpl->drawingPrimPath;
+}
+
+bool UsdViewportWidget::hasPrimPath(const QString& primPath) const {
+    if (primPath == myImpl->shotCamPath || primPath == QStringLiteral("/World/ShotCam") ||
+        primPath.startsWith(QStringLiteral("/World/CameraRig"))) {
+        return myImpl->cameraTools && myImpl->cameraTools->rigData().pathDrawn &&
+               myImpl->cameraTools->rigData().points.size() >= 2;
+    }
+    return myImpl->explicitlyDrawnPrimPaths.contains(primPath) &&
+           myImpl->primPaths.value(primPath).size() >= 2;
+}
+
+QVector<QVector3D> UsdViewportWidget::primPath(const QString& primPath) const {
+    if (primPath == myImpl->shotCamPath || primPath == QStringLiteral("/World/ShotCam") ||
+        primPath.startsWith(QStringLiteral("/World/CameraRig"))) {
+        QVector<QVector3D> pts;
+        if (myImpl->cameraTools && myImpl->cameraTools->rigData().pathDrawn) {
+            for (const auto& rp : myImpl->cameraTools->rigData().points) {
+                pts.append(rp.position);
+            }
+        }
+        return pts;
+    }
+    return myImpl->primPaths.value(primPath);
+}
+
+void UsdViewportWidget::setPrimPath(const QString& primPath, const QVector<QVector3D>& points) {
+    if (primPath.isEmpty()) return;
+    pushUndoSnapshot();
+    const bool isCam = (primPath == myImpl->shotCamPath || primPath == QStringLiteral("/World/ShotCam") ||
+                        primPath.startsWith(QStringLiteral("/World/CameraRig")));
+    if (isCam) {
+        if (myImpl->cameraTools) {
+            CameraRigData rig = myImpl->cameraTools->rigData();
+            QVector3D camPos;
+            if (!rig.points.isEmpty()) {
+                camPos = rig.points.first().position;
+            } else {
+                camPos = cameraEvaluatedPosition();
+            }
+            rig.points.clear();
+            CameraRigPoint startPt;
+            startPt.position = camPos;
+            startPt.focalLength = rig.focalStart;
+            rig.points.append(startPt);
+
+            const int startIdx = (!points.isEmpty() && (points.first() - camPos).length() < 0.35f) ? 1 : 0;
+            for (int i = startIdx; i < points.size(); ++i) {
+                CameraRigPoint rp;
+                rp.position = points[i];
+                rp.focalLength = rig.focalEnd;
+                rig.points.append(rp);
+            }
+            if (rig.pathEndS <= rig.pathStartS) {
+                rig.pathEndS = rig.pathStartS + 5.0;
+            }
+            myImpl->cameraTools->setRigData(rig);
+            myImpl->cameraTools->setSelectedPointIndex(0);
+            setCurrentFrame(myImpl->startFrame);
+            bakeCurrentCameraRig();
+        }
+    } else {
+        myImpl->primPaths[primPath] = points;
+    }
+    persistPrimPaths();
+    emit primPathChanged(primPath);
+    update();
+}
+
+void UsdViewportWidget::clearPrimPath(const QString& primPath) {
+    if (primPath.isEmpty()) return;
+    pushUndoSnapshot();
+    const bool isCam = (primPath == myImpl->shotCamPath || primPath == QStringLiteral("/World/ShotCam") ||
+                        primPath.startsWith(QStringLiteral("/World/CameraRig")));
+    if (isCam) {
+        clearCameraPath();
+    } else {
+        myImpl->primPaths.remove(primPath);
+        myImpl->explicitlyDrawnPrimPaths.remove(primPath);
+        if (myImpl->lastDrawnPrimPath == primPath) myImpl->lastDrawnPrimPath.clear();
+    }
+    persistPrimPaths();
+    emit primPathChanged(primPath);
+    update();
+    emit statusMessageChanged(QString("Cleared movement path for %1").arg(primPath));
+}
+
+void UsdViewportWidget::clearAllPrimPaths() {
+    pushUndoSnapshot();
+    myImpl->primPaths.clear();
+    myImpl->explicitlyDrawnPrimPaths.clear();
+    myImpl->lastDrawnPrimPath.clear();
+    clearCameraPath();
+    persistPrimPaths();
+    emit primPathChanged(QString());
+    update();
+}
+
+int UsdViewportWidget::primPathJointCount(const QString& primPath) const {
+    if (primPath == myImpl->shotCamPath || primPath == QStringLiteral("/World/ShotCam") ||
+        primPath.startsWith(QStringLiteral("/World/CameraRig"))) {
+        return cameraPathJointCount();
+    }
+    return myImpl->explicitlyDrawnPrimPaths.contains(primPath)
+        ? myImpl->primPaths.value(primPath).size() : 0;
+}
+
+QColor UsdViewportWidget::primPathColor(const QString& primPath) const {
+    if (primPath == myImpl->shotCamPath || primPath == QStringLiteral("/World/ShotCam") ||
+        primPath.startsWith(QStringLiteral("/World/CameraRig"))) {
+        return QColor("#38bdf8"); // Sky Blue for camera
+    }
+    if (myImpl->primPathColors.contains(primPath)) {
+        return myImpl->primPathColors.value(primPath);
+    }
+    const auto items = primList();
+    for (const auto& item : items) {
+        if (item.path == primPath && item.identityColor.isValid()) {
+            return item.identityColor;
+        }
+    }
+    static const QVector<QColor> sPalette = {
+        QColor("#22c55e"), // Vivid Green
+        QColor("#f43f5e"), // Bright Rose
+        QColor("#eab308"), // Warm Yellow
+        QColor("#a855f7"), // Vibrant Purple
+        QColor("#f97316"), // Vibrant Orange
+        QColor("#06b6d4"), // Cyan
+        QColor("#ec4899"), // Pink
+        QColor("#14b8a6"), // Teal
+        QColor("#3b82f6"), // Cobalt Blue
+        QColor("#84cc16")  // Lime
+    };
+    const uint h = qHash(primPath);
+    return sPalette.at(h % sPalette.size());
+}
+
+QHash<QString, QVector<QVector3D>> UsdViewportWidget::allPrimPaths() const {
+    return myImpl->primPaths;
+}
+
+QStringList UsdViewportWidget::explicitlyDrawnPrimPaths() const {
+    return myImpl->explicitlyDrawnPrimPaths.values();
+}
+
+void UsdViewportWidget::setExplicitlyDrawnPrimPaths(const QStringList& paths) {
+    myImpl->explicitlyDrawnPrimPaths.clear();
+    for (const auto& path : paths) {
+        if (myImpl->primPaths.value(path).size() >= 2) myImpl->explicitlyDrawnPrimPaths.insert(path);
+    }
+    update();
+}
+
+void UsdViewportWidget::setAllPrimPaths(const QHash<QString, QVector<QVector3D>>& paths, bool recordUndo) {
+    if (recordUndo) pushUndoSnapshot();
+    QHash<QString, QVector<QVector3D>> drawnPaths;
+    if (!recordUndo) {
+        for (const auto& path : myImpl->explicitlyDrawnPrimPaths) {
+            if (myImpl->primPaths.value(path).size() >= 2)
+                drawnPaths.insert(path, myImpl->primPaths.value(path));
+        }
+    }
+    myImpl->primPaths = paths;
+    if (recordUndo) {
+        myImpl->explicitlyDrawnPrimPaths.clear();
+        myImpl->lastDrawnPrimPath.clear();
+    } else {
+        for (auto it = drawnPaths.cbegin(); it != drawnPaths.cend(); ++it)
+            myImpl->primPaths.insert(it.key(), it.value());
+    }
+    if (recordUndo) persistPrimPaths();
+    update();
 }
 
 QVector<UsdPrimItem> UsdViewportWidget::primList() const {
@@ -1021,7 +2097,11 @@ QString UsdViewportWidget::selectedPrimPath() const { return myImpl->selectedPri
 
 void UsdViewportWidget::selectPrim(const QString& primPath) {
     if (myImpl->selectedPrimPath == primPath) return;
+    myImpl->lastDrawnPrimPath.clear();
     myImpl->selectedPrimPath = primPath;
+    if (!primPath.isEmpty()) {
+        myImpl->selectedAimTarget = false;
+    }
     // Selection box & gizmo are drawn as a Qt 2D overlay over cachedFrame; no Hydra re-render needed.
     updateOverlayUi();
     update();
@@ -1059,6 +2139,18 @@ void UsdViewportWidget::setPrimVisible(const QString& primPath, bool visible) {
 
 QVector3D UsdViewportWidget::selectedPrimPosition() const {
     if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return QVector3D();
+
+    if (myImpl->selectedPrimPath == myImpl->shotCamPath || myImpl->selectedPrimPath == QStringLiteral("/World/ShotCam")) {
+        if (myImpl->cameraTools) {
+            const auto& rig = myImpl->cameraTools->rigData();
+            const int selPt = myImpl->cameraTools->selectedPointIndex();
+            if (selPt >= 0 && selPt < rig.points.size()) {
+                return rig.points[selPt].position;
+            }
+        }
+        return cameraEvaluatedPosition();
+    }
+
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim || !prim.IsA<UsdGeomXformable>()) return QVector3D();
     UsdGeomXformable xf(prim);
@@ -1069,8 +2161,68 @@ QVector3D UsdViewportWidget::selectedPrimPosition() const {
     return QVector3D(float(t[0]), float(t[1]), float(t[2]));
 }
 
+bool UsdViewportWidget::primWorldPosition(const QString& primPath, QVector3D& position) const {
+    if (!myImpl->stage || primPath.isEmpty()) return false;
+    const UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(primPath.toStdString()));
+    if (!prim || !prim.IsA<UsdGeomXformable>()) return false;
+    const auto translation = UsdGeomXformable(prim)
+                                 .ComputeLocalToWorldTransform(UsdTimeCode(myImpl->startFrame))
+                                 .ExtractTranslation();
+    position = QVector3D(float(translation[0]), float(translation[1]), float(translation[2]));
+    return true;
+}
+
 void UsdViewportWidget::setSelectedPrimPosition(const QVector3D& position) {
     if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return;
+
+    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingObjectGround);
+    if (!interactiveDrag) {
+        pushUndoSnapshot();
+    }
+
+    if (myImpl->selectedPrimPath == myImpl->shotCamPath || myImpl->selectedPrimPath == QStringLiteral("/World/ShotCam")) {
+        if (myImpl->cameraTools) {
+            CameraRigData& rig = myImpl->cameraTools->rigData();
+            const int selPt = myImpl->cameraTools->selectedPointIndex();
+            if (selPt >= 0 && selPt < rig.points.size()) {
+                rig.points[selPt].position = position;
+            } else if (rig.points.size() == 1) {
+                rig.points[0].position = position;
+            } else if (rig.points.isEmpty()) {
+                CameraRigPoint rp;
+                rp.position = position;
+                rig.points.append(rp);
+            } else {
+                const QVector3D curPos = cameraEvaluatedPosition();
+                const QVector3D delta = position - curPos;
+                for (auto& pt : rig.points) {
+                    pt.position += delta;
+                }
+            }
+        }
+
+        if (interactiveDrag) {
+            myImpl->pendingDragSave = true;
+            if (myImpl->stage && myImpl->userEditsLayer && myImpl->cameraTools) {
+                myImpl->suppressWatcherReload = true;
+                myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+                bakeCameraRigToShotCam(myImpl->stage, myImpl->cameraTools->rigData(), myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+                myImpl->suppressWatcherReload = false;
+            }
+            myImpl->hydraDirty = true;
+            update();
+            emit selectionChanged(myImpl->selectedPrimPath);
+            return;
+        }
+
+        bakeCurrentCameraRig();
+        updateOverlayUi();
+        update();
+        emit stageChanged();
+        emit userEditsChanged(userEditedPrimCount());
+        return;
+    }
+
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim || !prim.IsA<UsdGeomXformable>()) return;
 
@@ -1102,7 +2254,6 @@ void UsdViewportWidget::setSelectedPrimPosition(const QVector3D& position) {
     myImpl->invalidateBound(myImpl->selectedPrimPath);
     myImpl->hydraDirty = true;
 
-    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingObjectGround);
     if (interactiveDrag) {
         myImpl->pendingDragSave = true;
         myImpl->suppressWatcherReload = false;
@@ -1123,6 +2274,9 @@ void UsdViewportWidget::setSelectedPrimPosition(const QVector3D& position) {
 
 QVector3D UsdViewportWidget::selectedPrimRotation() const {
     if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return QVector3D();
+    if (myImpl->selectedPrimPath == myImpl->shotCamPath || myImpl->selectedPrimPath == QStringLiteral("/World/ShotCam")) {
+        return cameraEvaluatedRotation();
+    }
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim || !prim.IsA<UsdGeomXformable>()) return QVector3D();
     UsdGeomXformable xf(prim);
@@ -1153,6 +2307,12 @@ QVector3D UsdViewportWidget::selectedPrimRotation() const {
 
 void UsdViewportWidget::setSelectedPrimRotation(const QVector3D& rotationDeg) {
     if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return;
+
+    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingObjectGround);
+    if (!interactiveDrag) {
+        pushUndoSnapshot();
+    }
+
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim || !prim.IsA<UsdGeomXformable>()) return;
 
@@ -1195,7 +2355,6 @@ void UsdViewportWidget::setSelectedPrimRotation(const QVector3D& rotationDeg) {
     myImpl->invalidateBound(myImpl->selectedPrimPath);
     myImpl->hydraDirty = true;
 
-    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingObjectGround);
     if (interactiveDrag) {
         myImpl->pendingDragSave = true;
         myImpl->suppressWatcherReload = false;
@@ -1233,6 +2392,12 @@ double UsdViewportWidget::selectedPrimScale() const {
 
 void UsdViewportWidget::setSelectedPrimScale(double scale) {
     if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return;
+
+    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingObjectGround);
+    if (!interactiveDrag) {
+        pushUndoSnapshot();
+    }
+
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim || !prim.IsA<UsdGeomXformable>()) return;
 
@@ -1267,7 +2432,6 @@ void UsdViewportWidget::setSelectedPrimScale(double scale) {
     myImpl->invalidateBound(myImpl->selectedPrimPath);
     myImpl->hydraDirty = true;
 
-    const bool interactiveDrag = (myImpl->draggingGizmo || myImpl->draggingObjectGround);
     if (interactiveDrag) {
         myImpl->pendingDragSave = true;
         myImpl->suppressWatcherReload = false;
@@ -1421,6 +2585,9 @@ QString UsdViewportWidget::addReferencedAsset(const QString& assetId, const QStr
     if (envLight) {
         envLight.SetActive(false);
     }
+
+    includeAssetInGround(myImpl->stage, prim, UsdTimeCode(myImpl->currentFrame));
+    myImpl->invalidateBound(QStringLiteral("/World/Ground"));
 
     if (myImpl->userEditsLayer) {
         myImpl->userEditsLayer->Save();
@@ -1644,59 +2811,94 @@ void UsdViewportWidget::clearSelectedPrimUserEdits() {
 
 void UsdViewportWidget::pushUndoSnapshot() {
     if (!myImpl->userEditsLayer) return;
-    std::string exported;
-    myImpl->userEditsLayer->ExportToString(&exported);
-    const QString text = QString::fromStdString(exported);
+    const QString text = captureUndoState();
     if (myImpl->undoStack.isEmpty() || myImpl->undoStack.last() != text) {
         myImpl->undoStack.append(text);
         if (myImpl->undoStack.size() > 50) myImpl->undoStack.removeFirst();
+        emit undoSnapshotPushed();
     }
     myImpl->redoStack.clear();
 }
 
-bool UsdViewportWidget::canUndo() const { return myImpl->undoStack.size() > 1; }
-bool UsdViewportWidget::canRedo() const { return !myImpl->redoStack.isEmpty(); }
+bool UsdViewportWidget::canUndo() const {
+    if (!myImpl->userEditsLayer || myImpl->undoStack.isEmpty()) return false;
+    const QString currentText = captureUndoState();
+    for (int i = myImpl->undoStack.size() - 1; i >= 0; --i) {
+        if (myImpl->undoStack[i] != currentText) return true;
+    }
+    return false;
+}
+
+bool UsdViewportWidget::canRedo() const {
+    if (!myImpl->userEditsLayer || myImpl->redoStack.isEmpty()) return false;
+    const QString currentText = captureUndoState();
+    for (int i = myImpl->redoStack.size() - 1; i >= 0; --i) {
+        if (myImpl->redoStack[i] != currentText) return true;
+    }
+    return false;
+}
 
 void UsdViewportWidget::undo() {
     if (!myImpl->userEditsLayer || myImpl->undoStack.isEmpty()) return;
-    std::string currentStr;
-    myImpl->userEditsLayer->ExportToString(&currentStr);
-    const QString currentText = QString::fromStdString(currentStr);
+    const QString currentText = captureUndoState();
 
-    QString targetText = myImpl->undoStack.takeLast();
-    if (targetText == currentText && !myImpl->undoStack.isEmpty()) {
-        myImpl->redoStack.append(currentText);
-        targetText = myImpl->undoStack.last();
-    } else {
-        myImpl->redoStack.append(currentText);
+    QString targetText;
+    bool found = false;
+    while (!myImpl->undoStack.isEmpty()) {
+        QString candidate = myImpl->undoStack.takeLast();
+        if (candidate != currentText) {
+            targetText = candidate;
+            found = true;
+            break;
+        }
     }
+    if (!found) return;
+
+    myImpl->redoStack.append(currentText);
 
     myImpl->suppressWatcherReload = true;
-    myImpl->userEditsLayer->ImportFromString(targetText.toStdString());
-    myImpl->userEditsLayer->Save();
+    restoreUndoState(targetText);
     myImpl->suppressWatcherReload = false;
     myImpl->invalidateBound(QString());
+
     myImpl->hydraDirty = true;
     updateOverlayUi();
     update();
     emit stageChanged();
     emit userEditsChanged(userEditedPrimCount());
+    emit selectionChanged(myImpl->selectedPrimPath);
+    emit statusMessageChanged(QStringLiteral("Undid last action"));
 }
 
 void UsdViewportWidget::redo() {
     if (!myImpl->userEditsLayer || myImpl->redoStack.isEmpty()) return;
-    const QString nextText = myImpl->redoStack.takeLast();
-    myImpl->undoStack.append(nextText);
+    const QString currentText = captureUndoState();
+
+    QString nextText;
+    bool found = false;
+    while (!myImpl->redoStack.isEmpty()) {
+        QString candidate = myImpl->redoStack.takeLast();
+        if (candidate != currentText) {
+            nextText = candidate;
+            found = true;
+            break;
+        }
+    }
+    if (!found) return;
+
+    myImpl->undoStack.append(currentText);
     myImpl->suppressWatcherReload = true;
-    myImpl->userEditsLayer->ImportFromString(nextText.toStdString());
-    myImpl->userEditsLayer->Save();
+    restoreUndoState(nextText);
     myImpl->suppressWatcherReload = false;
     myImpl->invalidateBound(QString());
+
     myImpl->hydraDirty = true;
     updateOverlayUi();
     update();
     emit stageChanged();
     emit userEditsChanged(userEditedPrimCount());
+    emit selectionChanged(myImpl->selectedPrimPath);
+    emit statusMessageChanged(QStringLiteral("Redid last action"));
 }
 
 void UsdViewportWidget::setTool(PaintingTool tool) {
@@ -1706,14 +2908,6 @@ void UsdViewportWidget::setTool(PaintingTool tool) {
 
 PaintingTool UsdViewportWidget::tool() const { return myImpl->activeTool; }
 
-void UsdViewportWidget::setGizmoMode(UsdGizmoMode mode) {
-    if (myImpl->gizmoMode == mode) return;
-    myImpl->gizmoMode = mode;
-    updateOverlayUi();
-    update();
-}
-
-UsdGizmoMode UsdViewportWidget::gizmoMode() const { return myImpl->gizmoMode; }
 void UsdViewportWidget::setBrushColor(const QColor& color) { myImpl->brushColor = color; }
 void UsdViewportWidget::setBrushSize(double size) { myImpl->brushSize = size; }
 void UsdViewportWidget::setBrushOpacity(double opacity) { myImpl->brushOpacity = opacity; }
@@ -1792,7 +2986,7 @@ QMatrix4x4 UsdViewportWidget::currentProjectionMatrix(double aspect) const {
         }
     }
     QMatrix4x4 proj;
-    proj.perspective(45.0f, safeAspect, 0.1f, 1000.0f);
+    proj.perspective(45.0f, safeAspect, kFreeViewNearClip, kFreeViewFarClip);
     return proj;
 }
 
@@ -2025,7 +3219,36 @@ bool UsdViewportWidget::tryCpuRayPick(const QPointF& screenPt, QString& outHitPr
     const UsdTimeCode time(myImpl->currentFrame);
 
     double closestDist = std::numeric_limits<double>::max();
+    double bestFarDist = std::numeric_limits<double>::max();
+    double bestSize = std::numeric_limits<double>::max();
     SdfPath bestPrimPath;
+
+    // Large environment bounds often surround smaller visible assets. When their
+    // ray intervals overlap, prefer the smaller bound instead of the front face
+    // of a building's mostly empty bounding box.
+    const auto considerBox = [&](const GfBBox3d& box, const SdfPath& path) {
+        const GfRange3d range = box.ComputeAlignedRange();
+        if (range.IsEmpty()) return false;
+        double dMin = 0.0, dMax = 0.0;
+        if (!ray.Intersect(box, &dMin, &dMax) || dMax < 0.0) return false;
+        const double nearDist = std::max(0.0, dMin);
+        const double size = range.GetSize().GetLength();
+        const bool overlap = nearDist <= bestFarDist && closestDist <= dMax;
+        const bool substantiallySmaller = size * 3.0 < bestSize;
+        const bool substantiallyLarger = bestSize * 3.0 < size;
+        if (bestPrimPath.IsEmpty() ||
+            (path == bestPrimPath && nearDist < closestDist) ||
+            (path != bestPrimPath && overlap && substantiallySmaller) ||
+            (path != bestPrimPath && !(overlap && substantiallyLarger) && nearDist < closestDist)) {
+            closestDist = nearDist;
+            bestFarDist = dMax;
+            bestSize = size;
+            bestPrimPath = path;
+        }
+        return true;
+    };
+
+    myImpl->loadManifestCollidersIfNeeded();
 
     for (const UsdPrim& child : worldPrim.GetChildren()) {
         const std::string nameStr = child.GetName().GetString();
@@ -2041,21 +3264,10 @@ bool UsdViewportWidget::tryCpuRayPick(const QPointF& screenPt, QString& outHitPr
 
         if (nameStr == "Paint") {
             for (const UsdPrim& stroke : child.GetChildren()) {
-                const GfBBox3d bbox = myImpl->cachedWorldBound(stroke);
-                if (bbox.ComputeAlignedRange().IsEmpty()) continue;
-                double dMin = 0.0, dMax = 0.0;
-                if (ray.Intersect(bbox, &dMin, &dMax)) {
-                    const double hitDist = (dMin >= 0.0) ? dMin : ((dMax >= 0.0) ? dMax : -1.0);
-                    if (hitDist >= 0.0 && hitDist < closestDist) {
-                        closestDist = hitDist;
-                        bestPrimPath = stroke.GetPath();
-                    }
-                }
+                considerBox(myImpl->cachedWorldBound(stroke), stroke.GetPath());
             }
             continue;
         }
-
-        myImpl->loadManifestCollidersIfNeeded();
 
         // Check if child matches an ingested asset with collider boxes
         QString assetId;
@@ -2084,33 +3296,16 @@ bool UsdViewportWidget::tryCpuRayPick(const QPointF& screenPt, QString& outHitPr
         if (!colliders.isEmpty()) {
             UsdGeomXformable xf(child);
             GfMatrix4d l2w = xf ? xf.ComputeLocalToWorldTransform(time) : GfMatrix4d(1.0);
+            bool hitCollider = false;
             for (const auto& box : colliders) {
                 GfRange3d localRng(box.center - box.size * 0.5, box.center + box.size * 0.5);
                 GfBBox3d obb(localRng, l2w);
-                double dMin = 0.0, dMax = 0.0;
-                if (ray.Intersect(obb, &dMin, &dMax)) {
-                    const double hitDist = (dMin >= 0.0) ? dMin : ((dMax >= 0.0) ? dMax : -1.0);
-                    if (hitDist >= 0.0 && hitDist < closestDist) {
-                        closestDist = hitDist;
-                        bestPrimPath = child.GetPath();
-                    }
-                }
+                hitCollider = considerBox(obb, child.GetPath()) || hitCollider;
             }
-            continue;
+            if (hitCollider) continue;
         }
 
-        const GfBBox3d bbox = myImpl->cachedWorldBound(child);
-        const GfRange3d range = bbox.ComputeAlignedRange();
-        if (range.IsEmpty()) continue;
-
-        double dMin = 0.0, dMax = 0.0;
-        if (ray.Intersect(bbox, &dMin, &dMax)) {
-            const double hitDist = (dMin >= 0.0) ? dMin : ((dMax >= 0.0) ? dMax : -1.0);
-            if (hitDist >= 0.0 && hitDist < closestDist) {
-                closestDist = hitDist;
-                bestPrimPath = child.GetPath();
-            }
-        }
+        considerBox(myImpl->cachedWorldBound(child), child.GetPath());
     }
 
     if (!bestPrimPath.IsEmpty()) {
@@ -2156,8 +3351,78 @@ void UsdViewportWidget::drawGridOverlay(QPainter& painter, const QMatrix4x4& vie
     painter.restore();
 }
 
+void UsdViewportWidget::drawOrbitCenterOverlay(QPainter& painter, const QMatrix4x4& viewProj) const {
+    if (!myImpl->fixedOrbitCenter || myImpl->useShotCam) return;
+    // Scale the navigation marker with viewing distance so it stays legible.
+    // Its center and vertical direction remain fixed in world space.
+    const float radius = static_cast<float>(myImpl->distance * 0.025);
+    constexpr int ringSegments = 48;
+    constexpr double fullTurn = 6.28318530717958647692;
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(QColor("#5ec27e"), 1.5));
+    for (int i = 0; i < ringSegments; ++i) {
+        const double a = fullTurn * i / ringSegments;
+        const double b = fullTurn * (i + 1) / ringSegments;
+        bool frontA = false, frontB = false;
+        const QPointF start = projectWorldToScreen(myImpl->target + QVector3D(
+            radius * std::cos(a), 0.0f, radius * std::sin(a)), viewProj, &frontA);
+        const QPointF end = projectWorldToScreen(myImpl->target + QVector3D(
+            radius * std::cos(b), 0.0f, radius * std::sin(b)), viewProj, &frontB);
+        if (frontA && frontB) painter.drawLine(start, end);
+    }
+    bool frontA = false, frontB = false;
+    const QPointF start = projectWorldToScreen(myImpl->target - QVector3D(0, radius * 2, 0), viewProj, &frontA);
+    const QPointF end = projectWorldToScreen(myImpl->target + QVector3D(0, radius * 2, 0), viewProj, &frontB);
+    painter.setPen(QPen(QColor("#5ec27e"), 1.5, Qt::DashLine));
+    if (frontA && frontB) painter.drawLine(start, end);
+    painter.restore();
+}
+
 void UsdViewportWidget::drawSelectionAndGizmoOverlay(QPainter& painter, const QMatrix4x4& viewProj) const {
-    if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return;
+    if (!myImpl->stage) return;
+
+    if (myImpl->selectedAimTarget) {
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        const QVector3D origin = resolvedAimTargetPosition();
+        bool originInFront = false;
+        const QPointF originPt = projectWorldToScreen(origin, viewProj, &originInFront);
+        if (originInFront) {
+            const float axisLen = 1.6f;
+            const QVector3D axisEnds[3] = {
+                origin + QVector3D(axisLen, 0.0f, 0.0f),
+                origin + QVector3D(0.0f, axisLen, 0.0f),
+                origin + QVector3D(0.0f, 0.0f, axisLen)
+            };
+            const QColor axisColors[3] = {
+                QColor("#e85d4a"), // +X Red
+                QColor("#5ec27e"), // +Y Green
+                QColor("#5b9be6")  // +Z Blue
+            };
+            const char* axisNames[3] = {"X", "Y", "Z"};
+
+            for (int a = 0; a < 3; ++a) {
+                bool endFront = false;
+                const QPointF endPt = projectWorldToScreen(axisEnds[a], viewProj, &endFront);
+                if (!endFront) continue;
+                const bool active = (myImpl->activeGizmoAxis == a);
+                painter.setPen(QPen(active ? QColor("#ffffff") : axisColors[a], active ? 3.5 : 2.5));
+                painter.drawLine(originPt, endPt);
+                painter.setBrush(axisColors[a]);
+                painter.drawEllipse(endPt, 5.5, 5.5);
+                painter.setPen(axisColors[a].lighter(135));
+                painter.drawText(endPt + QPointF(7.0, -5.0), QString::fromLatin1(axisNames[a]));
+            }
+            painter.setBrush(QColor("#22c55e"));
+            painter.setPen(QPen(QColor("#14532d"), 1.8));
+            painter.drawEllipse(originPt, 6.0, 6.0);
+        }
+        painter.restore();
+        return;
+    }
+
+    if (myImpl->selectedPrimPath.isEmpty()) return;
     UsdPrim prim = myImpl->stage->GetPrimAtPath(SdfPath(myImpl->selectedPrimPath.toStdString()));
     if (!prim) return;
 
@@ -2190,49 +3455,14 @@ void UsdViewportWidget::drawSelectionAndGizmoOverlay(QPainter& painter, const QM
         }
     }
 
-    // 2. Draw interactive 3D Move/Rotate/Scale gizmo at prim pivot
-    const QVector3D origin = selectedPrimPosition();
-    bool originInFront = false;
-    const QPointF originPt = projectWorldToScreen(origin, viewProj, &originInFront);
-    if (originInFront) {
-        const float axisLen = 1.6f;
-        const QVector3D axisEnds[3] = {
-            origin + QVector3D(axisLen, 0.0f, 0.0f),
-            origin + QVector3D(0.0f, axisLen, 0.0f),
-            origin + QVector3D(0.0f, 0.0f, axisLen)
-        };
-        const QColor axisColors[3] = {
-            QColor("#e85d4a"), // +X Red
-            QColor("#5ec27e"), // +Y Green
-            QColor("#5b9be6")  // +Z Blue
-        };
-        const char* axisNames[3] = {"X", "Y", "Z"};
-
-        for (int a = 0; a < 3; ++a) {
-            bool endFront = false;
-            const QPointF endPt = projectWorldToScreen(axisEnds[a], viewProj, &endFront);
-            if (!endFront) continue;
-            const bool active = (myImpl->activeGizmoAxis == a);
-            painter.setPen(QPen(active ? QColor("#ffffff") : axisColors[a], active ? 3.5 : 2.5));
-            painter.drawLine(originPt, endPt);
-            painter.setBrush(axisColors[a]);
-            painter.drawEllipse(endPt, 5.5, 5.5);
-            painter.setPen(axisColors[a].lighter(135));
-            painter.drawText(endPt + QPointF(7.0, -5.0), QString::fromLatin1(axisNames[a]));
-        }
-        painter.setBrush(QColor("#f0c47a"));
-        painter.setPen(QPen(QColor("#1b2027"), 1.5));
-        painter.drawEllipse(originPt, 5.0, 5.0);
-    }
-
     painter.restore();
 }
 
 int UsdViewportWidget::hitTestGizmoAxis(const QPointF& screenPt) const {
-    if (!myImpl->stage || myImpl->selectedPrimPath.isEmpty()) return -1;
+    if (!myImpl->stage || !myImpl->selectedAimTarget) return -1;
+    const QVector3D origin = resolvedAimTargetPosition();
     const double aspect = static_cast<double>(width()) / static_cast<double>(std::max(1, height()));
     const QMatrix4x4 vp = currentProjectionMatrix(aspect) * currentViewMatrix();
-    const QVector3D origin = selectedPrimPosition();
     bool originFront = false;
     const QPointF originPt = projectWorldToScreen(origin, vp, &originFront);
     if (!originFront) return -1;
@@ -2355,28 +3585,42 @@ void UsdViewportWidget::drawOrientationGizmo(QPainter& painter) const {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    const QRectF gizmoRect(width() - 94.0, 12.0, 82.0, 82.0);
+    const QRectF gizmoRect(width() - 132.0, 12.0, 120.0, 120.0);
     painter.setBrush(QColor(21, 25, 30, 200));
     painter.setPen(QPen(QColor(52, 62, 75), 1.0));
     painter.drawRoundedRect(gizmoRect, 10.0, 10.0);
 
-    const QPointF center = gizmoRect.center();
-    const QMatrix4x4 view = currentViewMatrix();
-    const QVector3D axes[3] = {
-        QVector3D(1.0f, 0.0f, 0.0f),
-        QVector3D(0.0f, 1.0f, 0.0f),
-        QVector3D(0.0f, 0.0f, 1.0f)
-    };
-    const QColor colors[3] = {QColor("#e85d4a"), QColor("#5ec27e"), QColor("#5b9be6")};
-    const char* labels[3] = {"X", "Y", "Z"};
-    for (int i = 0; i < 3; ++i) {
-        const QVector3D dir = view.mapVector(axes[i]);
-        const QPointF tip = center + QPointF(dir.x() * 26.0, -dir.y() * 26.0);
-        painter.setPen(QPen(colors[i], 2.2));
-        painter.drawLine(center, tip);
-        painter.setBrush(colors[i]);
-        painter.drawEllipse(tip, 4.0, 4.0);
-        painter.drawText(tip + QPointF(4.0, -3.0), QString::fromLatin1(labels[i]));
+    // Project world directions through the camera's horizontal right vector.
+    // This keeps the compass readable even when looking level at the horizon.
+    const QMatrix4x4 cameraToWorld = currentViewMatrix().inverted();
+    const QVector3D cameraRight = cameraToWorld.mapVector(QVector3D(1, 0, 0));
+    QVector2D right(cameraRight.x(), cameraRight.z());
+    if (right.lengthSquared() <= 1e-8f) {
+        const QVector3D cameraUp = cameraToWorld.mapVector(QVector3D(0, 1, 0));
+        right = QVector2D(-cameraUp.z(), cameraUp.x());
+    }
+    if (right.lengthSquared() > 1e-8f) {
+        const QVector2D screenRight = right.normalized();
+        const QVector2D screenUp(screenRight.y(), -screenRight.x());
+        const QPointF center(gizmoRect.center().x(), gizmoRect.top() + 57.0);
+        const QVector2D directions[] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}};
+        const char* labels[] = {"N", "E", "S", "W"};
+        for (int i = 0; i < 4; ++i) {
+            const double x = QVector2D::dotProduct(directions[i], screenRight);
+            const double y = QVector2D::dotProduct(directions[i], screenUp);
+            const QPointF tip = center + QPointF(x * 35.0, -y * 35.0);
+            const QColor color = i == 0 ? QColor("#f87171") : QColor("#d7e4ef");
+            painter.setPen(QPen(color, i == 0 ? 2.2 : 1.3));
+            painter.drawLine(center, tip);
+            painter.setBrush(i == 0 ? QColor("#7f3030") : QColor("#263544"));
+            painter.drawEllipse(tip, 9.0, 9.0);
+            painter.setPen(color);
+            painter.drawText(QRectF(tip.x() - 9.0, tip.y() - 9.0, 18.0, 18.0),
+                             Qt::AlignCenter, QString::fromLatin1(labels[i]));
+        }
+        painter.setPen(QColor("#7d93a5"));
+        painter.drawText(gizmoRect.adjusted(0, 99, 0, -3), Qt::AlignHCenter,
+                         QStringLiteral("N −Z  ·  E +X"));
     }
     painter.restore();
 }
@@ -2407,25 +3651,657 @@ void UsdViewportWidget::drawStatusBanner(QPainter& painter) const {
     painter.restore();
 }
 
+void UsdViewportWidget::drawCameraFrustumAndPath(QPainter& painter, const QMatrix4x4& viewProj) const {
+    if (!myImpl->stage || !myImpl->cameraTools) return;
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    const CameraRigData& rig = myImpl->cameraTools->rigData();
+    CameraRigEvaluator evaluator(myImpl->fps);
+
+    // 1. Draw 3D spline curve path
+    if (rig.pathDrawn && rig.points.size() >= 2) {
+        const QVector<QVector3D> polyline = evaluator.samplePolyline(rig, 100);
+        painter.setPen(QPen(QColor("#38bdf8"), 2.2));
+        for (int i = 0; i < polyline.size() - 1; ++i) {
+            bool f1 = false, f2 = false;
+            const QPointF p1 = projectWorldToScreen(polyline[i], viewProj, &f1);
+            const QPointF p2 = projectWorldToScreen(polyline[i + 1], viewProj, &f2);
+            if (f1 && f2) {
+                painter.drawLine(p1, p2);
+            }
+        }
+
+        // Draw time tick marks every 0.5s along path
+        const double duration = std::max(0.5, rig.pathEndS - rig.pathStartS);
+        const int numTicks = static_cast<int>(std::floor(duration / 0.5));
+        QFont tickFont = painter.font();
+        tickFont.setPixelSize(10);
+        painter.setFont(tickFont);
+        for (int i = 0; i <= numTicks; ++i) {
+            const double t = rig.pathStartS + i * 0.5;
+            CameraSample sample = evaluator.evaluate(rig, t);
+            bool f = false;
+            QPointF tickPt = projectWorldToScreen(sample.position, viewProj, &f);
+            if (f) {
+                painter.setBrush(QColor("#38bdf8"));
+                painter.setPen(QPen(QColor("#0f172a"), 1.0));
+                painter.drawEllipse(tickPt, 3.5, 3.5);
+                painter.setPen(QColor("#bae6fd"));
+                painter.drawText(tickPt + QPointF(5, -4), QString("%1s").arg(i * 0.5, 0, 'f', 1));
+            }
+        }
+    }
+
+    // 2. Draw control points (path joints)
+    const int selIdx = myImpl->cameraTools->selectedPointIndex();
+    const int numPts = rig.pathDrawn ? rig.points.size() : 0;
+    for (int i = 0; i < numPts; ++i) {
+        bool f = false;
+        const QPointF pt = projectWorldToScreen(rig.points[i].position, viewProj, &f);
+        if (!f) continue;
+        const bool isSelected = (i == selIdx);
+
+        QString labelText;
+        if (numPts > 1) {
+            if (i == 0) labelText = QString("Joint %1 (Start)").arg(i + 1);
+            else if (i == numPts - 1) labelText = QString("Joint %1 (End)").arg(i + 1);
+            else labelText = QString("Joint %1").arg(i + 1);
+        } else {
+            labelText = QString("Joint 1");
+        }
+
+        if (isSelected) {
+            painter.setBrush(Qt::NoBrush);
+            painter.setPen(QPen(QColor(251, 191, 36, 140), 1.5, Qt::DashLine));
+            painter.drawEllipse(pt, 11.0, 11.0);
+
+            painter.setPen(QPen(QColor("#f59e0b"), 2.2));
+            painter.setBrush(QColor("#fbbf24"));
+            painter.drawEllipse(pt, 6.0, 6.0);
+
+            QFont jFont = painter.font();
+            jFont.setPixelSize(10);
+            jFont.setBold(true);
+            painter.setFont(jFont);
+            const QString selLabel = labelText + " (Selected)";
+            const int tw = painter.fontMetrics().horizontalAdvance(selLabel);
+            const QRectF jBadge(pt.x() + 9, pt.y() - 14, tw + 8, 16);
+            painter.setBrush(QColor(15, 23, 42, 220));
+            painter.setPen(QPen(QColor("#fbbf24"), 1.2));
+            painter.drawRoundedRect(jBadge, 4, 4);
+            painter.setPen(QColor("#ffffff"));
+            painter.drawText(jBadge, Qt::AlignCenter, selLabel);
+        } else {
+            painter.setPen(QPen(QColor("#0284c7"), 1.5));
+            painter.setBrush(QColor("#38bdf8"));
+            painter.drawEllipse(pt, 4.5, 4.5);
+            painter.setPen(QColor("#cbd5e1"));
+            QFont jFont = painter.font();
+            jFont.setPixelSize(9);
+            painter.setFont(jFont);
+            painter.drawText(pt + QPointF(7, -3), labelText);
+        }
+    }
+
+    // 3. Draw Camera 3D Mesh Representation & Frustum at current frame
+    CameraSample curSample = evaluator.evaluate(rig, myImpl->currentFrame / myImpl->fps);
+    const QVector3D camPos = curSample.position;
+    const QVector3D rotDeg = curSample.rotationDeg;
+    const bool isCamSelected = (myImpl->selectedPrimPath == myImpl->shotCamPath ||
+                                myImpl->selectedPrimPath == QStringLiteral("/World/ShotCam"));
+
+    QMatrix4x4 camMat;
+    camMat.rotate(rotDeg.y(), 0.0f, 1.0f, 0.0f);
+    camMat.rotate(rotDeg.x(), 1.0f, 0.0f, 0.0f);
+    camMat.rotate(rotDeg.z(), 0.0f, 0.0f, 1.0f);
+
+    const QVector3D forward = camMat.mapVector(QVector3D(0.0f, 0.0f, -1.0f));
+    const QVector3D right = camMat.mapVector(QVector3D(1.0f, 0.0f, 0.0f));
+    const QVector3D up = camMat.mapVector(QVector3D(0.0f, 1.0f, 0.0f));
+
+    // A. 3D Camera Body (Chassis) - smaller, sleek cinema camera body
+    const float bodyW = 0.26f;
+    const float bodyH = 0.17f;
+    const float bodyD = 0.22f;
+    const QVector3D halfW = right * (bodyW * 0.5f);
+    const QVector3D halfH = up * (bodyH * 0.5f);
+    const QVector3D fCenter = camPos;
+    const QVector3D bCenter = camPos - forward * bodyD;
+
+    // 8 vertices of camera body box
+    const QVector3D vF_BL = fCenter - halfW - halfH;
+    const QVector3D vF_BR = fCenter + halfW - halfH;
+    const QVector3D vF_TR = fCenter + halfW + halfH;
+    const QVector3D vF_TL = fCenter - halfW + halfH;
+    const QVector3D vB_BL = bCenter - halfW - halfH;
+    const QVector3D vB_BR = bCenter + halfW - halfH;
+    const QVector3D vB_TR = bCenter + halfW + halfH;
+    const QVector3D vB_TL = bCenter - halfW + halfH;
+
+    bool fF_BL=false, fF_BR=false, fF_TR=false, fF_TL=false;
+    bool fB_BL=false, fB_BR=false, fB_TR=false, fB_TL=false;
+    const QPointF pF_BL = projectWorldToScreen(vF_BL, viewProj, &fF_BL);
+    const QPointF pF_BR = projectWorldToScreen(vF_BR, viewProj, &fF_BR);
+    const QPointF pF_TR = projectWorldToScreen(vF_TR, viewProj, &fF_TR);
+    const QPointF pF_TL = projectWorldToScreen(vF_TL, viewProj, &fF_TL);
+    const QPointF pB_BL = projectWorldToScreen(vB_BL, viewProj, &fB_BL);
+    const QPointF pB_BR = projectWorldToScreen(vB_BR, viewProj, &fB_BR);
+    const QPointF pB_TR = projectWorldToScreen(vB_TR, viewProj, &fB_TR);
+    const QPointF pB_TL = projectWorldToScreen(vB_TL, viewProj, &fB_TL);
+
+    const QColor bodyFill = isCamSelected ? QColor(36, 44, 58, 230) : QColor(21, 27, 36, 220);
+    const QColor bodyEdge = isCamSelected ? QColor("#fbbf24") : QColor("#58a6ff");
+    painter.setPen(QPen(bodyEdge, isCamSelected ? 1.8 : 1.3));
+
+    // Draw camera body faces
+    if (fF_TL && fF_TR && fB_TR && fB_TL) {
+        painter.setBrush(bodyFill.lighter(125));
+        painter.drawPolygon(QPolygonF({pF_TL, pF_TR, pB_TR, pB_TL})); // Top face
+    }
+    if (fF_BL && fF_BR && fB_BR && fB_BL) {
+        painter.setBrush(bodyFill.darker(115));
+        painter.drawPolygon(QPolygonF({pF_BL, pF_BR, pB_BR, pB_BL})); // Bottom face
+    }
+    if (fF_BL && fF_TL && fB_TL && fB_BL) {
+        painter.setBrush(bodyFill);
+        painter.drawPolygon(QPolygonF({pF_BL, pF_TL, pB_TL, pB_BL})); // Left face
+    }
+    if (fF_BR && fF_TR && fB_TR && fB_BR) {
+        painter.setBrush(bodyFill.darker(108));
+        painter.drawPolygon(QPolygonF({pF_BR, pF_TR, pB_TR, pB_BR})); // Right face
+    }
+    if (fF_BL && fF_BR && fF_TR && fF_TL) {
+        painter.setBrush(bodyFill.lighter(112));
+        painter.drawPolygon(QPolygonF({pF_BL, pF_BR, pF_TR, pF_TL})); // Front face
+    }
+
+    // B. Film magazine reels on top of camera body
+    const QVector3D reelCenter1 = fCenter - forward * (bodyD * 0.35f) + up * (bodyH * 0.5f + 0.055f);
+    const QVector3D reelCenter2 = fCenter - forward * (bodyD * 0.70f) + up * (bodyH * 0.5f + 0.055f);
+    const float reelR = 0.055f;
+    for (const QVector3D& rc : {reelCenter1, reelCenter2}) {
+        QPolygonF reelPoly;
+        bool allReelOk = true;
+        for (int k = 0; k < 8; ++k) {
+            const double ang = k * (2.0 * 3.14159265358979323846 / 8.0);
+            const QVector3D pt = rc + (forward * std::cos(ang) + up * std::sin(ang)) * reelR;
+            bool ok = false;
+            const QPointF sc = projectWorldToScreen(pt, viewProj, &ok);
+            if (!ok) { allReelOk = false; break; }
+            reelPoly << sc;
+        }
+        if (allReelOk) {
+            painter.setBrush(bodyFill.darker(120));
+            painter.setPen(QPen(bodyEdge, 1.2));
+            painter.drawPolygon(reelPoly);
+            bool hubOk = false;
+            const QPointF hubPt = projectWorldToScreen(rc, viewProj, &hubOk);
+            if (hubOk) {
+                painter.setBrush(isCamSelected ? QColor("#fbbf24") : QColor("#38bdf8"));
+                painter.drawEllipse(hubPt, 2.5, 2.5);
+            }
+        }
+    }
+
+    // C. Lens barrel & front rim
+    const QVector3D lensApex = fCenter + forward * 0.08f;
+    const float lensR = 0.055f;
+    QPolygonF lensRim;
+    bool allLensOk = true;
+    for (int k = 0; k < 8; ++k) {
+        const double ang = k * (2.0 * 3.14159265358979323846 / 8.0);
+        const QVector3D pt = lensApex + (right * std::cos(ang) + up * std::sin(ang)) * lensR;
+        bool ok = false;
+        const QPointF sc = projectWorldToScreen(pt, viewProj, &ok);
+        if (!ok) { allLensOk = false; break; }
+        lensRim << sc;
+    }
+    if (allLensOk) {
+        painter.setBrush(QColor(24, 32, 44, 240));
+        painter.setPen(QPen(QColor("#38bdf8"), 1.4));
+        painter.drawPolygon(lensRim);
+    }
+
+    // D. Compact Frustum Pyramid (frustumDist = 0.9m)
+    const float frustumDist = 0.9f;
+    const float vertFovRad = static_cast<float>(2.0 * std::atan(curSample.verticalAperture / (2.0 * curSample.focalLength)));
+    const float frustumH = 2.0f * frustumDist * std::tan(vertFovRad * 0.5f);
+    const float aspect = static_cast<float>(curSample.horizontalAperture / curSample.verticalAperture);
+    const float frustumW = frustumH * aspect;
+
+    const QVector3D centerFar = lensApex + forward * frustumDist;
+    const QVector3D cTL = centerFar - right * (frustumW * 0.5f) + up * (frustumH * 0.5f);
+    const QVector3D cTR = centerFar + right * (frustumW * 0.5f) + up * (frustumH * 0.5f);
+    const QVector3D cBR = centerFar + right * (frustumW * 0.5f) - up * (frustumH * 0.5f);
+    const QVector3D cBL = centerFar - right * (frustumW * 0.5f) - up * (frustumH * 0.5f);
+
+    bool fApex = false, fTL = false, fTR = false, fBR = false, fBL = false;
+    const QPointF pApex = projectWorldToScreen(lensApex, viewProj, &fApex);
+    const QPointF pTL = projectWorldToScreen(cTL, viewProj, &fTL);
+    const QPointF pTR = projectWorldToScreen(cTR, viewProj, &fTR);
+    const QPointF pBR = projectWorldToScreen(cBR, viewProj, &fBR);
+    const QPointF pBL = projectWorldToScreen(cBL, viewProj, &fBL);
+
+    if (fApex) {
+        // Frustum rays from lens to 4 corners
+        painter.setPen(QPen(isCamSelected ? QColor(251, 191, 36, 180) : QColor(56, 189, 248, 150), 1.2, Qt::DashLine));
+        if (fTL) painter.drawLine(pApex, pTL);
+        if (fTR) painter.drawLine(pApex, pTR);
+        if (fBR) painter.drawLine(pApex, pBR);
+        if (fBL) painter.drawLine(pApex, pBL);
+
+        // Frustum far framing rectangle
+        if (fTL && fTR && fBR && fBL) {
+            painter.setPen(QPen(isCamSelected ? QColor(251, 191, 36, 240) : QColor(56, 189, 248, 220), 1.6));
+            painter.setBrush(isCamSelected ? QColor(251, 191, 36, 22) : QColor(56, 189, 248, 16));
+            painter.drawPolygon(QPolygonF({pTL, pTR, pBR, pBL}));
+
+            // Direction UP indicator triangle on far plane top edge
+            const QPointF pMidTop = (pTL + pTR) * 0.5;
+            bool fUp = false;
+            const QPointF pUpMarker = projectWorldToScreen(centerFar + up * (frustumH * 0.65f), viewProj, &fUp);
+            if (fUp) {
+                painter.setBrush(isCamSelected ? QColor("#fbbf24") : QColor("#38bdf8"));
+                painter.setPen(Qt::NoPen);
+                painter.drawPolygon(QPolygonF({pMidTop - QPointF(4, 0), pMidTop + QPointF(4, 0), pUpMarker}));
+            }
+        }
+
+        // Selection rings if camera is selected
+        if (isCamSelected) {
+            painter.setBrush(Qt::NoBrush);
+            painter.setPen(QPen(QColor("#fbbf24"), 2.0));
+            painter.drawEllipse(pApex, 8.0, 8.0);
+            painter.setPen(QPen(QColor(251, 191, 36, 130), 1.2, Qt::DashLine));
+            painter.drawEllipse(pApex, 13.0, 13.0);
+        } else {
+            painter.setBrush(QColor("#38bdf8"));
+            painter.setPen(QPen(QColor("#0f172a"), 1.2));
+            painter.drawEllipse(pApex, 4.5, 4.5);
+        }
+
+        // Camera badge pill
+        const QString badgeText = QString("🎥 ShotCam • %1mm").arg(static_cast<int>(std::round(curSample.focalLength)));
+        QFont badgeFont = painter.font();
+        badgeFont.setPixelSize(10);
+        badgeFont.setBold(true);
+        painter.setFont(badgeFont);
+        const int badgeTextW = painter.fontMetrics().horizontalAdvance(badgeText);
+        const QRectF badgeRect(pApex.x() - badgeTextW * 0.5 - 6, pApex.y() - 25, badgeTextW + 12, 17);
+        painter.setBrush(QColor(15, 23, 42, 230));
+        painter.setPen(QPen(isCamSelected ? QColor("#fbbf24") : QColor("#38bdf8"), 1.2));
+        painter.drawRoundedRect(badgeRect, 8.5, 8.5);
+        painter.setPen(isCamSelected ? QColor("#fbbf24") : QColor("#e2e8f0"));
+        painter.drawText(badgeRect, Qt::AlignCenter, badgeText);
+    }
+
+    // 4. Look-at line & green arrow aiming target (always active by default)
+    if (rig.aimMode == CameraAimMode::LookAt) {
+        const QVector3D tgtPos = resolvedAimTargetPosition();
+        bool fTgt = false;
+        const QPointF pTgt = projectWorldToScreen(tgtPos, viewProj, &fTgt);
+
+        if (fApex && fTgt) {
+            // Direction vector and math for chevrons & green arrow
+            const QPointF dir = pTgt - pApex;
+            const double dist = std::hypot(dir.x(), dir.y());
+
+            if (dist > 14.0) {
+                const QPointF norm = dir / dist;
+                const QPointF perp(-norm.y(), norm.x());
+
+                // Sightline from camera to target point
+                painter.setPen(QPen(QColor(34, 197, 94, 210), 2.2, Qt::DashLine));
+                painter.drawLine(pApex, pTgt);
+
+                // Direction chevrons along sightline showing gaze flow
+                painter.setPen(QPen(QColor(74, 222, 128, 230), 2.0));
+                for (double frac : {0.33, 0.66}) {
+                    const QPointF cPt = pApex + dir * frac;
+                    QPolygonF chev;
+                    chev << cPt - norm * 7.0 + perp * 5.0 << cPt << cPt - norm * 7.0 - perp * 5.0;
+                    painter.drawPolyline(chev);
+                }
+
+                // Prominent GREEN ARROW pointing directly to where the camera looks
+                const QPointF pArrowTip = pTgt;
+                const double arrowLen = std::min(28.0, dist * 0.45);
+                const double arrowWidth = std::min(14.0, arrowLen * 0.55);
+                const QPointF pBaseL = pArrowTip - norm * arrowLen + perp * arrowWidth;
+                const QPointF pBaseR = pArrowTip - norm * arrowLen - perp * arrowWidth;
+                const QPointF pNotch = pArrowTip - norm * (arrowLen * 0.70);
+
+                QPolygonF arrowPoly;
+                arrowPoly << pArrowTip << pBaseL << pNotch << pBaseR;
+
+                const bool isAimSel = myImpl->selectedAimTarget;
+                painter.setBrush(isAimSel ? QColor(74, 222, 128) : QColor(34, 197, 94));
+                painter.setPen(QPen(isAimSel ? QColor("#fbbf24") : QColor(15, 23, 42), isAimSel ? 2.0 : 1.5));
+                painter.drawPolygon(arrowPoly);
+            }
+        }
+    }
+
+    // 5. Active drawing stroke preview
+    if (myImpl->cameraTools->isDrawing()) {
+        const auto& stroke = myImpl->cameraTools->activeStroke();
+        if (stroke.size() >= 2) {
+            painter.setPen(QPen(QColor("#fbbf24"), 2.5, Qt::DashLine));
+            for (int i = 0; i < stroke.size() - 1; ++i) {
+                bool f1 = false, f2 = false;
+                const QPointF q1 = projectWorldToScreen(stroke[i], viewProj, &f1);
+                const QPointF q2 = projectWorldToScreen(stroke[i + 1], viewProj, &f2);
+                if (f1 && f2) painter.drawLine(q1, q2);
+            }
+        }
+    }
+
+    // Scrub ghosts are overlays, so previews never modify the composed actors.
+    const double time = myImpl->currentFrame / myImpl->fps;
+    const auto tracks = myImpl->directorBrief["tracks"].toObject();
+    const auto paths = myImpl->directorBrief["paths"].toObject();
+    for (auto track = tracks.begin(); track != tracks.end(); ++track) {
+        QVector3D position; bool found = false; QString action;
+        for (const auto& value : track.value().toObject()["segments"].toArray()) {
+            const auto seg = value.toObject(); const auto range = seg["t"].toArray();
+            if (range.size() != 2 || time < range[0].toDouble()) continue;
+            const auto path = paths[seg["path"].toString()].toObject(); const auto points = path["points"].toArray();
+            if (points.size() < 2) continue;
+            auto vector = [](const QJsonValue& v) { const auto a = v.toArray(); return QVector3D(a[0].toDouble(),a[1].toDouble(),a[2].toDouble()); };
+            double length = 0; for (int i=1;i<points.size();++i) length += (vector(points[i])-vector(points[i-1])).length();
+            double u = std::clamp((time-range[0].toDouble()) / std::max(.001, range[1].toDouble()-range[0].toDouble()), 0., 1.);
+            if (path["speed_profile"].toString() == "ease_in_out") u = u*u*(3-2*u);
+            double distance = u*length;
+            position = vector(points.last());
+            for (int i=1;i<points.size();++i) { const auto a=vector(points[i-1]), b=vector(points[i]); const double d=(b-a).length();
+                if (distance <= d && d > 0) { position=a+(b-a)*float(distance/d); break; } distance-=d; }
+            found = true; action = seg["action"].toString();
+        }
+        if (!found) continue;
+        bool front=false, headFront=false;
+        const auto foot=projectWorldToScreen(position,viewProj,&front);
+        const auto head=projectWorldToScreen(position+QVector3D(0,1.7,0),viewProj,&headFront);
+        if (!front || !headFront) continue;
+        painter.setPen(QPen(QColor(180,220,255,170),2,Qt::DashLine));
+        painter.setBrush(QColor(100,180,240,35)); const double height=std::max(12.,std::hypot(head.x()-foot.x(),head.y()-foot.y()));
+        painter.drawEllipse(head,height*.08,height*.08); painter.drawLine(head,foot);
+        painter.drawEllipse(foot,height*.2,height*.07);
+        painter.drawText(foot+QPointF(8,-5),track.key()+" · "+action);
+    }
+
+    // 6. General Asset Movement Paths (Characters, Vehicles, Animals)
+    for (auto it = myImpl->primPaths.constBegin(); it != myImpl->primPaths.constEnd(); ++it) {
+        const QString primKey = it.key();
+        const QVector<QVector3D>& pts = it.value();
+        if (pts.size() < 2) continue;
+        if (!myImpl->explicitlyDrawnPrimPaths.contains(primKey)) continue;
+        const bool isBeingDrawn = myImpl->drawPathActive && myImpl->drawingPrimPath == primKey;
+        if (!isBeingDrawn && primKey != myImpl->selectedPrimPath &&
+            primKey != myImpl->lastDrawnPrimPath) continue;
+
+        const QColor col = myImpl->lintPaths.contains(primKey.section('/', -1)) ? QColor("#ef4444") : primPathColor(primKey);
+        const bool isSelected = (primKey == myImpl->selectedPrimPath);
+
+        // Path lines
+        if (isSelected) {
+            painter.setPen(QPen(QColor(col.red(), col.green(), col.blue(), 70), 6.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            for (int i = 0; i < pts.size() - 1; ++i) {
+                bool f1 = false, f2 = false;
+                const QPointF p1 = projectWorldToScreen(pts[i], viewProj, &f1);
+                const QPointF p2 = projectWorldToScreen(pts[i + 1], viewProj, &f2);
+                if (f1 && f2) painter.drawLine(p1, p2);
+            }
+        }
+
+        painter.setPen(QPen(col, isSelected ? 2.8 : 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        for (int i = 0; i < pts.size() - 1; ++i) {
+            bool f1 = false, f2 = false;
+            const QPointF p1 = projectWorldToScreen(pts[i], viewProj, &f1);
+            const QPointF p2 = projectWorldToScreen(pts[i + 1], viewProj, &f2);
+            if (f1 && f2) {
+                painter.drawLine(p1, p2);
+
+                const QPointF mid = (p1 + p2) * 0.5;
+                const QPointF dir = p2 - p1;
+                const double len = std::hypot(dir.x(), dir.y());
+                if (len > 25.0) {
+                    const double ux = dir.x() / len;
+                    const double uy = dir.y() / len;
+                    const double nx = -uy;
+                    const double ny = ux;
+                    QPolygonF arrow;
+                    arrow << mid + QPointF(ux * 5, uy * 5)
+                          << mid + QPointF(-ux * 5 + nx * 4, -uy * 5 + ny * 4)
+                          << mid + QPointF(-ux * 2, -uy * 2)
+                          << mid + QPointF(-ux * 5 - nx * 4, -uy * 5 - ny * 4);
+                    painter.save();
+                    painter.setBrush(col);
+                    painter.setPen(Qt::NoPen);
+                    painter.drawPolygon(arrow);
+                    painter.restore();
+                }
+            }
+        }
+
+        // Joints & Badges
+        for (int i = 0; i < pts.size(); ++i) {
+            bool f = false;
+            const QPointF pt = projectWorldToScreen(pts[i], viewProj, &f);
+            if (!f) continue;
+
+            if (i == 0) {
+                painter.setPen(QPen(QColor("#0f172a"), 1.5));
+                painter.setBrush(col);
+                painter.drawEllipse(pt, 5.5, 5.5);
+
+                const QString label = primKey.section('/', -1) + " [Start]";
+                QFont jFont = painter.font();
+                jFont.setPixelSize(10);
+                jFont.setBold(isSelected);
+                painter.setFont(jFont);
+                const int tw = painter.fontMetrics().horizontalAdvance(label);
+                const QRectF badge(pt.x() + 8, pt.y() - 11, tw + 8, 16);
+                painter.setBrush(QColor(15, 23, 42, 220));
+                painter.setPen(QPen(col, 1.2));
+                painter.drawRoundedRect(badge, 4, 4);
+                painter.setPen(QColor("#ffffff"));
+                painter.drawText(badge, Qt::AlignCenter, label);
+            } else if (i == pts.size() - 1) {
+                painter.setPen(QPen(col, 2.0));
+                painter.setBrush(QColor(15, 23, 42));
+                painter.drawEllipse(pt, 5.0, 5.0);
+
+                QFont jFont = painter.font();
+                jFont.setPixelSize(9);
+                painter.setFont(jFont);
+                painter.setPen(col);
+                painter.drawText(pt + QPointF(7, -3), QStringLiteral("[End]"));
+            } else {
+                painter.setPen(QPen(QColor("#0f172a"), 1.0));
+                painter.setBrush(col);
+                painter.drawEllipse(pt, 3.5, 3.5);
+            }
+        }
+    }
+
+    // 7. Active drawing stroke preview for general asset
+    if (myImpl->isDrawingPrimStroke && myImpl->activePrimStroke.size() >= 2) {
+        const QColor drawCol = primPathColor(myImpl->drawingPrimPath);
+        painter.setPen(QPen(drawCol, 2.5, Qt::DashLine));
+        for (int i = 0; i < myImpl->activePrimStroke.size() - 1; ++i) {
+            bool f1 = false, f2 = false;
+            const QPointF q1 = projectWorldToScreen(myImpl->activePrimStroke[i], viewProj, &f1);
+            const QPointF q2 = projectWorldToScreen(myImpl->activePrimStroke[i + 1], viewProj, &f2);
+            if (f1 && f2) painter.drawLine(q1, q2);
+        }
+    }
+
+    painter.restore();
+}
+
+void UsdViewportWidget::drawViewfinderHud(QPainter& painter) const {
+    painter.save();
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    const CameraRigData& rig = myImpl->cameraTools->rigData();
+    double targetAspect = 16.0 / 9.0;
+    if (rig.aspectRatio == "2.39:1" || rig.aspectRatio == "2.39_1") targetAspect = 2.39;
+    else if (rig.aspectRatio == "9:16" || rig.aspectRatio == "9_16") targetAspect = 9.0 / 16.0;
+    else if (rig.aspectRatio == "1:1" || rig.aspectRatio == "1_1") targetAspect = 1.0;
+
+    const QRectF crop = viewfinderCropRect(targetAspect);
+
+    // 1. Draw solid cinema black pillarbox/letterbox bars
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(10, 12, 16));
+    if (crop.top() > 0) {
+        painter.drawRect(QRectF(0, 0, width(), crop.top()));
+        painter.drawRect(QRectF(0, crop.bottom(), width(), height() - crop.bottom()));
+    }
+    if (crop.left() > 0) {
+        painter.drawRect(QRectF(0, 0, crop.left(), height()));
+        painter.drawRect(QRectF(crop.right(), 0, width() - crop.right(), height()));
+    }
+
+    // Border around crop
+    painter.setPen(QPen(QColor(70, 85, 105, 180), 1.0));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(crop);
+
+    // 2. Safe frames (Action Safe 90%, Title Safe 80%)
+    const QRectF actionSafe = crop.adjusted(crop.width() * 0.05, crop.height() * 0.05,
+                                           -crop.width() * 0.05, -crop.height() * 0.05);
+    const QRectF titleSafe = crop.adjusted(crop.width() * 0.10, crop.height() * 0.10,
+                                          -crop.width() * 0.10, -crop.height() * 0.10);
+    painter.setPen(QPen(QColor(255, 255, 255, 45), 1.0, Qt::DashLine));
+    painter.drawRect(actionSafe);
+    painter.setPen(QPen(QColor(255, 255, 255, 28), 1.0, Qt::DotLine));
+    painter.drawRect(titleSafe);
+
+    // 3. Rule of thirds grid & Center crosshair
+    painter.setPen(QPen(QColor(255, 255, 255, 35), 0.8));
+    painter.drawLine(QPointF(crop.left() + crop.width() / 3.0, crop.top()),
+                     QPointF(crop.left() + crop.width() / 3.0, crop.bottom()));
+    painter.drawLine(QPointF(crop.left() + crop.width() * 2.0 / 3.0, crop.top()),
+                     QPointF(crop.left() + crop.width() * 2.0 / 3.0, crop.bottom()));
+    painter.drawLine(QPointF(crop.left(), crop.top() + crop.height() / 3.0),
+                     QPointF(crop.right(), crop.top() + crop.height() / 3.0));
+    painter.drawLine(QPointF(crop.left(), crop.top() + crop.height() * 2.0 / 3.0),
+                     QPointF(crop.right(), crop.top() + crop.height() * 2.0 / 3.0));
+
+    const QPointF center = crop.center();
+    painter.setPen(QPen(QColor(255, 255, 255, 90), 1.2));
+    painter.drawLine(center - QPointF(12, 0), center + QPointF(12, 0));
+    painter.drawLine(center - QPointF(0, 12), center + QPointF(0, 12));
+
+    // 4. Viewfinder Top HUD Bar inside crop
+    const QRectF hudTop(crop.left() + 12, crop.top() + 10, crop.width() - 24, 28);
+
+    const QString shotSizeName = CameraRigEvaluator::shotSizeToString(rig.shotSize).toUpper().replace('_', ' ');
+    const QString lensText = QString("🎥 VIEWFINDER · %1mm · %2 · %3")
+                                 .arg(static_cast<int>(std::round(cameraFocalLength())))
+                                 .arg(shotSizeName)
+                                 .arg(rig.aspectRatio);
+
+    QFont hudFont = painter.font();
+    hudFont.setPixelSize(11);
+    hudFont.setBold(true);
+    painter.setFont(hudFont);
+    QFontMetrics fm(hudFont);
+    const int badgeW = fm.horizontalAdvance(lensText) + 20;
+    const QRectF badgeRect(hudTop.left(), hudTop.top(), badgeW, 24);
+
+    painter.setBrush(QColor(20, 25, 32, 210));
+    painter.setPen(QPen(QColor(70, 85, 105), 1.0));
+    painter.drawRoundedRect(badgeRect, 4, 4);
+
+    painter.setPen(QColor("#f8fafc"));
+    painter.drawText(badgeRect, Qt::AlignCenter, lensText);
+
+    if (rig.dollyZoomEnabled) {
+        const QRectF dzRect(badgeRect.right() + 8, hudTop.top(), 110, 24);
+        painter.setBrush(QColor(180, 83, 9, 220));
+        painter.setPen(QPen(QColor(251, 191, 36), 1.0));
+        painter.drawRoundedRect(dzRect, 4, 4);
+        painter.setPen(QColor("#fef3c7"));
+        painter.drawText(dzRect, Qt::AlignCenter, "⚡ DOLLY ZOOM");
+    }
+
+    const double seconds = myImpl->fps > 0 ? (myImpl->currentFrame / myImpl->fps) : 0.0;
+    const int minutes = static_cast<int>(seconds) / 60;
+    const double secRemainder = seconds - minutes * 60;
+    const QString tcText = QString("TC %1:%2:%3")
+                               .arg(minutes, 2, 10, QChar('0'))
+                               .arg(static_cast<int>(secRemainder), 2, 10, QChar('0'))
+                               .arg(static_cast<int>((myImpl->currentFrame - std::floor(myImpl->currentFrame)) * myImpl->fps), 2, 10, QChar('0'));
+
+    const int tcW = fm.horizontalAdvance(tcText) + 20;
+    const QRectF tcRect(hudTop.right() - tcW, hudTop.top(), tcW, 24);
+    painter.setBrush(QColor(20, 25, 32, 210));
+    painter.setPen(QPen(QColor(70, 85, 105), 1.0));
+    painter.drawRoundedRect(tcRect, 4, 4);
+    painter.setPen(QColor("#f8fafc"));
+    painter.drawText(tcRect, Qt::AlignCenter, tcText);
+
+    if (myImpl->playing) {
+        const QRectF recRect(tcRect.left() - 65, hudTop.top(), 58, 24);
+        painter.setBrush(QColor(220, 38, 38, 230));
+        painter.setPen(QPen(QColor(254, 202, 202), 1.0));
+        painter.drawRoundedRect(recRect, 4, 4);
+        painter.setPen(QColor("#ffffff"));
+        painter.drawText(recRect, Qt::AlignCenter, "● REC");
+    }
+
+    painter.restore();
+}
+
 void UsdViewportWidget::paintEvent(QPaintEvent*) {
     const int w = std::max(64, width());
     const int h = std::max(64, height());
-    if (myImpl->hydraDirty || myImpl->cachedFrame.width() != w || myImpl->cachedFrame.height() != h) {
-        renderHydraToImage(w, h, myImpl->cachedFrame);
+    const double previewScale = myImpl->playing ? kPlaybackPreviewScale : 1.0;
+    const int renderW = std::max(64, static_cast<int>(std::round(w * previewScale)));
+    const int renderH = std::max(64, static_cast<int>(std::round(h * previewScale)));
+    if (myImpl->hydraDirty || myImpl->cachedFrame.width() != renderW || myImpl->cachedFrame.height() != renderH) {
+        renderHydraToImage(renderW, renderH, myImpl->cachedFrame);
         myImpl->hydraDirty = false;
     }
 
     QPainter painter(this);
     painter.drawImage(rect(), myImpl->cachedFrame);
 
-    const double aspect = static_cast<double>(w) / static_cast<double>(h);
-    const QMatrix4x4 vp = currentProjectionMatrix(aspect) * currentViewMatrix();
+    if (myImpl->viewMode == ViewMode::CameraViewfinder) {
+        drawViewfinderHud(painter);
+        drawStatusBanner(painter);
+    } else {
+        const double aspect = static_cast<double>(w) / static_cast<double>(h);
+        const QMatrix4x4 vp = currentProjectionMatrix(aspect) * currentViewMatrix();
 
-    drawGridOverlay(painter, vp);
-    drawSelectionAndGizmoOverlay(painter, vp);
-    drawActorNameTags(painter, vp);
-    drawOrientationGizmo(painter);
-    drawStatusBanner(painter);
+        drawGridOverlay(painter, vp);
+        drawOrbitCenterOverlay(painter, vp);
+        drawCameraFrustumAndPath(painter, vp);
+        drawSelectionAndGizmoOverlay(painter, vp);
+        drawActorNameTags(painter, vp);
+        drawOrientationGizmo(painter);
+        drawStatusBanner(painter);
+
+        // Subtle 3D World mode badge in top-left
+        painter.save();
+        QFont modeFont = painter.font();
+        modeFont.setPixelSize(11);
+        modeFont.setBold(true);
+        painter.setFont(modeFont);
+        const QString worldBadgeText = QStringLiteral("🌐 3D WORLD · Tab for Viewfinder");
+        QFontMetrics fm(modeFont);
+        const int badgeW = fm.horizontalAdvance(worldBadgeText) + 16;
+        const QRectF badgeRect(12, 12, badgeW, 22);
+        painter.setBrush(QColor(15, 20, 26, 200));
+        painter.setPen(QPen(QColor(60, 75, 95), 1.0));
+        painter.drawRoundedRect(badgeRect, 4, 4);
+        painter.setPen(QColor("#94a3b8"));
+        painter.drawText(badgeRect, Qt::AlignCenter, worldBadgeText);
+        painter.restore();
+    }
 }
 
 void UsdViewportWidget::resizeEvent(QResizeEvent* event) {
@@ -2437,6 +4313,45 @@ void UsdViewportWidget::resizeEvent(QResizeEvent* event) {
 void UsdViewportWidget::mousePressEvent(QMouseEvent* event) {
     setFocus();
     myImpl->lastMousePos = event->position();
+
+    if (myImpl->viewMode == ViewMode::CameraViewfinder) {
+        if (event->button() == Qt::LeftButton || event->button() == Qt::RightButton) {
+            myImpl->panning = false;
+            myImpl->orbiting = false;
+            myImpl->draggingGizmo = false;
+            myImpl->cameraTools->setTool(CameraToolType::Aim);
+            myImpl->cameraTools->handleMousePress(event);
+            return;
+        }
+    }
+
+    if (myImpl->cameraTools && myImpl->cameraTools->tool() != CameraToolType::None) {
+        if (myImpl->cameraTools->handleMousePress(event)) {
+            update();
+            return;
+        }
+    }
+
+    if (myImpl->drawPathActive && !myImpl->drawingPrimPath.isEmpty() &&
+        myImpl->drawingPrimPath != myImpl->shotCamPath &&
+        myImpl->drawingPrimPath != QStringLiteral("/World/ShotCam") &&
+        !myImpl->drawingPrimPath.startsWith(QStringLiteral("/World/CameraRig"))) {
+        if (event->button() == Qt::LeftButton) {
+            QVector3D primPos = selectedPrimPosition();
+            double planeH = primPos.y();
+            QVector3D hitPt;
+            if (screenToGroundPlane(event->position(), planeH, hitPt)) {
+                pushUndoSnapshot();
+                myImpl->isDrawingPrimStroke = true;
+                myImpl->activePrimStroke.clear();
+                myImpl->activePrimStroke.append(hitPt);
+                update();
+                return;
+            }
+            emit statusMessageChanged(QStringLiteral("Path did not start there. Drag across the ground in the 3D viewport."));
+            return;
+        }
+    }
 
     if (event->button() == Qt::RightButton ||
         (event->button() == Qt::LeftButton && (event->modifiers() & Qt::AltModifier))) {
@@ -2452,7 +4367,12 @@ void UsdViewportWidget::mousePressEvent(QMouseEvent* event) {
     }
 
     if (event->button() == Qt::MiddleButton) {
-        myImpl->panning = true;
+        const bool ctrl = event->modifiers() & Qt::ControlModifier;
+        const bool shift = event->modifiers() & Qt::ShiftModifier;
+        myImpl->dollying = ctrl && shift;
+        myImpl->zooming = ctrl && !shift;
+        myImpl->panning = shift && !ctrl;
+        myImpl->orbiting = !ctrl && !shift;
         if (myImpl->useShotCam) {
             setUseShotCamera(false);
         }
@@ -2477,20 +4397,94 @@ void UsdViewportWidget::mousePressEvent(QMouseEvent* event) {
         return;
     }
 
-    // 1. Check if user clicked on a 3D gizmo axis handle first
+    // The camera aim target keeps its axis controls; assets move by direct dragging.
     const int hitAxis = hitTestGizmoAxis(event->position());
-    if (hitAxis >= 0 && !myImpl->selectedPrimPath.isEmpty()) {
+    if (hitAxis >= 0) {
         pushUndoSnapshot();
         myImpl->draggingGizmo = true;
         myImpl->activeGizmoAxis = hitAxis;
-        myImpl->dragStartPrimPos = selectedPrimPosition();
-        myImpl->dragStartPrimRot = selectedPrimRotation();
-        myImpl->dragStartPrimScale = selectedPrimScale();
+        myImpl->dragStartAimPos = resolvedAimTargetPosition();
         update();
         return;
     }
 
-    // 2. Perform object picking: GPU picking if an active context exists; fast, crash-proof CPU ray picking otherwise
+    // 2. Camera, Aim Target & path waypoint picking in World 3D view
+    if (myImpl->viewMode == ViewMode::World && myImpl->cameraTools && event->button() == Qt::LeftButton) {
+        const double aspect = static_cast<double>(width()) / static_cast<double>(std::max(1, height()));
+        const QMatrix4x4 vp = currentProjectionMatrix(aspect) * currentViewMatrix();
+
+        // 2a. Check Aim Target & Green Arrow picking
+        const QVector3D aimPos = resolvedAimTargetPosition();
+        bool aimFront = false;
+        const QPointF aimSc = projectWorldToScreen(aimPos, vp, &aimFront);
+        if (aimFront && (event->position() - aimSc).manhattanLength() <= 24.0) {
+            myImpl->selectedAimTarget = true;
+            myImpl->selectedPrimPath.clear();
+            myImpl->cameraTools->setSelectedPointIndex(-1);
+            QVector3D groundHit;
+            if (screenToGroundPlane(event->position(), aimPos.y(), groundHit)) {
+                pushUndoSnapshot();
+                myImpl->draggingAimTarget = true;
+                myImpl->dragStartAimPos = aimPos;
+                myImpl->dragStartWorldHit = groundHit;
+            }
+            updateOverlayUi();
+            update();
+            return;
+        }
+
+        // 2b. Check camera control points first
+        const auto& rigPts = myImpl->cameraTools->rigData().points;
+        int hitPtIdx = -1;
+        for (int i = 0; i < rigPts.size(); ++i) {
+            bool ptFront = false;
+            const QPointF sc = projectWorldToScreen(rigPts[i].position, vp, &ptFront);
+            if (ptFront && (event->position() - sc).manhattanLength() <= 16.0) {
+                hitPtIdx = i;
+                break;
+            }
+        }
+        if (hitPtIdx >= 0) {
+            myImpl->selectedAimTarget = false;
+            myImpl->cameraTools->setSelectedPointIndex(hitPtIdx);
+            selectPrim(myImpl->shotCamPath.isEmpty() ? QStringLiteral("/World/ShotCam") : myImpl->shotCamPath);
+            QVector3D groundHit;
+            if (screenToGroundPlane(event->position(), rigPts[hitPtIdx].position.y(), groundHit)) {
+                pushUndoSnapshot();
+                myImpl->draggingObjectGround = true;
+                myImpl->dragUndoCaptured = true;
+                myImpl->dragStartPrimPos = rigPts[hitPtIdx].position;
+                myImpl->dragStartWorldHit = groundHit;
+            }
+            update();
+            return;
+        }
+
+        // 2c. Check camera body & position
+        const QVector3D camPos = cameraEvaluatedPosition();
+        bool camFront = false;
+        const QPointF camSc = projectWorldToScreen(camPos, vp, &camFront);
+        if (camFront) {
+            const double d = (event->position() - camSc).manhattanLength();
+            if (d <= 28.0) {
+                myImpl->selectedAimTarget = false;
+                myImpl->cameraTools->setSelectedPointIndex(-1);
+                selectPrim(myImpl->shotCamPath.isEmpty() ? QStringLiteral("/World/ShotCam") : myImpl->shotCamPath);
+                QVector3D groundHit;
+                if (screenToGroundPlane(event->position(), camPos.y(), groundHit)) {
+                    pushUndoSnapshot();
+                    myImpl->draggingObjectGround = true;
+                    myImpl->dragUndoCaptured = true;
+                    myImpl->dragStartPrimPos = camPos;
+                    myImpl->dragStartWorldHit = groundHit;
+                }
+                update();
+                return;
+            }
+        }
+    }
+
+    // 3. Perform object picking: GPU picking if an active context exists; fast, crash-proof CPU ray picking otherwise
     QString hitPrimPath;
     QVector3D hitWorldPt;
     bool hit = false;
@@ -2502,23 +4496,60 @@ void UsdViewportWidget::mousePressEvent(QMouseEvent* event) {
     }
 
     if (hit && !hitPrimPath.isEmpty()) {
+        myImpl->selectedAimTarget = false;
         selectPrim(hitPrimPath);
         QVector3D groundHit;
         if (screenToGroundPlane(event->position(), selectedPrimPosition().y(), groundHit)) {
-            pushUndoSnapshot();
             myImpl->draggingObjectGround = true;
+            myImpl->dragUndoCaptured = false;
             myImpl->dragStartPrimPos = selectedPrimPosition();
             myImpl->dragStartWorldHit = groundHit;
+            setCursor(Qt::ClosedHandCursor);
         }
         return;
     }
 
+    myImpl->selectedAimTarget = false;
     selectPrim(QString());
 }
 
 void UsdViewportWidget::mouseMoveEvent(QMouseEvent* event) {
     const QPointF delta = event->position() - myImpl->lastMousePos;
     myImpl->lastMousePos = event->position();
+
+    if (myImpl->viewMode == ViewMode::CameraViewfinder) {
+        if (myImpl->cameraTools && myImpl->cameraTools->handleMouseMove(event)) {
+            bakeCurrentCameraRig();
+            update();
+            return;
+        }
+    }
+
+    if (myImpl->cameraTools && myImpl->cameraTools->tool() != CameraToolType::None) {
+        if (myImpl->cameraTools->handleMouseMove(event)) {
+            update();
+            return;
+        }
+    }
+
+    if (myImpl->drawPathActive && myImpl->isDrawingPrimStroke && (event->buttons() & Qt::LeftButton)) {
+        QVector3D primPos = selectedPrimPosition();
+        double planeH = primPos.y();
+        QVector3D hitPt;
+        if (screenToGroundPlane(event->position(), planeH, hitPt)) {
+            if (myImpl->activePrimStroke.isEmpty() || (hitPt - myImpl->activePrimStroke.last()).length() > 0.15f) {
+                myImpl->activePrimStroke.append(hitPt);
+                update();
+                return;
+            }
+        }
+    }
+
+    if (myImpl->zooming || myImpl->dollying) {
+        zoomFreeCamera(delta.y() / kZoomDragPixelsPerStep,
+                       QPointF(width() * 0.5, height() * 0.5), myImpl->dollying, false);
+        return;
+    }
 
     if (myImpl->orbiting) {
         myImpl->yaw -= delta.x() * 0.008;
@@ -2529,6 +4560,10 @@ void UsdViewportWidget::mouseMoveEvent(QMouseEvent* event) {
     }
 
     if (myImpl->panning) {
+        if (myImpl->fixedOrbitCenter) {
+            emit statusMessageChanged("Turn off Fixed Center to pan the editor view.");
+            return;
+        }
         const QMatrix4x4 view = currentViewMatrix();
         const QVector3D right(view(0, 0), view(0, 1), view(0, 2));
         const QVector3D up(view(1, 0), view(1, 1), view(1, 2));
@@ -2551,25 +4586,22 @@ void UsdViewportWidget::mouseMoveEvent(QMouseEvent* event) {
         return;
     }
 
-    if (myImpl->draggingGizmo && myImpl->activeGizmoAxis >= 0 && !myImpl->selectedPrimPath.isEmpty()) {
+    if (myImpl->draggingGizmo && myImpl->selectedAimTarget && myImpl->activeGizmoAxis >= 0) {
         const int axis = myImpl->activeGizmoAxis;
         const float step = static_cast<float>((delta.x() - delta.y()) * 0.03);
-        if (myImpl->gizmoMode == UsdGizmoMode::Move) {
-            QVector3D pos = selectedPrimPosition();
-            if (axis == 0) pos.setX(pos.x() + step);
-            if (axis == 1) pos.setY(pos.y() + step);
-            if (axis == 2) pos.setZ(pos.z() + step);
-            setSelectedPrimPosition(pos);
-        } else if (myImpl->gizmoMode == UsdGizmoMode::Rotate) {
-            QVector3D rot = selectedPrimRotation();
-            const float degStep = static_cast<float>((delta.x() - delta.y()) * 0.8);
-            if (axis == 0) rot.setX(rot.x() + degStep);
-            if (axis == 1) rot.setY(rot.y() + degStep);
-            if (axis == 2) rot.setZ(rot.z() + degStep);
-            setSelectedPrimRotation(rot);
-        } else if (myImpl->gizmoMode == UsdGizmoMode::Scale) {
-            const double s = std::max(0.05, selectedPrimScale() + (delta.x() - delta.y()) * 0.01);
-            setSelectedPrimScale(s);
+        QVector3D pos = resolvedAimTargetPosition();
+        if (axis == 0) pos.setX(pos.x() + step);
+        if (axis == 1) pos.setY(pos.y() + step);
+        if (axis == 2) pos.setZ(pos.z() + step);
+        setAimTargetPosition(pos);
+        return;
+    }
+
+    if (myImpl->draggingAimTarget) {
+        QVector3D groundHit;
+        if (screenToGroundPlane(event->position(), myImpl->dragStartAimPos.y(), groundHit)) {
+            const QVector3D offset = groundHit - myImpl->dragStartWorldHit;
+            setAimTargetPosition(myImpl->dragStartAimPos + offset);
         }
         return;
     }
@@ -2578,6 +4610,11 @@ void UsdViewportWidget::mouseMoveEvent(QMouseEvent* event) {
         QVector3D groundHit;
         if (screenToGroundPlane(event->position(), myImpl->dragStartPrimPos.y(), groundHit)) {
             const QVector3D offset = groundHit - myImpl->dragStartWorldHit;
+            if (offset.lengthSquared() < 1e-6f) return;
+            if (!myImpl->dragUndoCaptured) {
+                pushUndoSnapshot();
+                myImpl->dragUndoCaptured = true;
+            }
             setSelectedPrimPosition(myImpl->dragStartPrimPos + QVector3D(offset.x(), 0.0f, offset.z()));
         }
         return;
@@ -2631,12 +4668,66 @@ void UsdViewportWidget::mouseReleaseEvent(QMouseEvent* event) {
         emit userEditsChanged(userEditedPrimCount());
     }
 
+    if (myImpl->draggingAimTarget || (myImpl->draggingGizmo && myImpl->selectedAimTarget)) {
+        myImpl->draggingAimTarget = false;
+        myImpl->draggingGizmo = false;
+        myImpl->activeGizmoAxis = -1;
+        bakeCurrentCameraRig();
+        if (myImpl->stage && myImpl->userEditsLayer && myImpl->cameraTools) {
+            myImpl->suppressWatcherReload = true;
+            myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+            saveCameraRigToStage(myImpl->stage, myImpl->cameraTools->rigData(), myImpl->startFrame, myImpl->endFrame, myImpl->fps);
+            myImpl->userEditsLayer->Save();
+            myImpl->suppressWatcherReload = false;
+        }
+        updateOverlayUi();
+        update();
+        emit stageChanged();
+        emit userEditsChanged(userEditedPrimCount());
+        return;
+    }
+
+    if (myImpl->cameraTools && myImpl->cameraTools->handleMouseRelease(event)) {
+        setCurrentFrame(myImpl->startFrame);
+        bakeCurrentCameraRig();
+        stopDrawingPath();
+        update();
+        return;
+    }
+
+    if (myImpl->drawPathActive && myImpl->isDrawingPrimStroke) {
+        myImpl->isDrawingPrimStroke = false;
+        if (myImpl->activePrimStroke.size() >= 2) {
+            QVector<QVector3D> simplified = simplifyPointsRdp(myImpl->activePrimStroke, 0.1);
+            const QString completedPath = myImpl->drawingPrimPath;
+            myImpl->primPaths[completedPath] = simplified;
+            myImpl->explicitlyDrawnPrimPaths.insert(completedPath);
+            myImpl->lastDrawnPrimPath = completedPath;
+            persistPrimPaths();
+            myImpl->activePrimStroke.clear();
+            stopDrawingPath();
+            emit primPathChanged(completedPath);
+            emit statusMessageChanged(QString("Sketched %1 points for %2 movement path")
+                                          .arg(simplified.size())
+                                          .arg(completedPath));
+            update();
+            return;
+        }
+        myImpl->activePrimStroke.clear();
+        stopDrawingPath();
+        update();
+    }
+
     myImpl->orbiting = false;
     myImpl->panning = false;
+    myImpl->zooming = false;
+    myImpl->dollying = false;
     myImpl->draggingGizmo = false;
     myImpl->draggingObjectGround = false;
+    myImpl->dragUndoCaptured = false;
     myImpl->paintingStroke = false;
     myImpl->activeGizmoAxis = -1;
+    unsetCursor();
 
     if (myImpl->pendingDragSave) {
         myImpl->pendingDragSave = false;
@@ -2653,18 +4744,129 @@ void UsdViewportWidget::mouseReleaseEvent(QMouseEvent* event) {
     update();
 }
 
-void UsdViewportWidget::wheelEvent(QWheelEvent* event) {
-    const double delta = event->angleDelta().y() / 120.0;
-    if (std::abs(delta) < 1e-4) return;
-    if (myImpl->useShotCam) {
-        setUseShotCamera(false);
+void UsdViewportWidget::zoomFreeCamera(double steps, const QPointF& screenPos,
+                                       bool dolly, bool zoomToMouse) {
+    if (std::abs(steps) < 1e-4) return;
+    if (myImpl->useShotCam) setUseShotCamera(false);
+    if (myImpl->fixedOrbitCenter) {
+        dolly = false;
+        zoomToMouse = false;
     }
-    myImpl->distance = std::clamp(myImpl->distance * std::pow(0.88, delta), 1.0, 250.0);
+
+    // Dolly translates the eye and orbit center together, so it can pass through
+    // the orbit center. Ordinary zoom changes their separation instead.
+    if (dolly) {
+        const QMatrix4x4 inverseView = currentViewMatrix().inverted();
+        const QVector3D forward = -inverseView.mapVector(QVector3D(0.0f, 0.0f, 1.0f)).normalized();
+        const double travel = myImpl->distance * (1.0 - std::pow(kZoomFactorPerStep, steps));
+        myImpl->target += forward * static_cast<float>(travel);
+        myImpl->hydraDirty = true;
+        update();
+        return;
+    }
+
+    QVector3D anchor = myImpl->target;
+    QString hitPrimPath;
+    if (zoomToMouse && !tryCpuRayPick(screenPos, hitPrimPath, &anchor) &&
+        !screenToGroundPlane(screenPos, 0.0, anchor)) {
+        QVector3D origin, direction;
+        if (screenToRay(screenPos, origin, direction)) {
+            const QMatrix4x4 inverseView = currentViewMatrix().inverted();
+            const QVector3D forward = -inverseView.mapVector(QVector3D(0.0f, 0.0f, 1.0f)).normalized();
+            const float denominator = QVector3D::dotProduct(direction, forward);
+            if (std::abs(denominator) > 1e-4f) {
+                const float depth = QVector3D::dotProduct(myImpl->target - origin, forward) / denominator;
+                anchor = origin + direction * std::max(0.0f, depth);
+            } else {
+                anchor = myImpl->target;
+            }
+        } else {
+            anchor = myImpl->target;
+        }
+    }
+
+    const double oldDistance = myImpl->distance;
+    const double newDistance = std::clamp(oldDistance * std::pow(kZoomFactorPerStep, steps),
+                                          kFreeViewNearClip * 2.0, kFreeViewFarClip * 0.5);
+    const float scale = static_cast<float>(newDistance / oldDistance);
+    myImpl->target = anchor + (myImpl->target - anchor) * scale;
+    myImpl->distance = newDistance;
     myImpl->hydraDirty = true;
     update();
 }
 
+void UsdViewportWidget::wheelEvent(QWheelEvent* event) {
+    if (myImpl->viewMode == ViewMode::CameraViewfinder) {
+        if (event->modifiers() & Qt::ShiftModifier) {
+            const double delta = event->angleDelta().y() > 0 ? 0.35 : -0.35;
+            auto& rig = myImpl->cameraTools->rigData();
+            if (!rig.points.isEmpty()) {
+                CameraRigEvaluator eval(myImpl->fps);
+                CameraSample cur = eval.evaluate(rig, myImpl->currentFrame / myImpl->fps);
+                QMatrix4x4 camMat;
+                camMat.rotate(cur.rotationDeg.y(), 0.0f, 1.0f, 0.0f);
+                camMat.rotate(cur.rotationDeg.x(), 1.0f, 0.0f, 0.0f);
+                const QVector3D fwd = camMat.mapVector(QVector3D(0.0f, 0.0f, -1.0f));
+                for (auto& pt : rig.points) {
+                    pt.position += fwd * static_cast<float>(delta);
+                }
+                bakeCurrentCameraRig();
+            }
+        } else {
+            const double delta = event->angleDelta().y() > 0 ? 2.0 : -2.0;
+            setCameraFocalLength(cameraFocalLength() + delta);
+        }
+        return;
+    }
+
+    if (myImpl->selectedAimTarget && (event->modifiers() & Qt::ShiftModifier)) {
+        const double delta = event->angleDelta().y() > 0 ? 0.2 : -0.2;
+        QVector3D pos = resolvedAimTargetPosition();
+        pos.setY(std::max(0.0f, pos.y() + static_cast<float>(delta)));
+        setAimTargetPosition(pos);
+        bakeCurrentCameraRig();
+        return;
+    }
+
+    if (myImpl->cameraTools && myImpl->cameraTools->handleWheel(event)) {
+        update();
+        return;
+    }
+
+    const double steps = !event->angleDelta().isNull()
+        ? event->angleDelta().y() / 120.0
+        : event->pixelDelta().y() / 100.0;
+    zoomFreeCamera(steps, event->position());
+    event->accept();
+}
+
 void UsdViewportWidget::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_C && (event->modifiers() & (Qt::MetaModifier | Qt::ControlModifier)) && (event->modifiers() & Qt::ShiftModifier)) {
+        snapCameraToView(); event->accept(); return;
+    }
+    if (event->key() == Qt::Key_Tab) {
+        toggleViewMode();
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_C && !(event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))) {
+        selectPrim(myImpl->shotCamPath);
+        event->accept();
+        return;
+    }
+    if (myImpl->cameraTools && myImpl->cameraTools->handleKeyPress(event)) {
+        event->accept();
+        return;
+    }
+
+    if (myImpl->viewMode == ViewMode::World && (event->modifiers() & Qt::KeypadModifier) &&
+        (event->key() == Qt::Key_Plus || event->key() == Qt::Key_Minus)) {
+        zoomFreeCamera(event->key() == Qt::Key_Plus ? 1.0 : -1.0,
+                       QPointF(width() * 0.5, height() * 0.5), false, false);
+        event->accept();
+        return;
+    }
+
     if (event->matches(QKeySequence::Undo)) {
         undo();
         return;
@@ -2677,21 +4879,16 @@ void UsdViewportWidget::keyPressEvent(QKeyEvent* event) {
         case Qt::Key_Space:
             setPlaying(!myImpl->playing);
             break;
-        case Qt::Key_W:
-            setGizmoMode(UsdGizmoMode::Move);
-            break;
-        case Qt::Key_E:
-            setGizmoMode(UsdGizmoMode::Rotate);
-            break;
-        case Qt::Key_R:
-            setGizmoMode(UsdGizmoMode::Scale);
-            break;
         case Qt::Key_F:
             frameSelectedPrim();
             break;
         case Qt::Key_Delete:
         case Qt::Key_Backspace:
-            deleteSelectedPrim();
+            if (myImpl->cameraTools && myImpl->cameraTools->selectedPointIndex() >= 0) {
+                deleteSelectedCameraPathJoint();
+            } else {
+                deleteSelectedPrim();
+            }
             break;
         case Qt::Key_D:
             if (event->modifiers() & Qt::ControlModifier) {
@@ -2704,3 +4901,121 @@ void UsdViewportWidget::keyPressEvent(QKeyEvent* event) {
     }
 }
 
+
+QJsonObject UsdViewportWidget::cameraDocument() const { return myImpl->cameraDocument; }
+
+void UsdViewportWidget::setCameraDocument(const QJsonObject& document) {
+    if (!myImpl->cameraTools || document["version"].toInt() != 1) return;
+    const QString cid = document["active_camera"].toString();
+    if (!QRegularExpression("^[A-Za-z_][A-Za-z0-9_]*$").match(cid).hasMatch()) return;
+    const auto camera = document["cameras"].toObject()[cid].toObject();
+    if (camera.isEmpty()) return;
+    const bool suppress = myImpl->suppressWatcherReload;
+    myImpl->suppressWatcherReload = true;
+    myImpl->cameraDocument = document;
+    CameraRigData rig = cameraRigFromJson(camera);
+    for (auto& target : rig.aimTargets) {
+        for (const auto& item : primList()) if (item.actorId == target) { target = item.path; break; }
+    }
+    myImpl->cameraTools->setRigData(rig);
+    const QString file = QFileInfo(myImpl->stagePath).dir().filePath("cam_" + cid + ".usda");
+    if (myImpl->userEditsLayer && QFileInfo::exists(file)) {
+        const auto paths = myImpl->userEditsLayer->GetSubLayerPaths();
+        if (std::find(paths.begin(), paths.end(), file.toStdString()) == paths.end())
+            myImpl->userEditsLayer->GetSubLayerPaths().push_back(file.toStdString());
+        myImpl->shotCamPath = "/World/Cameras/" + cid;
+    }
+    myImpl->suppressWatcherReload = suppress;
+}
+
+void UsdViewportWidget::snapCameraToView() {
+    if (!myImpl->stage || !myImpl->cameraTools) return;
+    pushUndoSnapshot();
+    auto rig = myImpl->cameraTools->rigData();
+    const double cp = std::cos(myImpl->pitch);
+    CameraRigPoint point;
+    point.position = myImpl->target + QVector3D(std::sin(myImpl->yaw)*cp, std::sin(myImpl->pitch), std::cos(myImpl->yaw)*cp)*myImpl->distance;
+    point.focalLength = rig.focalStart;
+    if (rig.points.isEmpty()) rig.pathStartS = myImpl->currentFrame/myImpl->fps;
+    rig.points.append(point);
+    myImpl->cameraTools->setRigData(rig);
+    bakeCurrentCameraRig();
+    emit statusMessageChanged("View added as a camera waypoint");
+}
+
+void UsdViewportWidget::persistPrimPaths() {
+    if (!myImpl->userEditsLayer) return;
+    QJsonObject paths;
+    for (auto it = myImpl->primPaths.begin(); it != myImpl->primPaths.end(); ++it) {
+        QJsonArray points;
+        for (const auto& p : it.value()) points.append(QJsonArray{p.x(), p.y(), p.z()});
+        paths[it.key()] = points;
+    }
+    auto metadata = myImpl->userEditsLayer->GetCustomLayerData();
+    metadata["director_actor_paths"] = VtValue(QJsonDocument(paths).toJson(QJsonDocument::Compact).toStdString());
+    QJsonArray drawnPaths;
+    for (const auto& path : myImpl->explicitlyDrawnPrimPaths) drawnPaths.append(path);
+    metadata["director_drawn_paths"] = VtValue(QJsonDocument(drawnPaths).toJson(QJsonDocument::Compact).toStdString());
+    myImpl->userEditsLayer->SetCustomLayerData(metadata);
+    myImpl->stage->SetEditTarget(UsdEditTarget(myImpl->userEditsLayer));
+    for (auto it = myImpl->primPaths.begin(); it != myImpl->primPaths.end(); ++it) {
+        if (!it.key().startsWith("/World/Paths/") || it.value().size() < 2 ||
+            !myImpl->explicitlyDrawnPrimPaths.contains(it.key())) continue;
+        auto curve = UsdGeomBasisCurves::Define(myImpl->stage, SdfPath(it.key().toStdString()));
+        curve.CreatePurposeAttr().Set(UsdGeomTokens->guide);
+        curve.CreateTypeAttr().Set(UsdGeomTokens->linear);
+        VtVec3fArray points; for (const auto& p : it.value()) points.push_back(GfVec3f(p.x(),p.y(),p.z()));
+        curve.CreatePointsAttr().Set(points); curve.CreateCurveVertexCountsAttr().Set(VtIntArray{int(points.size())});
+    }
+    myImpl->userEditsLayer->Save();
+}
+void UsdViewportWidget::setDirectorBrief(const QJsonObject& brief) { myImpl->directorBrief = brief; update(); }
+void UsdViewportWidget::setPathLint(const QStringList& paths) { myImpl->lintPaths = paths; update(); }
+
+QString UsdViewportWidget::captureUndoState() const {
+    if (!myImpl->userEditsLayer) return {};
+    std::string layer; myImpl->userEditsLayer->ExportToString(&layer);
+    QFile authored(myImpl->userEditsPath); QByteArray raw;
+    if (authored.open(QIODevice::ReadOnly)) raw = authored.readAll();
+    const QString file = QFileInfo(myImpl->stagePath).dir().filePath("camera_rig.json");
+    QFile camera(file); const bool exists = camera.exists(); QByteArray cameraBytes;
+    if (camera.open(QIODevice::ReadOnly)) cameraBytes = camera.readAll();
+    QJsonObject paths;
+    for (auto it=myImpl->primPaths.begin();it!=myImpl->primPaths.end();++it) {
+        QJsonArray points; for(const auto& p:it.value())points.append(QJsonArray{p.x(),p.y(),p.z()});paths[it.key()]=points;
+    }
+    return QString::fromUtf8(QJsonDocument(QJsonObject{{"layer",QString::fromStdString(layer)}, {"raw_layer",QString::fromLatin1(raw.toBase64())},
+        {"camera_exists",exists},{"camera",QString::fromLatin1(cameraBytes.toBase64())},{"paths",paths},
+        {"drawn_paths",QJsonArray::fromStringList(explicitlyDrawnPrimPaths())}}).toJson(QJsonDocument::Compact));
+}
+
+void UsdViewportWidget::restoreUndoState(const QString& snapshot) {
+    const auto state=QJsonDocument::fromJson(snapshot.toUtf8()).object();
+    myImpl->userEditsLayer->ImportFromString(state["layer"].toString().toStdString());
+    QSaveFile layer(myImpl->userEditsPath);
+    if(layer.open(QIODevice::WriteOnly)){layer.write(QByteArray::fromBase64(state["raw_layer"].toString().toLatin1()));layer.commit();}
+    myImpl->primPaths.clear();const auto paths=state["paths"].toObject();
+    for(auto it=paths.begin();it!=paths.end();++it){QVector<QVector3D> points;for(const auto& value:it.value().toArray()){auto a=value.toArray();if(a.size()==3)points.append(QVector3D(a[0].toDouble(),a[1].toDouble(),a[2].toDouble()));}myImpl->primPaths[it.key()]=points;}
+    QStringList drawnPaths;
+    for (const auto& value : state["drawn_paths"].toArray()) drawnPaths.append(value.toString());
+    setExplicitlyDrawnPrimPaths(drawnPaths);
+    myImpl->lastDrawnPrimPath.clear();
+    const QString file=QFileInfo(myImpl->stagePath).dir().filePath("camera_rig.json");
+    if(state["camera_exists"].toBool()){
+        const auto bytes=QByteArray::fromBase64(state["camera"].toString().toLatin1());QSaveFile camera(file);
+        if(camera.open(QIODevice::WriteOnly)){camera.write(bytes);camera.commit();}
+        setCameraDocument(QJsonDocument::fromJson(bytes).object());myImpl->cameraPreviewTimer->start();
+    }else{
+        QFile::remove(file);myImpl->cameraDocument={};myImpl->shotCamPath="/World/ShotCam";
+        CameraRigData rig;if(convertShotCamToRig(myImpl->stage,myImpl->startFrame,myImpl->endFrame,myImpl->fps,rig))myImpl->cameraTools->setRigData(rig);
+    }
+    emit primPathChanged(QString());
+}
+
+void UsdViewportWidget::flushCameraPreview() {
+    if (myImpl->cameraPreviewTimer) myImpl->cameraPreviewTimer->stop();
+    if (myImpl->cameraPreviewProcess) {
+        auto* process=myImpl->cameraPreviewProcess;
+        if (!process->waitForFinished(5000)) {process->kill();process->waitForFinished(1000);}
+    }
+}

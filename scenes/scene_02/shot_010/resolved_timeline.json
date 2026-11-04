@@ -1,0 +1,664 @@
+{
+  "total_duration_s": 14.708,
+  "fps": 24,
+  "beats": [
+    {
+      "beat_id": "drive_to_1",
+      "actor_id": "car_1",
+      "function": "drive_to",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {
+        "target": "south",
+        "speed": "normal",
+        "wait_for": []
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_to_1.started": 0.0,
+        "drive_to_1.finished": 3.0,
+        "car_1.started": 0.0,
+        "car_1.finished": 3.0,
+        "car_1.arrived": 3.0,
+        "drive_to_1.arrived": 3.0,
+        "car_1.stopped": 3.0,
+        "drive_to_1.stopped": 3.0
+      }
+    },
+    {
+      "beat_id": "drive_to_2",
+      "actor_id": "car_2",
+      "function": "drive_to",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {
+        "target": "south",
+        "speed": "normal",
+        "wait_for": []
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_to_2.started": 0.0,
+        "drive_to_2.finished": 3.0,
+        "car_2.started": 0.0,
+        "car_2.finished": 3.0,
+        "car_2.arrived": 3.0,
+        "drive_to_2.arrived": 3.0,
+        "car_2.stopped": 3.0,
+        "drive_to_2.stopped": 3.0
+      }
+    },
+    {
+      "beat_id": "idle_human_1_0",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_human_2_0",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 0.0,
+      "end_time": 3.0,
+      "duration": 3.0,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_car_1_300",
+      "actor_id": "car_1",
+      "function": "wait",
+      "start_time": 3.0,
+      "end_time": 11.2,
+      "duration": 8.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_car_2_300",
+      "actor_id": "car_2",
+      "function": "wait",
+      "start_time": 3.0,
+      "end_time": 14.708,
+      "duration": 11.708,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "exit_vehicle_3",
+      "actor_id": "human_1",
+      "function": "exit_vehicle",
+      "start_time": 3.0,
+      "end_time": 5.0,
+      "duration": 2.0,
+      "params": {
+        "door_part": "door_fl",
+        "vehicle": "car_1",
+        "target": "car_1:door_fl_stand",
+        "part": "car_1:door_fl",
+        "wait_for": [
+          "drive_to_1",
+          "drive_to_2"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "exit_vehicle_3.started": 3.0,
+        "exit_vehicle_3.finished": 5.0,
+        "human_1.started": 3.0,
+        "human_1.finished": 5.0
+      }
+    },
+    {
+      "beat_id": "exit_vehicle_4",
+      "actor_id": "human_2",
+      "function": "exit_vehicle",
+      "start_time": 3.0,
+      "end_time": 5.0,
+      "duration": 2.0,
+      "params": {
+        "door_part": "door_fl",
+        "vehicle": "car_2",
+        "target": "car_2:door_fl_stand",
+        "part": "car_2:door_fl",
+        "wait_for": [
+          "drive_to_1",
+          "drive_to_2"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "exit_vehicle_4.started": 3.0,
+        "exit_vehicle_4.finished": 5.0,
+        "human_2.started": 3.0,
+        "human_2.finished": 5.0
+      }
+    },
+    {
+      "beat_id": "use_weapon_5",
+      "actor_id": "human_1",
+      "function": "use_weapon",
+      "start_time": 5.0,
+      "end_time": 7.0,
+      "duration": 2.0,
+      "params": {
+        "target": "human_2",
+        "weapon": "pistol",
+        "action": "shoot",
+        "wait_for": [
+          "exit_vehicle_3",
+          "exit_vehicle_4"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "use_weapon_5.started": 5.0,
+        "use_weapon_5.finished": 7.0,
+        "human_1.started": 5.0,
+        "human_1.finished": 7.0
+      }
+    },
+    {
+      "beat_id": "use_weapon_6",
+      "actor_id": "human_2",
+      "function": "use_weapon",
+      "start_time": 5.0,
+      "end_time": 7.0,
+      "duration": 2.0,
+      "params": {
+        "target": "human_1",
+        "weapon": "pistol",
+        "action": "shoot",
+        "wait_for": [
+          "exit_vehicle_3",
+          "exit_vehicle_4"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "use_weapon_6.started": 5.0,
+        "use_weapon_6.finished": 7.0,
+        "human_2.started": 5.0,
+        "human_2.finished": 7.0
+      }
+    },
+    {
+      "beat_id": "idle_human_1_700",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 7.0,
+      "end_time": 9.2,
+      "duration": 2.2,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "collapse_or_knockout_7",
+      "actor_id": "human_2",
+      "function": "collapse_or_knockout",
+      "start_time": 7.0,
+      "end_time": 9.2,
+      "duration": 2.2,
+      "params": {
+        "style": "dying",
+        "wait_for": [
+          "use_weapon_5",
+          "use_weapon_6"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "collapse_or_knockout_7.started": 7.0,
+        "collapse_or_knockout_7.finished": 9.2,
+        "human_2.started": 7.0,
+        "human_2.finished": 9.2
+      }
+    },
+    {
+      "beat_id": "enter_vehicle_8",
+      "actor_id": "human_1",
+      "function": "enter_vehicle",
+      "start_time": 9.2,
+      "end_time": 11.2,
+      "duration": 2.0,
+      "params": {
+        "target": "car_1:driver_seat",
+        "vehicle": "car_1",
+        "seat": "driver_seat",
+        "wait_for": [
+          "collapse_or_knockout_7"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "enter_vehicle_8.started": 9.2,
+        "enter_vehicle_8.finished": 11.2,
+        "human_1.started": 9.2,
+        "human_1.finished": 11.2
+      }
+    },
+    {
+      "beat_id": "idle_human_2_919",
+      "actor_id": "human_2",
+      "function": "wait",
+      "start_time": 9.2,
+      "end_time": 14.708,
+      "duration": 5.508,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "drive_to_9",
+      "actor_id": "car_1",
+      "function": "drive_to",
+      "start_time": 11.2,
+      "end_time": 14.2,
+      "duration": 3.0,
+      "params": {
+        "target": "east",
+        "speed": "fast",
+        "wait_for": [
+          "enter_vehicle_8"
+        ]
+      },
+      "is_idle_fill": false,
+      "events": {
+        "drive_to_9.started": 11.2,
+        "drive_to_9.finished": 14.2,
+        "car_1.started": 11.2,
+        "car_1.finished": 14.2,
+        "car_1.arrived": 14.2,
+        "drive_to_9.arrived": 14.2,
+        "car_1.stopped": 14.2,
+        "drive_to_9.stopped": 14.2
+      }
+    },
+    {
+      "beat_id": "idle_human_1_1120",
+      "actor_id": "human_1",
+      "function": "wait",
+      "start_time": 11.2,
+      "end_time": 14.708,
+      "duration": 3.508,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    },
+    {
+      "beat_id": "idle_car_1_1420",
+      "actor_id": "car_1",
+      "function": "wait",
+      "start_time": 14.2,
+      "end_time": 14.708,
+      "duration": 0.508,
+      "params": {},
+      "is_idle_fill": true,
+      "events": {}
+    }
+  ],
+  "events": {
+    "drive_to_1.started": 0.0,
+    "drive_to_1.finished": 3.0,
+    "car_1.started": 11.2,
+    "car_1.finished": 14.2,
+    "car_1.arrived": 14.2,
+    "drive_to_1.arrived": 3.0,
+    "car_1.stopped": 14.2,
+    "drive_to_1.stopped": 3.0,
+    "drive_to_2.started": 0.0,
+    "drive_to_2.finished": 3.0,
+    "car_2.started": 0.0,
+    "car_2.finished": 3.0,
+    "car_2.arrived": 3.0,
+    "drive_to_2.arrived": 3.0,
+    "car_2.stopped": 3.0,
+    "drive_to_2.stopped": 3.0,
+    "exit_vehicle_3.started": 3.0,
+    "exit_vehicle_3.finished": 5.0,
+    "human_1.started": 9.2,
+    "human_1.finished": 11.2,
+    "exit_vehicle_4.started": 3.0,
+    "exit_vehicle_4.finished": 5.0,
+    "human_2.started": 7.0,
+    "human_2.finished": 9.2,
+    "use_weapon_5.started": 5.0,
+    "use_weapon_5.finished": 7.0,
+    "use_weapon_6.started": 5.0,
+    "use_weapon_6.finished": 7.0,
+    "collapse_or_knockout_7.started": 7.0,
+    "collapse_or_knockout_7.finished": 9.2,
+    "enter_vehicle_8.started": 9.2,
+    "enter_vehicle_8.finished": 11.2,
+    "drive_to_9.started": 11.2,
+    "drive_to_9.finished": 14.2,
+    "drive_to_9.arrived": 14.2,
+    "drive_to_9.stopped": 14.2
+  },
+  "actor_schedules": {
+    "car_1": [
+      {
+        "beat_id": "drive_to_1",
+        "actor_id": "car_1",
+        "function": "drive_to",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {
+          "target": "south",
+          "speed": "normal",
+          "wait_for": []
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_to_1.started": 0.0,
+          "drive_to_1.finished": 3.0,
+          "car_1.started": 0.0,
+          "car_1.finished": 3.0,
+          "car_1.arrived": 3.0,
+          "drive_to_1.arrived": 3.0,
+          "car_1.stopped": 3.0,
+          "drive_to_1.stopped": 3.0
+        }
+      },
+      {
+        "beat_id": "idle_car_1_300",
+        "actor_id": "car_1",
+        "function": "wait",
+        "start_time": 3.0,
+        "end_time": 11.2,
+        "duration": 8.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "drive_to_9",
+        "actor_id": "car_1",
+        "function": "drive_to",
+        "start_time": 11.2,
+        "end_time": 14.2,
+        "duration": 3.0,
+        "params": {
+          "target": "east",
+          "speed": "fast",
+          "wait_for": [
+            "enter_vehicle_8"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_to_9.started": 11.2,
+          "drive_to_9.finished": 14.2,
+          "car_1.started": 11.2,
+          "car_1.finished": 14.2,
+          "car_1.arrived": 14.2,
+          "drive_to_9.arrived": 14.2,
+          "car_1.stopped": 14.2,
+          "drive_to_9.stopped": 14.2
+        }
+      },
+      {
+        "beat_id": "idle_car_1_1420",
+        "actor_id": "car_1",
+        "function": "wait",
+        "start_time": 14.2,
+        "end_time": 14.708,
+        "duration": 0.508,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_1": [
+      {
+        "beat_id": "idle_human_1_0",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "exit_vehicle_3",
+        "actor_id": "human_1",
+        "function": "exit_vehicle",
+        "start_time": 3.0,
+        "end_time": 5.0,
+        "duration": 2.0,
+        "params": {
+          "door_part": "door_fl",
+          "vehicle": "car_1",
+          "target": "car_1:door_fl_stand",
+          "part": "car_1:door_fl",
+          "wait_for": [
+            "drive_to_1",
+            "drive_to_2"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "exit_vehicle_3.started": 3.0,
+          "exit_vehicle_3.finished": 5.0,
+          "human_1.started": 3.0,
+          "human_1.finished": 5.0
+        }
+      },
+      {
+        "beat_id": "use_weapon_5",
+        "actor_id": "human_1",
+        "function": "use_weapon",
+        "start_time": 5.0,
+        "end_time": 7.0,
+        "duration": 2.0,
+        "params": {
+          "target": "human_2",
+          "weapon": "pistol",
+          "action": "shoot",
+          "wait_for": [
+            "exit_vehicle_3",
+            "exit_vehicle_4"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "use_weapon_5.started": 5.0,
+          "use_weapon_5.finished": 7.0,
+          "human_1.started": 5.0,
+          "human_1.finished": 7.0
+        }
+      },
+      {
+        "beat_id": "idle_human_1_700",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 7.0,
+        "end_time": 9.2,
+        "duration": 2.2,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "enter_vehicle_8",
+        "actor_id": "human_1",
+        "function": "enter_vehicle",
+        "start_time": 9.2,
+        "end_time": 11.2,
+        "duration": 2.0,
+        "params": {
+          "target": "car_1:driver_seat",
+          "vehicle": "car_1",
+          "seat": "driver_seat",
+          "wait_for": [
+            "collapse_or_knockout_7"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "enter_vehicle_8.started": 9.2,
+          "enter_vehicle_8.finished": 11.2,
+          "human_1.started": 9.2,
+          "human_1.finished": 11.2
+        }
+      },
+      {
+        "beat_id": "idle_human_1_1120",
+        "actor_id": "human_1",
+        "function": "wait",
+        "start_time": 11.2,
+        "end_time": 14.708,
+        "duration": 3.508,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "car_2": [
+      {
+        "beat_id": "drive_to_2",
+        "actor_id": "car_2",
+        "function": "drive_to",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {
+          "target": "south",
+          "speed": "normal",
+          "wait_for": []
+        },
+        "is_idle_fill": false,
+        "events": {
+          "drive_to_2.started": 0.0,
+          "drive_to_2.finished": 3.0,
+          "car_2.started": 0.0,
+          "car_2.finished": 3.0,
+          "car_2.arrived": 3.0,
+          "drive_to_2.arrived": 3.0,
+          "car_2.stopped": 3.0,
+          "drive_to_2.stopped": 3.0
+        }
+      },
+      {
+        "beat_id": "idle_car_2_300",
+        "actor_id": "car_2",
+        "function": "wait",
+        "start_time": 3.0,
+        "end_time": 14.708,
+        "duration": 11.708,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ],
+    "human_2": [
+      {
+        "beat_id": "idle_human_2_0",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 0.0,
+        "end_time": 3.0,
+        "duration": 3.0,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      },
+      {
+        "beat_id": "exit_vehicle_4",
+        "actor_id": "human_2",
+        "function": "exit_vehicle",
+        "start_time": 3.0,
+        "end_time": 5.0,
+        "duration": 2.0,
+        "params": {
+          "door_part": "door_fl",
+          "vehicle": "car_2",
+          "target": "car_2:door_fl_stand",
+          "part": "car_2:door_fl",
+          "wait_for": [
+            "drive_to_1",
+            "drive_to_2"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "exit_vehicle_4.started": 3.0,
+          "exit_vehicle_4.finished": 5.0,
+          "human_2.started": 3.0,
+          "human_2.finished": 5.0
+        }
+      },
+      {
+        "beat_id": "use_weapon_6",
+        "actor_id": "human_2",
+        "function": "use_weapon",
+        "start_time": 5.0,
+        "end_time": 7.0,
+        "duration": 2.0,
+        "params": {
+          "target": "human_1",
+          "weapon": "pistol",
+          "action": "shoot",
+          "wait_for": [
+            "exit_vehicle_3",
+            "exit_vehicle_4"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "use_weapon_6.started": 5.0,
+          "use_weapon_6.finished": 7.0,
+          "human_2.started": 5.0,
+          "human_2.finished": 7.0
+        }
+      },
+      {
+        "beat_id": "collapse_or_knockout_7",
+        "actor_id": "human_2",
+        "function": "collapse_or_knockout",
+        "start_time": 7.0,
+        "end_time": 9.2,
+        "duration": 2.2,
+        "params": {
+          "style": "dying",
+          "wait_for": [
+            "use_weapon_5",
+            "use_weapon_6"
+          ]
+        },
+        "is_idle_fill": false,
+        "events": {
+          "collapse_or_knockout_7.started": 7.0,
+          "collapse_or_knockout_7.finished": 9.2,
+          "human_2.started": 7.0,
+          "human_2.finished": 9.2
+        }
+      },
+      {
+        "beat_id": "idle_human_2_919",
+        "actor_id": "human_2",
+        "function": "wait",
+        "start_time": 9.2,
+        "end_time": 14.708,
+        "duration": 5.508,
+        "params": {},
+        "is_idle_fill": true,
+        "events": {}
+      }
+    ]
+  }
+}

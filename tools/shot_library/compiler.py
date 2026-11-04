@@ -32,17 +32,303 @@ sys.path.insert(0, str(REPO_ROOT / "tools" / "shot_library"))
 
 from actor_registry import ActorAppearance, ActorRecord, ActorRegistry
 from camera_controller import CameraController
+from crowd_spacing import actor_envelopes, space_standing_actors
 from asset_matcher import ManifestAssetMatcher, tokenize
 from manifest_schema import enrich_manifest
 from motion_synthesis import ActorPerformance, Keyframe, MotionSynthesizer
-from plan_model import Beat, SetupAction, ShotPlan, StructuredError
+from plan_model import Beat, SetupAction, ShotPlan, StructuredError, TimingCondition
 from semantic_references import ReferenceResolver, ResolvedTarget
 from shot_linter import ShotLinter
 from timeline_resolver import ResolvedBeat, ResolvedTimeline, TimelineResolver
 
 
+def missing_local_sublayers(scene_usda_path: Path) -> List[Dict[str, str]]:
+    """Find broken local dependencies throughout a scene's layer tree."""
+    from pxr import Sdf
+
+    missing: List[Dict[str, str]] = []
+    visited = set()
+
+    def visit(path: Path) -> None:
+        path = path.resolve()
+        if path in visited:
+            return
+        visited.add(path)
+        layer = Sdf.Layer.FindOrOpen(str(path))
+        if layer is None:
+            return
+        for authored in layer.subLayerPaths:
+            resolved = Sdf.ComputeAssetPathRelativeToLayer(layer, authored)
+            if not resolved or "://" in resolved:
+                continue
+            child = Path(resolved)
+            if not child.is_absolute():
+                child = path.parent / child
+            child = child.resolve()
+            if not child.exists():
+                missing.append({
+                    "source_layer": str(path),
+                    "authored_path": authored,
+                    "resolved_path": str(child),
+                })
+            else:
+                visit(child)
+
+    visit(scene_usda_path)
+    return missing
+
+
 class ShotCompiler:
-    def __init__(self, project_root: Optional[Path] = None, fps: int = 24) -> None:
+    @staticmethod
+    def _actor_synthesis_order(actor_ids, actor_schedules, initial_states):
+        """Resolve a moving target's trajectory before an actor travels to it."""
+        moving = {
+            "exit_vehicle", "enter_vehicle", "walk_to", "run_to", "jog_to",
+            "sneak_to", "approach", "flee_from", "follow", "disperse",
+            "crawl_to", "stumble_to", "back_up_to", "carry_to", "swim_to",
+            "fly_to", "take_cover", "jump_on", "jump_down", "jump_over",
+            "climb_stairs", "climb_surface", "vault_over", "stage_pair",
+        }
+        aliases = {actor_id.lower(): actor_id for actor_id in actor_ids}
+        aliases.update({str(initial_states[actor_id].get("label")).lower(): actor_id
+                        for actor_id in actor_ids if initial_states[actor_id].get("label")})
+        dependencies = {actor_id: set() for actor_id in actor_ids}
+        for actor_id in actor_ids:
+            for beat in actor_schedules.get(actor_id, []):
+                if beat.function not in moving:
+                    continue
+                target_id = aliases.get(str(beat.params.get("target") or "").lower())
+                if target_id and target_id != actor_id and any(
+                        candidate.function in moving
+                        for candidate in actor_schedules.get(target_id, [])):
+                    dependencies[actor_id].add(target_id)
+        ordered = []
+        remaining = list(actor_ids)
+        while remaining:
+            ready = next((actor_id for actor_id in remaining
+                          if dependencies[actor_id].issubset(ordered)), None)
+            if ready is None:
+                raise ValueError(
+                    "Mutual movement targets require a joint trajectory: "
+                    + ", ".join(remaining))
+            ordered.append(ready)
+            remaining.remove(ready)
+        return ordered
+
+    def _prepare_stair_climbs(self, plan: ShotPlan, initial_states: Dict[str, Dict[str, Any]],
+                              synthesizer: MotionSynthesizer) -> Optional[StructuredError]:
+        """Fit prompt stair actions to the real flight and assign opposite tread lanes."""
+        stair_groups: Dict[Tuple[str, str], List[Beat]] = {}
+        for beat in plan.beats:
+            if beat.function != "climb_stairs":
+                continue
+            info = synthesizer._resolve_stair(str(beat.params.get("stairs", "")))
+            if not info:
+                return StructuredError(
+                    "STAIR_NOT_IN_SCENE", "The requested stair is not present in the starting scene.",
+                    beat_id=beat.beat_id, actor_id=beat.actor_id,
+                    suggestions=["Use a stair portal on an existing scene asset."])
+            stair_groups.setdefault((info["asset_id"], info["stair_id"]), []).append(beat)
+
+        for key, beats in stair_groups.items():
+            info = synthesizer._resolve_stair(beats[0].params["stairs"])
+            stair = info["data"]
+            width = float(stair.get("width_m", 0.0))
+            if len({b.actor_id for b in beats}) == 2 and len(beats) == 2:
+                if width < 1.2:
+                    return StructuredError("STAIR_TOO_NARROW", "Two climbers need separate usable stair lanes.",
+                                           beat_id=beats[0].beat_id)
+                centerline = stair.get("centerline", [])
+                if len(centerline) >= 2:
+                    p0, p1 = centerline[0], centerline[-1]
+                    dx, dz = p1[0] - p0[0], p1[2] - p0[2]
+                    length = max(1e-6, math.hypot(dx, dz))
+                    lateral = (-dz / length, dx / length)
+                    beats.sort(key=lambda b: (
+                        (initial_states.get(b.actor_id, {}).get("position", p0)[0] - p0[0]) * lateral[0]
+                        + (initial_states.get(b.actor_id, {}).get("position", p0)[2] - p0[2]) * lateral[1]))
+                    lane = min(0.4, width * 0.5 - 0.25)
+                    beats[0].params["stair_lane_offset_m"] = -lane
+                    beats[1].params["stair_lane_offset_m"] = lane
+                    beats[0].params["stair_exit_distance_m"] = 0.8
+                    if beats[1].start_condition is None:
+                        beats[1].start_condition = TimingCondition("at", 1.2)
+                    later = next((b for b in plan.beats[plan.beats.index(beats[0]) + 1:]
+                                  if b.actor_id == beats[0].actor_id and b.function != "climb_stairs"), None)
+                    if later is not None and later.start_condition is None:
+                        later.start_condition = TimingCondition("after", f"{beats[1].beat_id}.finished")
+
+            for beat in beats:
+                if beat.params.get("exact_window") or beat.duration_condition is not None:
+                    continue
+                pts = [list(p) for p in stair.get("centerline", [])]
+                if len(pts) < 2:
+                    continue
+                if beat.params.get("direction", "up") == "down":
+                    pts.reverse()
+                offset = float(beat.params.get("stair_lane_offset_m", 0.0))
+                dx, dz = pts[-1][0] - pts[0][0], pts[-1][2] - pts[0][2]
+                length = max(1e-6, math.hypot(dx, dz))
+                entry = [pts[0][0] - dz / length * offset, pts[0][2] + dx / length * offset]
+                source = initial_states.get(beat.actor_id, {}).get("position", pts[0])
+                approach = math.hypot(source[0] - entry[0], source[2] - entry[1])
+                if approach > 0.5:
+                    back_x, back_z = -dx / length * 0.7, -dz / length * 0.7
+                    approach_pts = [list(source),
+                                    [source[0] + back_x, source[1], source[2] + back_z],
+                                    [entry[0] + back_x, pts[0][1], entry[1] + back_z],
+                                    [entry[0], pts[0][1], entry[1]]]
+                    approach = sum(math.dist(a, b) for a, b in zip(approach_pts, approach_pts[1:]))
+                flight = sum(math.hypot(b[0] - a[0], b[2] - a[2]) for a, b in zip(pts, pts[1:]))
+                run = beat.params.get("pace", "walk") == "run"
+                climb_speed = float(beat.params.get("speed_mps") or (2.0 if run else 0.65))
+                max_speed = 1.0 if beat.params.get("direction") == "down" else (2.5 if run else 0.8)
+                climb_speed = min(climb_speed, max_speed)
+                needed = (approach / (3.0 if run else 1.25) if approach > 0.15 else 0.0) + flight / max(0.1, climb_speed)
+                needed += float(beat.params.get("stair_exit_distance_m", 0.0)) / (3.0 if run else 1.25)
+                default = 2.5 if run else 6.0
+                beat.duration_condition = TimingCondition("for_duration", max(default, needed))
+        return None
+
+    @staticmethod
+    def _release_animated_actor_overrides(shot_path: Path) -> None:
+        """Let generated motion show through static editor placement opinions.
+
+        The editor stores initial placement in its stronger session layer.  Once
+        that placement has been consumed by the compiler, its default xform
+        values would mask every time sample in shot.usda.
+        """
+        from pxr import Sdf, Usd
+
+        edits_path = shot_path.parent / "user_edits.usda"
+        if not edits_path.exists():
+            return
+        shot = Usd.Stage.Open(str(shot_path))
+        shot_layer = Sdf.Layer.FindOrOpen(str(shot_path))
+        edits = Sdf.Layer.FindOrOpen(str(edits_path))
+        if not shot or not shot_layer or not edits:
+            return
+        edits.Reload()
+        changed = False
+        for prim in shot.Traverse():
+            motion = prim.GetAttribute("xformOp:translate")
+            if not motion or not motion.GetNumTimeSamples():
+                continue
+            spec = edits.GetPrimAtPath(prim.GetPath())
+            if not spec:
+                continue
+            generated_spec = shot_layer.GetPrimAtPath(prim.GetPath())
+            generated_refs = (generated_spec.referenceList.GetAddedOrExplicitItems()
+                              if generated_spec else [])
+            manual_refs = spec.referenceList.prependedItems
+            if generated_refs and manual_refs and all(
+                    any(Path(manual.assetPath).with_suffix("") ==
+                        Path(generated.assetPath).with_suffix("")
+                        for generated in generated_refs)
+                    for manual in manual_refs):
+                spec.referenceList.ClearEdits()
+                changed = True
+            edited_motion = spec.properties.get("xformOp:translate")
+            if edited_motion and edited_motion.ListTimeSamples():
+                continue  # An explicit animated edit remains authoritative.
+            for name in ("xformOp:translate", "xformOp:rotateXYZ",
+                         "xformOp:rotateY", "xformOp:rotateX"):
+                prop = spec.properties.get(name)
+                if prop and not prop.ListTimeSamples():
+                    spec.RemoveProperty(prop)
+                    changed = True
+            order = spec.properties.get("xformOpOrder")
+            if order:
+                # Keep unrelated manual scale/transform ops alongside shot motion.
+                shot_order = list(prim.GetAttribute("xformOpOrder").Get() or [])
+                extras = [op for op in (order.default or [])
+                          if op not in shot_order and op in spec.properties]
+                if extras:
+                    order.default = shot_order + extras
+                else:
+                    spec.RemoveProperty(order)
+                changed = True
+        if changed:
+            edits.Save()
+
+    @staticmethod
+    def _restore_placed_actor_visibility(shot_path: Path, actor_paths: set[str]) -> None:
+        """Discard stale editor deletions when a plan explicitly places an actor again.
+
+        Scene snapshots are weaker than the generated shot, but the editor's
+        session layer is stronger. Keep all unrelated manual edits intact.
+        """
+        from pxr import Sdf
+
+        edits_path = shot_path.parent / "user_edits.usda"
+        if not actor_paths or not edits_path.exists():
+            return
+        edits = Sdf.Layer.FindOrOpen(str(edits_path))
+        if not edits:
+            return
+        edits.Reload()
+        changed = False
+        for path in actor_paths:
+            spec = edits.GetPrimAtPath(path)
+            if not spec:
+                continue
+            if spec.HasInfo("active") and spec.GetInfo("active") is False:
+                spec.ClearInfo("active")
+                changed = True
+            visibility = spec.properties.get("visibility")
+            if (visibility and visibility.default == "invisible"
+                    and not visibility.ListTimeSamples()):
+                spec.RemoveProperty(visibility)
+                changed = True
+        if changed:
+            edits.Save()
+
+    @staticmethod
+    def _read_existing_actors(shot_path: Path, actors: Optional[set], tracks: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        """Resolve action actors against the same root/session composition as the editor."""
+        from pxr import Gf, Sdf, Usd, UsdGeom
+
+        if not shot_path.exists():
+            return {}
+        root = Sdf.Layer.FindOrOpen(str(shot_path))
+        edits_path = shot_path.parent / "user_edits.usda"
+        edits = Sdf.Layer.FindOrOpen(str(edits_path)) if edits_path.exists() else None
+        stage = Usd.Stage.Open(root, edits) if edits else Usd.Stage.Open(root)
+        if actors is None:
+            actors = {str(p.GetCustomDataByKey("actor_id") or p.GetName())
+                      for p in stage.Traverse() if p.GetCustomDataByKey("asset_id")
+                      and UsdGeom.Xformable(p)}
+        result = {}
+        for actor in actors:
+            path = tracks.get(actor, {}).get("actor_path") or "/World/" + actor
+            prim = stage.GetPrimAtPath(path)
+            if not prim or not prim.IsActive():
+                prim = next((p for p in stage.Traverse()
+                             if p.GetCustomDataByKey("actor_id") == actor), None)
+            if not prim or not prim.IsActive():
+                continue
+            asset_id = prim.GetCustomDataByKey("asset_id")
+            if not asset_id or not UsdGeom.Xformable(prim):
+                continue
+            transform = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode(0))
+            forward = transform.TransformDir(Gf.Vec3d(0, 0, -1))
+            appearance = ActorAppearance(
+                color_variant=str(prim.GetCustomDataByKey("appearance_variant") or "default"),
+                height_scale=float(prim.GetCustomDataByKey("height_scale") or 1.0),
+                tint_rgb=list(prim.GetCustomDataByKey("tint_rgb") or [1.0, 1.0, 1.0]),
+            )
+            result[actor] = {
+                "actor_id": actor, "label": prim.GetName(), "prim_path": str(prim.GetPath()),
+                "asset_id": str(asset_id), "position": list(transform.ExtractTranslation()),
+                "facing_deg": math.degrees(math.atan2(forward[0], -forward[2])) % 360.0,
+                "is_vehicle": "car" in asset_id or "vehicle" in asset_id,
+                "appearance": appearance,
+            }
+        return result
+
+    def __init__(self, project_root: Optional[Path] = None, fps: int = 24, crowd_config=None) -> None:
+        from crowd.config import CrowdSolverConfig
+        self.crowd_config = crowd_config or CrowdSolverConfig()
         self.project_root = project_root or REPO_ROOT
         self.fps = fps
         self.manifest_path = self.project_root / "manifest.json"
@@ -57,6 +343,95 @@ class ShotCompiler:
         scene_usda_path: Optional[Path] = None,
         validate: bool = True,
     ) -> Tuple[bool, Dict[str, Any]]:
+        """Validate private candidates and promote only a passing shot.
+
+        ``validate=False`` remains an explicit development/preview bypass; it
+        does not run repair or certify collision freedom. Production queue
+        callers always use the validated path.
+        """
+        if validate and Path(output_shot_usda_path).name == 'scene.usda' and plan.beats:
+            return False, {'success': False, 'error': StructuredError(
+                'SCENE_ACTIONS_REQUIRE_SHOT',
+                'Action beats belong in a shot layer so later shots inherit only the shared scene.'
+            ).to_dict()}
+        if not validate:
+            return self._compile_once(copy.deepcopy(plan), output_shot_usda_path,
+                                      scene_usda_path, validate=False)
+        from dataclasses import replace
+        from compile_transaction import CompileTransaction, relocate_report
+        from crowd.repair import clearance_deficit, next_clearance
+
+        output = Path(output_shot_usda_path).resolve()
+        scene = Path(scene_usda_path).resolve() if scene_usda_path is not None else None
+        if output.name == 'scene.usda' and scene is not None and scene != output:
+            return False, {'success': False, 'error': StructuredError(
+                'SCENE_STAGE_SOURCE_MISMATCH',
+                'A scene-stage compile must use its output scene.usda as the source scene.').to_dict()}
+        history = []
+        clearance = self.crowd_config.buffer_m
+        for attempt in range(self.crowd_config.max_repair_attempts + 1):
+            with CompileTransaction(output) as transaction:
+                candidate = copy.copy(self)
+                candidate.crowd_config = replace(self.crowd_config, buffer_m=clearance)
+                candidate._spatial_layout_variant = attempt
+                staged_output = transaction.stage / output.name
+                staged_scene = (staged_output if output.name == 'scene.usda'
+                                else scene or output.parent.parent / 'scene.usda')
+                ok, report = candidate._compile_once(
+                    copy.deepcopy(plan), staged_output, staged_scene, validate=True)
+                report = relocate_report(report, transaction.stage, output.parent)
+                history.append({'attempt': attempt, 'planning_buffer_m': clearance,
+                                'success': ok, 'error': report.get('error'),
+                                'collision_report': report.get('validation', {}).get('collision_report')})
+                if plan.spatial_intents:
+                    history[-1]['spatial_layout_variant'] = candidate._spatial_layout_variant
+                if ok:
+                    report['crowd_repair'] = {'retries': attempt, 'attempts': history}
+                    validation_path = transaction.stage / 'validation_report.json'
+                    if validation_path.exists():
+                        validation = json.loads(validation_path.read_text())
+                        validation['crowd_repair'] = report['crowd_repair']
+                        validation_path.write_text(json.dumps(validation, indent=2) + '\n')
+                        report['validation'] = validation
+                    try:
+                        transaction.publish()
+                    except (OSError, RuntimeError) as exc:
+                        return False, {'success': False, 'error': StructuredError(
+                            'SHOT_PUBLICATION_FAILED', str(exc)).to_dict(), 'crowd_repair': report['crowd_repair']}
+                    return True, report
+                following = next_clearance(self.crowd_config, clearance, report)
+                # Region contracts authorize placement search. A failed route
+                # can try another checked grid layout without changing intent,
+                # authored input, or a previously published shot.
+                spatial_retry = (bool(plan.spatial_intents) and (report.get('error') or {}).get('error_code') in
+                                 {'SPATIAL_INTENT_LIMIT', 'SPATIAL_INTENT_CONFORMANCE', 'CROWD_ROUTE_LIMIT',
+                                  'SPATIAL_ROUTE_REGION', 'SPATIAL_ROUTE_CONFORMANCE', 'SPATIAL_ORIGIN_CONFORMANCE',
+                                  'CROWD_DESTINATION_LIMIT', 'INTERACTION_SIMULTANEOUS'})
+                if following is None and spatial_retry and attempt < self.crowd_config.max_repair_attempts:
+                    following = clearance
+                if following is None or attempt == self.crowd_config.max_repair_attempts:
+                    stopped = ('spatial_layout_attempt_limit' if spatial_retry else
+                               'unrepairable_failure' if clearance_deficit(report) is None
+                               else 'clearance_limit' if following is None else 'attempt_limit')
+                    report['crowd_repair'] = {'retries': attempt, 'attempts': history,
+                                             'stopped': stopped}
+                    if not report.get('error') and not report.get('validation', {}).get('collision_passed', True):
+                        report['error'] = StructuredError(
+                            'COLLISION_VALIDATION_FAILED',
+                            'Final animation failed collision validation; no candidate was published.',
+                            details={'repair_stop': stopped}).to_dict()
+                    # These paths belong to discarded candidates, not accepted output.
+                    report.pop('artifacts', None)
+                    return False, report
+                clearance = following
+
+    def _compile_once(
+        self,
+        plan: ShotPlan,
+        output_shot_usda_path: Path,
+        scene_usda_path: Optional[Path] = None,
+        validate: bool = True,
+    ) -> Tuple[bool, Dict[str, Any]]:
         """Compile a ShotPlan into a complete shot directory.
 
         Returns (success: bool, report: dict).
@@ -65,51 +440,139 @@ class ShotCompiler:
         shot_dir = output_shot_usda_path.parent
         shot_dir.mkdir(parents=True, exist_ok=True)
 
-        if not scene_usda_path:
+        # The output location defines a scene-stage compile. Callers may omit
+        # --scene, but that must never turn scene.usda into a shot layer that
+        # sublayers the nonexistent ../scene.usda.
+        is_scene_stage = output_shot_usda_path.name == "scene.usda"
+        if is_scene_stage:
+            if scene_usda_path is not None and scene_usda_path.resolve() != output_shot_usda_path:
+                return False, {"success": False, "error": StructuredError(
+                    "SCENE_STAGE_SOURCE_MISMATCH",
+                    "A scene-stage compile must use its output scene.usda as the source scene.",
+                ).to_dict()}
+            scene_usda_path = output_shot_usda_path
+        elif scene_usda_path is None:
             scene_usda_path = shot_dir.parent / "scene.usda"
 
+        if scene_usda_path.exists():
+            missing_sublayers = missing_local_sublayers(scene_usda_path)
+            if missing_sublayers:
+                return False, {"success": False, "error": StructuredError(
+                    "SCENE_SUBLAYER_MISSING",
+                    "The source scene has missing local sublayers; repair its layer references before compiling a shot.",
+                    details={"missing_sublayers": missing_sublayers},
+                ).to_dict()}
+
+        from director_brief import load_brief, merge_brief, check_conformance
+        try:
+            brief = load_brief(shot_dir / "director_brief.json")
+            from director_brief import validate_brief
+            from function_catalog import FunctionCatalog
+            allowed = {name for name in dir(FunctionCatalog) if not name.startswith('_')} | set(self.manifest.get('clips', {})) | {'sprint_to'}
+            lint = validate_brief(brief, actions=allowed)
+            if lint:
+                raise ValueError(json.dumps(lint))
+            from director_brief import enrich_brief_choices
+            brief = enrich_brief_choices(brief, self.manifest)
+            plan = merge_brief(brief, plan)
+            from combat_moves import resolve_attack_moves
+            for beat in plan.beats:
+                if beat.function == "attack":
+                    try:
+                        beat.params["moves"] = resolve_attack_moves(beat.params.get("moves"), self.manifest.get("clips", {}))
+                    except ValueError as exc:
+                        return False, {"success": False, "error": StructuredError(
+                            "ATTACK_CLIP", str(exc), beat_id=beat.beat_id,
+                        ).to_dict()}
+        except (ValueError, KeyError, TypeError) as exc:
+            return False, {"success": False, "error": {"error_code": "DIRECTOR_BRIEF", "message": str(exc)}}
+
         # Resolve immutable scene snapshot version
-        scene_dir = shot_dir.parent
+        # A scene-stage request writes back to scene.usda. Snapshot that source
+        # beside the output so the generated layer can keep the original scene
+        # without referring to itself.
+        scene_dir = shot_dir if is_scene_stage else shot_dir.parent
         scene_version_file = None
+        scene_edits_version_file = None
+        scene_edits_path = shot_dir / "user_edits.usda" if is_scene_stage else None
         if scene_usda_path and scene_usda_path.exists():
             v_files = []
             for f in scene_dir.glob("scene_v*.usda"):
                 m = re.match(r"^scene_v(\d+)\.usda$", f.name)
                 if m:
                     v_files.append((int(m.group(1)), f.name, f))
+            latest_num = 0
             if v_files:
                 v_files.sort(key=lambda x: x[0])
                 latest_num, latest_name, latest_file = v_files[-1]
                 scene_hash = hashlib.sha256(scene_usda_path.read_bytes()).hexdigest()
                 latest_hash = hashlib.sha256(latest_file.read_bytes()).hexdigest()
-                if scene_hash == latest_hash:
+                edits_match = True
+                if is_scene_stage:
+                    latest_edits = scene_dir / f"scene_edits_v{latest_num}.usda"
+                    edits_match = (scene_edits_path.exists() == latest_edits.exists())
+                    if edits_match and scene_edits_path.exists():
+                        edits_match = (hashlib.sha256(scene_edits_path.read_bytes()).digest()
+                                       == hashlib.sha256(latest_edits.read_bytes()).digest())
+                if scene_hash == latest_hash and edits_match:
                     scene_version_file = latest_name
-                else:
-                    new_num = latest_num + 1
-                    new_name = f"scene_v{new_num}.usda"
-                    new_path = scene_dir / new_name
-                    try:
-                        shutil.copy2(scene_usda_path, new_path)
-                        scene_version_file = new_name
-                        self._update_scene_json_snapshots(scene_dir, new_name, new_num)
-                    except Exception:
-                        scene_version_file = latest_name
-            else:
-                v1_path = scene_dir / "scene_v1.usda"
+                    if is_scene_stage and scene_edits_path.exists():
+                        scene_edits_version_file = f"scene_edits_v{latest_num}.usda"
+            if scene_version_file is None:
+                new_num = latest_num + 1
+                new_name = f"scene_v{new_num}.usda"
+                new_path = scene_dir / new_name
                 try:
-                    shutil.copy2(scene_usda_path, v1_path)
-                    scene_version_file = "scene_v1.usda"
-                    self._update_scene_json_snapshots(scene_dir, "scene_v1.usda", 1)
+                    shutil.copy2(scene_usda_path, new_path)
+                    if is_scene_stage and scene_edits_path.exists():
+                        scene_edits_version_file = f"scene_edits_v{new_num}.usda"
+                        shutil.copy2(scene_edits_path, scene_dir / scene_edits_version_file)
+                    scene_version_file = new_name
+                    self._update_scene_json_snapshots(scene_dir, new_name, new_num)
                 except Exception:
-                    pass
+                    if not is_scene_stage and v_files:
+                        scene_version_file = latest_name
+        if is_scene_stage and not scene_version_file:
+            return False, {"success": False, "error": {
+                "error_code": "SCENE_SNAPSHOT_FAILED",
+                "message": "Could not snapshot the starting scene before compiling into scene.usda.",
+            }}
+
+        from director_brief import expand_open_windows
+        # Mirror the paths selected by merge_brief. A saved prompt string alone
+        # cannot suppress a route, and unrelated unassigned paths stay guides.
+        synthetic_paths = {
+            pid for pid, path in brief.get("paths", {}).items()
+            if any(b.beat_id == f"{path['owner']}.route_{pid}" for b in plan.beats)
+        }
+        brief = expand_open_windows(brief, synthesize_path_only=True,
+                                    path_ids=synthetic_paths)
 
         # 1. Parse scene context (zones, static objects)
-        scene_data = self._read_scene_context(scene_usda_path)
-        ref_resolver = ReferenceResolver(self.manifest, scene_data)
+        scene_data = self._read_scene_context(scene_usda_path, shot_dir=shot_dir)
+        if validate and scene_data.get("read_error"):
+            return False, {"success": False, "error": StructuredError(
+                "SCENE_CONTEXT_UNAVAILABLE",
+                "The scene geometry could not be read for spatial planning and collision checks.",
+                details={"reason": scene_data["read_error"]},
+            ).to_dict()}
+        uncovered = scene_data.get("unprotected_scene_objects", [])
+        if validate and uncovered and (plan.beats or plan.setup):
+            return False, {"success": False, "error": StructuredError(
+                "SCENE_COLLISION_COVERAGE",
+                "Scene geometry has no collision coverage, so actor and vehicle placements cannot be certified.",
+                details={"objects": uncovered},
+            ).to_dict()}
+        ref_resolver = ReferenceResolver(self.manifest, scene_data, self.crowd_config)
 
         # 2. Setup actors and initialize registry
         registry = ActorRegistry()
         actor_initial_states: Dict[str, Dict[str, Any]] = {}
+        existing_actors = self._read_existing_actors(
+            output_shot_usda_path,
+            {b.actor_id for b in plan.beats} | {s.actor_id for s in plan.setup if s.actor_id},
+            brief.get("tracks", {}),
+        )
 
         for setup_act in plan.setup:
             if setup_act.action_type == "place":
@@ -117,32 +580,50 @@ class ShotCompiler:
                 app = None
                 if setup_act.appearance:
                     app = ActorAppearance.from_dict(setup_act.appearance)
+                elif setup_act.actor_id in existing_actors:
+                    app = existing_actors[setup_act.actor_id]["appearance"]
 
                 rec = registry.register(
-                    asset_id=asset_id,
-                    label=setup_act.label,
+                    asset_id=existing_actors.get(setup_act.actor_id, {}).get("asset_id", asset_id),
+                    label=existing_actors.get(setup_act.actor_id, {}).get("label", setup_act.label),
                     actor_id=setup_act.actor_id,
                     appearance=app,
+                    prim_path=existing_actors.get(setup_act.actor_id, {}).get("prim_path"),
                 )
 
                 # Resolve initial position and facing
-                init_pos = [0.0, 0.0, 0.0]
-                init_facing = 0.0
+                existing = existing_actors.get(setup_act.actor_id, {})
+                init_pos = list(existing.get("position", [0.0, 0.0, 0.0]))
+                init_facing = existing.get("facing_deg", 0.0)
+                is_veh = "car" in rec.asset_id or "vehicle" in rec.asset_id
+                placement_states = dict(actor_initial_states)
+                placement_states[rec.actor_id] = dict(existing, asset_id=rec.asset_id,
+                                                       is_vehicle=is_veh, appearance=rec.appearance)
                 if setup_act.at_reference:
                     target_res, err = ref_resolver.resolve(
-                        setup_act.at_reference, actor_initial_states, 0.0
+                        setup_act.at_reference, placement_states, 0.0, source_actor_id=rec.actor_id
                     )
-                    if target_res:
-                        init_pos = list(target_res.position)
-                        init_facing = target_res.facing_deg
+                    if not target_res:
+                        return False, {'success': False, 'error': StructuredError(
+                            'UNRESOLVED_REFERENCE',
+                            f"Could not resolve starting location '{setup_act.at_reference}': {err}",
+                            actor_id=rec.actor_id,
+                            details={'reference': setup_act.at_reference, 'role': 'starting_location'}).to_dict()}
+                    init_pos = list(target_res.position)
+                    init_facing = target_res.facing_deg
                 elif setup_act.position:
                     init_pos = list(setup_act.position)
                     if setup_act.facing_deg is not None:
                         init_facing = float(setup_act.facing_deg)
 
-                if setup_act.facing_reference:
+                from semantic_references import direction_heading
+                compass_heading = direction_heading(setup_act.facing_reference)
+                if compass_heading is not None:
+                    init_facing = compass_heading
+                elif setup_act.facing_reference:
+                    placement_states[rec.actor_id]['position'] = init_pos
                     face_res, _ = ref_resolver.resolve(
-                        setup_act.facing_reference, actor_initial_states, 0.0
+                        setup_act.facing_reference, placement_states, 0.0, source_actor_id=rec.actor_id
                     )
                     if face_res:
                         dx = face_res.position[0] - init_pos[0]
@@ -150,7 +631,6 @@ class ShotCompiler:
                         if math.hypot(dx, dz) > 1e-3:
                             init_facing = math.degrees(math.atan2(dx, -dz)) % 360.0
 
-                is_veh = "car" in rec.asset_id or "vehicle" in rec.asset_id
                 seated_veh = None
                 seat_anch = None
                 if setup_act.at_reference and ":" in setup_act.at_reference:
@@ -181,13 +661,23 @@ class ShotCompiler:
                         actor_initial_states[rec.actor_id]["appearance"] = rec.appearance
 
         # If no setup declared, deduce from beats or pending world state
-        if not actor_initial_states and plan.beats:
+        if plan.beats:
             for b in plan.beats:
                 if b.actor_id not in registry._actors:
+                    existing = existing_actors.get(b.actor_id)
+                    if existing:
+                        rec = registry.register(
+                            asset_id=existing["asset_id"], actor_id=b.actor_id,
+                            label=existing["label"], prim_path=existing["prim_path"],
+                            appearance=existing["appearance"],
+                        )
+                        actor_initial_states[b.actor_id] = dict(existing)
+                        continue
                     default_car = next((a.get("id") for a in self.manifest.get("assets", []) if "car" in a.get("id", "") or "car" in a.get("tags", [])), "cars.car1")
                     default_human = next((a.get("id") for a in self.manifest.get("assets", []) if "character" in a.get("id", "") or "human" in a.get("id", "")), "character.human")
-                    asset_id = default_car if "car" in b.actor_id else default_human
-                    rec = registry.register(asset_id=asset_id, actor_id=b.actor_id)
+                    track = brief.get('tracks', {}).get(b.actor_id, {})
+                    asset_id = track.get('asset_id') or (default_car if "car" in b.actor_id else default_human)
+                    rec = registry.register(asset_id=asset_id, actor_id=b.actor_id, label=track.get('label'))
                     is_veh = "car" in asset_id
                     actor_initial_states[rec.actor_id] = {
                         "actor_id": rec.actor_id,
@@ -199,14 +689,116 @@ class ShotCompiler:
                         "appearance": rec.appearance,
                     }
 
-        # 3. Resolve timeline
+        from interaction_plan import apply_interactions, validate_interactions
+        # Phase intent applies to complete authored actions, not the last
+        # segment of a saved generated route. Rebuild before binding timing.
+        from crowd.movements import movement_source_plan
+        plan = movement_source_plan(plan)
+        from route_placement import place_unpositioned_movers
+        placement_error = place_unpositioned_movers(
+            plan, actor_initial_states, scene_data, self.manifest, self.project_root,
+            self.crowd_config, locked_actors=set(brief.get('tracks', {})) | set(existing_actors))
+        if placement_error:
+            return False, {'success': False, 'error': placement_error.to_dict()}
+        from plan_review import review_plan, review_suggestions
+        from spatial_intents import bind_spatial_intents
+        spatial_error = bind_spatial_intents(
+            plan, actor_initial_states, scene_data, self.manifest, self.project_root,
+            self.crowd_config, locked_actors=brief.get('tracks', {}),
+            variant=getattr(self, '_spatial_layout_variant', 0))
+        if spatial_error:
+            return False, {'success': False, 'error': spatial_error.to_dict()}
+        plan_review = review_plan(plan, scene_data, self.manifest, actor_initial_states,
+                                  locked_actors=brief.get('tracks', {}))
+        if not plan_review['passed']:
+            return False, {'success': False, 'error': StructuredError(
+                'PLAN_REVIEW', 'The generated plan conflicts with explicit prompt requirements or cannot verify them.',
+                details=plan_review,
+                suggestions=review_suggestions(plan_review)
+            ).to_dict(), 'plan_review': plan_review}
+        declared_error = apply_interactions(plan, actor_initial_states)
+        if declared_error:
+            return False, {"success": False, "error": declared_error.to_dict()}
+
+        # Expose prompt-created contact pairs before spacing and arena layout.
+        # The later interaction scheduler can link again; linked beats retain
+        # their group IDs and are therefore not duplicated.
+        from director_solver import link_prompt_interactions
+        plan = link_prompt_interactions(plan, actor_initial_states)
+        placement_timeline, placement_error = TimelineResolver(
+            fps=self.fps, ref_resolver=ref_resolver).resolve(plan, actor_initial_states)
+        if placement_error:
+            return False, {'success': False, 'error': placement_error.to_dict()}
+        spacing_error = space_standing_actors(
+            plan, actor_initial_states, scene_data, self.manifest, self.project_root,
+            locked_actors=set(brief.get("tracks", {})),
+            crowd_config=self.crowd_config,
+            durations={b.beat_id: b.duration for b in placement_timeline.beats},
+            timeline_beats=placement_timeline.beats,
+        )
+        if spacing_error:
+            return False, {"success": False, "error": spacing_error.to_dict()}
+
+        from director_solver import fit_contact_windows
+        try:
+            plan = fit_contact_windows(plan, brief, actor_initial_states, self.manifest)
+        except ValueError as exc:
+            return False, {"success": False, "error": {"error_code": "BRIEF_TIMING", "message": str(exc)}}
+
+        # 3. Route and time prompt-only meetings before the final timeline pass.
         timeline_resolver = TimelineResolver(fps=self.fps, ref_resolver=ref_resolver)
+        from director_solver import schedule_prompt_interactions
+        route_synthesizer = MotionSynthesizer(self.manifest, fps=self.fps,
+                                             ref_resolver=ref_resolver, scene_data=scene_data)
+        stair_error = self._prepare_stair_climbs(plan, actor_initial_states, route_synthesizer)
+        if stair_error:
+            return False, {"success": False, "error": stair_error.to_dict()}
+        envelopes = actor_envelopes(plan, actor_initial_states, self.manifest, self.project_root,
+                                    self.crowd_config)
+        route_synthesizer.solid_envelopes = envelopes
+        from crowd.movements import movement_source_plan, route_movements
+        plan = movement_source_plan(plan)
+        from crowd_spacing import GROUND_TRAVEL_CLIPS
+        movement_index = next((i for i, b in enumerate(plan.beats)
+                               if b.function in GROUND_TRAVEL_CLIPS and not b.params.get('brief_path')
+                               and not b.params.get('exact_window')), len(plan.beats))
+        prefix = copy.deepcopy(plan)
+        prefix.beats = prefix.beats[:movement_index]
+        prefix, interaction_error = schedule_prompt_interactions(
+            prefix, actor_initial_states, timeline_resolver, route_synthesizer, scene_data,
+            envelopes=envelopes, crowd_config=self.crowd_config,
+            continuation_beats=plan.beats[movement_index:])
+        if interaction_error:
+            return False, {"success": False, "error": interaction_error.to_dict()}
+        plan.beats = prefix.beats + plan.beats[movement_index:]
+        # Initial meeting approaches must exist before ordinary movements can
+        # know when their participants vacate their standing positions. Then
+        # rebuild meetings against the newly reserved ground movements.
+        plan, movement_error = route_movements(plan, actor_initial_states, timeline_resolver,
+                                               route_synthesizer, scene_data, envelopes, self.crowd_config,
+                                               preserve_approaches=True)
+        if movement_error:
+            return False, {'success': False, 'error': movement_error.to_dict()}
+        # Later meetings need scheduling even if every preceding movement is
+        # authored/locked and therefore produced no automatic crowd route.
+        plan, interaction_error = schedule_prompt_interactions(
+            plan, actor_initial_states, timeline_resolver, route_synthesizer, scene_data,
+            envelopes=envelopes, crowd_config=self.crowd_config)
+        if interaction_error:
+            return False, {'success': False, 'error': interaction_error.to_dict()}
+        # Linking a one-sided interaction can introduce a reaction partner.
+        # Include those generated clips in the final occupancy check too.
+        envelopes = actor_envelopes(plan, actor_initial_states, self.manifest, self.project_root,
+                                    self.crowd_config)
         timeline, err = timeline_resolver.resolve(plan, actor_initial_states)
         if err or not timeline:
             return False, {
                 "success": False,
                 "error": err.to_dict() if err else {"message": "Timeline resolution failed"},
             }
+        declared_error = validate_interactions(plan, timeline, actor_initial_states)
+        if declared_error:
+            return False, {"success": False, "error": declared_error.to_dict()}
 
         # 4. Resolve semantic targets for each beat (initial pass; dynamic re-resolution occurs at beat t_start in MotionSynthesizer)
         resolved_targets: Dict[str, ResolvedTarget] = {}
@@ -217,8 +809,12 @@ class ShotCompiler:
             if not target_ref and b.function == "climb_stairs":
                 target_ref = b.params.get("stairs")
             if target_ref:
-                t_res, ref_err = ref_resolver.resolve(
-                    target_ref, actor_states_at_start, 0.0, source_actor_id=b.actor_id
+                resolve_target = (ref_resolver.resolve_facing if b.function in ('turn_to_face', 'look_at')
+                                  else ref_resolver.resolve)
+                t_res, ref_err = resolve_target(
+                    target_ref, actor_states_at_start, 0.0, source_actor_id=b.actor_id,
+                    clearance_radius_m=(envelopes.solid_movement_radius(b.actor_id, b.function, b.beat_id)
+                                        if envelopes.knows(b.actor_id) else None)
                 )
                 if t_res:
                     resolved_targets[b.beat_id] = t_res
@@ -234,7 +830,7 @@ class ShotCompiler:
                             message=f"Could not resolve target '{target_ref}' for beat '{b.beat_id}': {ref_err}",
                             beat_id=b.beat_id,
                             actor_id=b.actor_id,
-                            suggestions=["Check valid actor IDs, zone markers, or surfaces in manifest."],
+                            suggestions=["Use current scene region IDs, valid actors, zone markers, anchors or surfaces."],
                         ).to_dict(),
                     }
 
@@ -244,14 +840,28 @@ class ShotCompiler:
             fps=self.fps,
             ref_resolver=ref_resolver,
             scene_data=scene_data,
+            solid_envelopes=envelopes,
         )
         actor_performances: Dict[str, ActorPerformance] = {}
 
         # Synthesize in sequence: vehicles first (threats), then humans (reactions/actions)
         vehicle_ids = [aid for aid, s in actor_initial_states.items() if s["is_vehicle"]]
         human_ids = [aid for aid, s in actor_initial_states.items() if not s["is_vehicle"]]
+        try:
+            human_ids = self._actor_synthesis_order(
+                human_ids, timeline.actor_schedules, actor_initial_states)
+        except ValueError as exc:
+            return False, {"success": False, "error": StructuredError(
+                "ACTOR_TRAJECTORY_DEPENDENCY", str(exc),
+                suggestions=["Sequence the movements or use a joint interaction plan."]
+            ).to_dict()}
 
         for aid in vehicle_ids + human_ids:
+            if aid == (human_ids[0] if human_ids else None) and vehicle_ids:
+                placed_support = self._read_placed_vehicle_support(
+                    actor_performances, actor_initial_states, scene_data)
+                scene_data["support_surfaces"].extend(placed_support["support_surfaces"])
+                scene_data["solid_boxes"].extend(placed_support["solid_boxes"])
             a_beats = timeline.actor_schedules.get(aid, [])
             perf, synth_err = synthesizer.synthesize_actor(
                 actor_id=aid,
@@ -272,15 +882,55 @@ class ShotCompiler:
                 }
             actor_performances[aid] = perf
 
+        from director_solver import effective_brief, solve_contacts, solve_shared_actions
+        solved_brief = effective_brief(brief, timeline)
+        group_errors = solve_shared_actions(solved_brief, actor_performances, synthesizer, scene_data, timeline.fps)
+        if group_errors:
+            return False, {"success": False, "error": {"error_code": "BRIEF_SHARED_ACTION", "details": group_errors}}
+        contact_errors = solve_contacts(solved_brief, timeline, actor_performances, self.manifest, synthesizer, scene_data, actor_initial_states, ref_resolver)
+        if contact_errors:
+            return False, {"success": False, "error": {"error_code": "BRIEF_CONTACT", "details": contact_errors}}
+        conformance_errors = check_conformance(solved_brief, actor_performances)
+        if conformance_errors:
+            return False, {"success": False, "error": {"error_code": "BRIEF_CONFORMANCE", "details": conformance_errors}}
+        from crowd.conformance import check_conformance as check_crowd_conformance
+        crowd_errors = (check_crowd_conformance(plan, timeline, actor_performances, envelopes, self.fps,
+                                               self.crowd_config) if validate else [])
+        if crowd_errors:
+            return False, {"success": False, "error": StructuredError(
+                'CROWD_CONFORMANCE', 'Synthesized actor roots overlap the planned crowd envelopes.',
+                details={'conflicts': crowd_errors}).to_dict()}
+
+        from vehicle_routes import check_vehicle_roots
+        vehicle_errors = check_vehicle_roots(actor_performances, synthesizer, timeline) if validate else []
+        if vehicle_errors:
+            return False, {'success': False, 'error': StructuredError(
+                'VEHICLE_ROUTE_CONFORMANCE',
+                'Synthesized vehicle motion overlaps another vehicle or leaves supported clear space.',
+                details={'conflicts': vehicle_errors}).to_dict()}
+
+        from spatial_intents import validate_spatial_intents
+        spatial_error = validate_spatial_intents(plan, timeline, actor_performances, scene_data,
+                                                 self.manifest, self.crowd_config)
+        if spatial_error:
+            return False, {'success': False, 'error': spatial_error.to_dict()}
+
         # 6. Camera synthesis
         cam_controller = CameraController(fps=self.fps)
         actor_positions_by_id = {
             aid: [(kf.time_s, list(kf.position)) for kf in p.keyframes]
             for aid, p in actor_performances.items()
         }
-        cam_keyframes = cam_controller.synthesize_camera(
-            plan.camera, actor_positions_by_id, timeline.total_duration_s
-        )
+        is_camera_locked = getattr(plan, "camera_locked", False)
+        if is_camera_locked:
+            # Camera is locked by user; skip camera synthesis from LLM prompt
+            cam_keyframes = cam_controller.synthesize_camera(
+                None, actor_positions_by_id, timeline.total_duration_s
+            )
+        else:
+            cam_keyframes = cam_controller.synthesize_camera(
+                plan.camera, actor_positions_by_id, timeline.total_duration_s
+            )
 
         # 7. Collect prompt-mandated props & author OpenUSD shot.usda layer
         prompt_str = getattr(plan, "prompt", "") or ""
@@ -291,10 +941,26 @@ class ShotCompiler:
             registry=registry,
             actor_performances=actor_performances,
             cam_keyframes=cam_keyframes,
-            scene_usda_rel_path=f"../{scene_version_file}" if scene_version_file else "../scene.usda",
+            scene_usda_rel_path=(scene_version_file or "scene.usda") if is_scene_stage
+                                else (f"../{scene_version_file}" if scene_version_file else "../scene.usda"),
+            scene_edits_rel_path=scene_edits_version_file,
             required_props=required_props,
         )
+        # Asset references must also resolve when compiling outside scenes/scene/shot.
+        asset_root_rel = os.path.relpath(self.project_root, shot_dir).replace(os.sep, "/")
+        shot_usda_text = shot_usda_text.replace("@../../../", "@" + asset_root_rel + "/")
         output_shot_usda_path.write_text(shot_usda_text, encoding="utf-8")
+        # An in-process regeneration may still hold the prior composed root layer.
+        from pxr import Sdf
+        cached_shot = Sdf.Layer.Find(str(output_shot_usda_path))
+        if cached_shot:
+            cached_shot.Reload()
+        placed_actor_paths = {
+            f"/World/{registry.get(action.actor_id).label.replace(' ', '_')}"
+            for action in plan.setup
+            if action.action_type == "place" and registry.get(action.actor_id)
+        }
+        self._restore_placed_actor_visibility(output_shot_usda_path, placed_actor_paths)
 
         # 8. Multi-clip baking & automatic skeleton binding for rigged human characters
         character_bake_errors = []
@@ -334,6 +1000,7 @@ class ShotCompiler:
                 actions_payload: Dict[str, Any] = {
                     "fps": self.fps,
                     "actions": perf.actions,
+                    "exact_windows": bool(brief.get("tracks", {}).get(aid)),
                 }
                 if getattr(perf, "overlay_actions", None):
                     actions_payload["overlay_actions"] = perf.overlay_actions
@@ -354,6 +1021,24 @@ class ShotCompiler:
                 except Exception as exc:
                     character_bake_errors.append(f"Failed to bake/bind character {aid}: {exc}")
 
+        if brief.get("paths"):
+            from director_brief import author_path_guides
+            from pxr import Usd
+            guide_stage = Usd.Stage.Open(str(output_shot_usda_path))
+            author_path_guides(guide_stage, brief)
+            guide_stage.GetRootLayer().Save()
+
+        # Validate the same editor composition that will be published.
+        # Removing stale overrides after validation could expose unchecked motion.
+        if not character_bake_errors:
+            self._release_animated_actor_overrides(output_shot_usda_path)
+
+        if not character_bake_errors and brief.get("tracks"):
+            from director_solver import check_baked_conformance
+            baked_errors = check_baked_conformance(solved_brief, output_shot_usda_path, actor_performances, self.fps)
+            if baked_errors:
+                return False, {"success": False, "error": {"error_code": "BAKED_CONFORMANCE", "details": baked_errors}}
+
         # 9. Write sidecars: shot_plan.json, resolved_timeline.json, allow_collisions.json, shot.json
         plan_path = shot_dir / "shot_plan.json"
         plan_path.write_text(plan.to_json(), encoding="utf-8")
@@ -363,17 +1048,41 @@ class ShotCompiler:
 
         # Aggregate allowed contacts across all actors
         allowed_contacts = []
-        scene_building_assets = [
-            obj.get("asset") or obj.get("name")
-            for obj in scene_data.get("objects", [])
-            if str(obj.get("asset", "")).startswith("buildings.") or "club" in str(obj.get("name", "")).lower()
-        ]
+        scene_building_assets = []
+        support_owners = {str(surface.get("owner", "")) for surface in scene_data.get("support_surfaces", [])
+                          if surface.get("owner")}
+        for obj in scene_data.get("objects", []):
+            asset_str = str(obj.get("asset", ""))
+            name_str = str(obj.get("name", ""))
+            if (name_str in support_owners
+                    or asset_str.startswith(("buildings.", "environment."))
+                    or "club" in name_str.lower()
+                    or "building" in asset_str.lower()):
+                for ref_key in (obj.get("asset"), obj.get("id"), obj.get("name")):
+                    if ref_key and ref_key not in scene_building_assets:
+                        scene_building_assets.append(ref_key)
+        for support_owner in support_owners:
+            if support_owner in actor_initial_states:
+                for ref_key in (support_owner, actor_initial_states[support_owner].get("asset_id")):
+                    if ref_key and ref_key not in scene_building_assets:
+                        scene_building_assets.append(ref_key)
+
         for aid, perf in actor_performances.items():
             rec = registry.get(aid)
             label = rec.label.replace(" ", "_") if rec else aid
-            actor_names = [aid]
-            if label not in actor_names:
-                actor_names.append(label)
+            actor_names = set([aid, label, label.replace("Human_", "")])
+            for name in list(actor_names):
+                actor_names.add(f"Human_{name}")
+
+            # Level integrity accepts an authored airborne action only during
+            # its scheduled interval; unrelated vertical motion still fails.
+            for beat in timeline.actor_schedules.get(aid, []):
+                if beat.function in {"jump_down", "fly_to", "climb_surface"}:
+                    for a_name in actor_names:
+                        allowed_contacts.append({"actor": a_name,
+                                                 "vertical_transition": True,
+                                                 "t0": beat.start_time,
+                                                 "t1": beat.end_time})
 
             # Allow foot/sole contact with building floor meshes in the scene
             for b_asset in scene_building_assets:
@@ -382,7 +1091,7 @@ class ShotCompiler:
                         "actor": a_name,
                         "asset": b_asset,
                         "joints": ["Foot", "Toe", "Leg"],
-                        "max_depth_m": 0.18,
+                        "max_depth_m": 0.25,
                     })
 
             for c in perf.allowed_contacts:
@@ -390,7 +1099,9 @@ class ShotCompiler:
                 target_rec = registry.get(target_asset) if target_asset else None
                 possible_assets = [target_asset]
                 if target_rec:
-                    possible_assets.extend([target_rec.actor_id, target_rec.label, target_rec.label.replace(" ", "_"), target_rec.asset_id])
+                    # Instance aliases identify the intended counterpart. An asset
+                    # ID would exempt every other copy of that character too.
+                    possible_assets.extend([target_rec.actor_id, target_rec.label, target_rec.label.replace(" ", "_")])
 
                 for a_name in actor_names:
                     seen_targets = set()
@@ -430,9 +1141,12 @@ class ShotCompiler:
 
         # 10. Run validators: physical lint and collision validator
         validation_report = {
+            'plan_review': plan_review,
+            'spatial_intents': [intent.to_dict() for intent in plan.spatial_intents],
             "success": len(character_bake_errors) == 0,
             "lint_passed": True,
-            "collision_passed": True,
+            "collision_passed": None,
+            "collision_skipped": not validate,
             "camera_passed": True,
             "bake_errors": character_bake_errors,
             "lint_warnings": [],
@@ -477,8 +1191,32 @@ class ShotCompiler:
                 validation_report["lint_passed"] = False
 
         # 10b. Frustum check
+        eval_cam_keyframes = cam_keyframes
+        user_edits_path = shot_dir / "user_edits.usda"
+        if user_edits_path.exists():
+            try:
+                from pxr import Usd, Sdf
+                edits_stage = Usd.Stage.Open(str(user_edits_path))
+                if edits_stage and edits_stage.GetPrimAtPath(Sdf.Path("/World/ShotCam")).IsValid():
+                    from camera_rig import read_rig_from_stage, CameraRigEvaluator
+                    rig = read_rig_from_stage(edits_stage)
+                    if rig:
+                        rig_eval = CameraRigEvaluator(fps=self.fps)
+                        actor_positions_by_t = {
+                            aid: [(kf.time_s, list(kf.position)) for kf in p.keyframes]
+                            for aid, p in actor_performances.items()
+                        }
+                        eval_cam_keyframes = rig_eval.evaluate_sequence(
+                            rig=rig,
+                            start_s=0.0,
+                            end_s=timeline.total_duration_s,
+                            actor_positions_over_time=actor_positions_by_t,
+                        )
+            except Exception:
+                pass
+
         cam_ok, cam_warnings = cam_controller.validate_frustum(
-            cam_keyframes, actor_positions_by_id, active_actor_ids
+            eval_cam_keyframes, actor_positions_by_id, active_actor_ids
         )
         validation_report["camera_passed"] = cam_ok
         validation_report["camera_warnings"] = cam_warnings
@@ -496,11 +1234,22 @@ class ShotCompiler:
             plan.prompt, output_shot_usda_path, registry, timeline, cam_keyframes
         )
         validation_report["prompt_adherence"] = prompt_res
-        if not prompt_res["passed"]:
+        if not prompt_res["passed"] and not brief.get("tracks"):
             validation_report["success"] = False
 
         (shot_dir / "validation_report.json").write_text(json.dumps(validation_report, indent=2), encoding="utf-8")
 
+        if validation_report["success"]:
+            from camera_workflow import bake_manual_cameras, save_fingerprints
+            if (shot_dir / "camera_rig.json").exists():
+                try:
+                    bake_manual_cameras(shot_dir, require_current=False)
+                except (ValueError, KeyError, TypeError) as exc:
+                    # Camera lint never invalidates body motion.
+                    validation_report["camera_warnings"].append(str(exc))
+            save_fingerprints(shot_dir)
+
+        (shot_dir / "validation_report.json").write_text(json.dumps(validation_report, indent=2), encoding="utf-8")
         return validation_report["success"], {
             "success": validation_report["success"],
             "artifacts": {
@@ -521,6 +1270,7 @@ class ShotCompiler:
         actor_performances: Dict[str, ActorPerformance],
         cam_keyframes: List[CameraKeyframe],
         scene_usda_rel_path: str = "../scene.usda",
+        scene_edits_rel_path: Optional[str] = None,
         required_props: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         end_frame = int(round(timeline.total_duration_s * self.fps))
@@ -533,7 +1283,9 @@ class ShotCompiler:
             f"    timeCodesPerSecond = {self.fps}",
             "    startTimeCode = 0",
             f"    endTimeCode = {end_frame}",
-            f"    subLayers = [ @{scene_usda_rel_path}@ ]",
+            "    subLayers = [ " + ", ".join(
+                f"@{path}@" for path in ([scene_edits_rel_path] if scene_edits_rel_path else [])
+                + [scene_usda_rel_path]) + " ]",
             ")",
             "",
             'def "World"',
@@ -549,7 +1301,7 @@ class ShotCompiler:
         t_samples = []
         r_samples = []
         for kf in cam_keyframes:
-            f = int(round(kf.time_s * self.fps))
+            f = round(kf.time_s * self.fps, 6)
             t_samples.append(f"            {f}: ({kf.position[0]:.3f}, {kf.position[1]:.3f}, {kf.position[2]:.3f})")
             r_samples.append(f"            {f}: ({kf.rotation_xyz[0]:.2f}, {kf.rotation_xyz[1]:.2f}, {kf.rotation_xyz[2]:.2f})")
         lines.append(",\n".join(t_samples))
@@ -599,6 +1351,7 @@ class ShotCompiler:
 
             lines.extend([
                 f'    def Xform "{prim_name}" (',
+                "        active = true",
                 "        customData = {",
                 f'            string actor_id = "{rec.actor_id}"',
                 f'            string label = "{rec.label}"',
@@ -619,7 +1372,7 @@ class ShotCompiler:
             pitch_lines = []
             has_pitch = any(abs(kf.pitch_deg) > 0.1 for kf in perf.keyframes)
             for kf in perf.keyframes:
-                f = int(round(kf.time_s * self.fps))
+                f = round(kf.time_s * self.fps, 6)
                 trans_lines.append(f"            {f}: ({kf.position[0]:.3f}, {kf.position[1]:.3f}, {kf.position[2]:.3f})")
                 rot_y = (-kf.heading_deg) % 360.0
                 rot_lines.append(f"            {f}: {rot_y:.2f}")
@@ -656,6 +1409,7 @@ class ShotCompiler:
 
             # Tint character clothing or vehicle displayColor
             lines.extend([
+                '        token visibility = "inherited"',
                 f"        color3f[] primvars:displayColor = [({rec.appearance.tint_rgb[0]:.3f}, {rec.appearance.tint_rgb[1]:.3f}, {rec.appearance.tint_rgb[2]:.3f})] (",
                 '            interpolation = "constant"',
                 "        )",
@@ -872,51 +1626,78 @@ class ShotCompiler:
 
         return out
 
-    def _read_scene_context(self, scene_usda_path: Path) -> Dict[str, Any]:
-        """Extract zones and static objects from scene.usda."""
-        data = {"zones": [], "objects": []}
-        if not scene_usda_path.exists():
+    def _read_scene_context(self, scene_usda_path: Optional[Path], shot_dir: Optional[Path] = None,
+                            stage_override=None) -> Dict[str, Any]:
+        """Extract the scene as seen in the editor, including shot-level manual edits."""
+        data = {"zones": [], "objects": [], "support_surfaces": [], "standing_spots": [],
+                "surface_spots": [], "rooftop_spots": [],
+                "solid_boxes": [], "unprotected_scene_objects": []}
+        if stage_override is None and (scene_usda_path is None or not scene_usda_path.exists()):
             return data
         try:
-            from pxr import Usd, UsdGeom
-            stage = Usd.Stage.Open(str(scene_usda_path))
+            try:
+                from pxr import Gf, Usd, UsdGeom
+            except ImportError:
+                venv_site = self.project_root / ".venv" / "lib" / "python3.12" / "site-packages"
+                if venv_site.exists() and str(venv_site) not in sys.path:
+                    sys.path.insert(0, str(venv_site))
+                from pxr import Gf, Usd, UsdGeom
+            edits_path = shot_dir / "user_edits.usda" if shot_dir else None
+            if stage_override is not None:
+                stage = stage_override
+            elif edits_path and edits_path.exists():
+                from pxr import Sdf
+                root_layer = Sdf.Layer.FindOrOpen(str(scene_usda_path))
+                edits_layer = Sdf.Layer.FindOrOpen(str(edits_path))
+                stage = Usd.Stage.Open(root_layer, edits_layer) if root_layer and edits_layer else None
+            else:
+                stage = Usd.Stage.Open(str(scene_usda_path))
             if not stage:
                 return data
+            from plan_path import discover_step_stairs
+            from support_surfaces import (ACTOR_SUPPORT_MARGIN_M,
+                                          MAX_SUPPORT_FACE_HEIGHT_VARIATION_M,
+                                          STANDING_BODY_HEIGHT_M, STANDING_MAX_STEP_M,
+                                          derive_standing_spots, derive_surface_spots,
+                                          polygon_area)
+            xform_cache = UsdGeom.XformCache(Usd.TimeCode.Default())
+            solid_boxes = []
+            meshed_owners = set()
+            object_prims = {}
             for prim in stage.Traverse():
                 p_path = str(prim.GetPath())
+                if prim.IsA(UsdGeom.Camera) or any(p_path == root or p_path.startswith(root+"/") for root in ("/World/Cameras", "/World/CameraRig", "/World/CameraPaths", "/World/Paths", "/World/Paint")):
+                    continue
                 if "Zones" in p_path and prim.IsA(UsdGeom.Cube):
-                    xform = UsdGeom.Xformable(prim)
-                    pos = [0.0, 0.0, 0.0]
-                    scale = [1.0, 1.0, 1.0]
-                    for op in xform.GetOrderedXformOps():
-                        if "translate" in op.GetOpName():
-                            t = op.Get()
-                            if t:
-                                pos = [float(t[0]), float(t[1]), float(t[2])]
-                        elif "scale" in op.GetOpName():
-                            s = op.Get()
-                            if s:
-                                scale = [float(s[0]), float(s[1]), float(s[2])]
-                    bmin = [pos[0] - scale[0] * 0.5, pos[1], pos[2] - scale[2] * 0.5]
-                    bmax = [pos[0] + scale[0] * 0.5, pos[1] + scale[1], pos[2] + scale[2] * 0.5]
-                    data["zones"].append({"id": prim.GetName(), "min": bmin, "max": bmax})
+                    half = float(UsdGeom.Cube(prim).GetSizeAttr().Get() or 2.0) * 0.5
+                    matrix = xform_cache.GetLocalToWorldTransform(prim)
+                    corners = [matrix.Transform(Gf.Vec3d(x, y, z))
+                               for x in (-half, half) for y in (-half, half) for z in (-half, half)]
+                    footprint = [matrix.Transform(Gf.Vec3d(x, 0, z))
+                                 for x, z in ((-half, -half), (half, -half),
+                                              (half, half), (-half, half))]
+                    forward = matrix.TransformDir(Gf.Vec3d(0, 0, -1))
+                    span_x = max(float(point[0]) for point in corners) - min(float(point[0]) for point in corners)
+                    span_z = max(float(point[2]) for point in corners) - min(float(point[2]) for point in corners)
+                    markers = ["center"]
+                    if span_z >= span_x:
+                        markers.extend(("north", "south"))
+                    if span_x >= span_z:
+                        markers.extend(("east", "west"))
+                    data["zones"].append({
+                        "id": prim.GetName(),
+                        "min": [min(float(point[axis]) for point in corners) for axis in range(3)],
+                        "max": [max(float(point[axis]) for point in corners) for axis in range(3)],
+                        "footprint_xz": [[float(point[0]), float(point[2])] for point in footprint],
+                        "reference_markers": markers,
+                        "heading_deg": math.degrees(math.atan2(forward[0], -forward[2])) % 360.0,
+                    })
                 elif prim.GetParent() and prim.GetParent().GetName() == "World" and prim.GetName() != "Zones" and not prim.GetTypeName().endswith("Light"):
-                    xform = UsdGeom.Xformable(prim)
-                    pos = [0.0, 0.0, 0.0]
-                    rot_y = 0.0
-                    for op in xform.GetOrderedXformOps():
-                        if "translate" in op.GetOpName():
-                            t = op.Get()
-                            if t:
-                                pos = [float(t[0]), float(t[1]), float(t[2])]
-                        elif "rotateXYZ" in op.GetOpName():
-                            r = op.Get()
-                            if r:
-                                rot_y = float(r[1])
-                        elif "rotateY" in op.GetOpName():
-                            r = op.Get()
-                            if r is not None:
-                                rot_y = float(r)
+                    world_matrix = xform_cache.GetLocalToWorldTransform(prim)
+                    origin = world_matrix.Transform(Gf.Vec3d(0, 0, 0))
+                    forward = world_matrix.TransformDir(Gf.Vec3d(0, 0, -1))
+                    pos = [float(origin[axis]) for axis in range(3)]
+                    rot_y = math.degrees(math.atan2(forward[0], -forward[2])) % 360.0
                     asset_id = prim.GetCustomDataByKey("asset_id") if prim.HasCustomDataKey("asset_id") else prim.GetName()
                     data["objects"].append({
                         "id": prim.GetName(),
@@ -924,21 +1705,264 @@ class ShotCompiler:
                         "asset": asset_id,
                         "position": pos,
                         "heading_deg": rot_y,
+                        "world_transform": [[float(world_matrix[row][col]) for col in range(4)]
+                                            for row in range(4)],
+                        "stairs": discover_step_stairs(prim),
                     })
-        except Exception:
-            pass
+                    object_prims[prim.GetName()] = prim
+                    # Convex top faces of scene boxes are exact standing support
+                    # candidates. Keep their world geometry so elevated meetings
+                    # can be checked without guessing from a zone's X/Z position.
+                    for child in Usd.PrimRange(prim):
+                        if child.IsA(UsdGeom.Mesh):
+                            meshed_owners.add(prim.GetName())
+                        if not child.IsA(UsdGeom.Cube):
+                            continue
+                        half = float(UsdGeom.Cube(child).GetSizeAttr().Get() or 2.0) * 0.5
+                        matrix = xform_cache.GetLocalToWorldTransform(child)
+                        box_corners = [matrix.Transform(Gf.Vec3d(x, y, z))
+                                       for x in (-half, half) for y in (-half, half)
+                                       for z in (-half, half)]
+                        solid_boxes.append({
+                            "owner": prim.GetName(),
+                            "min": [min(float(point[axis]) for point in box_corners) for axis in range(3)],
+                            "max": [max(float(point[axis]) for point in box_corners) for axis in range(3)],
+                        })
+                        corners = [matrix.Transform(Gf.Vec3d(x, half, z))
+                                   for x, z in ((-half, -half), (half, -half),
+                                                (half, half), (-half, half))]
+                        heights = [float(point[1]) for point in corners]
+                        if max(heights) - min(heights) > MAX_SUPPORT_FACE_HEIGHT_VARIATION_M:
+                            continue
+                        polygon = [[float(point[0]), float(point[2])] for point in corners]
+                        if polygon_area(polygon) < 4 * ACTOR_SUPPORT_MARGIN_M ** 2:
+                            continue
+                        data["support_surfaces"].append({
+                            "owner": prim.GetName(),
+                            "prim_path": str(child.GetPath()),
+                            "height_m": sum(heights) / len(heights),
+                            "polygon_xz": polygon,
+                        })
+            data['solid_boxes'] = solid_boxes
+            from colliders import SceneObject, apply, world_groups
+            assets = {asset.get("id"): asset for asset in self.manifest.get("assets", [])}
+            boxed_owners = {box["owner"] for box in solid_boxes}
+            for obj in data["objects"]:
+                asset = assets.get(obj.get("asset"), {})
+                if ((obj["name"] in meshed_owners or obj["name"] not in boxed_owners)
+                        and not asset.get("collision", {}).get("shapes")):
+                    data["unprotected_scene_objects"].append(obj["name"])
+                # Use the validator's transforms and shape interpretation. A
+                # decorative cube is not complete coverage of a mixed asset,
+                # and articulated parts remain obstacles in their live pose.
+                prim = object_prims[obj["name"]]
+                collider_object = SceneObject(prim, asset, "asset")
+                groups = world_groups(stage, collider_object, Usd.TimeCode.Default(), xform_cache)
+                box_shapes = {(shape.get("part"), shape["id"])
+                              for shape in asset.get("collision", {}).get("shapes", [])
+                              if shape.get("type", "box") == "box"}
+                for group in groups:
+                    for index, corners in enumerate(group.corners_world()):
+                        solid_boxes.append({
+                            "owner": obj["name"],
+                            "prim_path": str(prim.GetPath()),
+                            "shape_id": group.ids[index],
+                            "part": group.part,
+                            "min": corners.min(axis=0).tolist(),
+                            "max": corners.max(axis=0).tolist(),
+                        })
+                        # Thin collider tops can supply support even without a
+                        # mesh. Use the same live part transform as the solid.
+                        lo = group.c[index] - group.h[index]
+                        hi = group.c[index] + group.h[index]
+                        if ((group.part, group.ids[index]) not in box_shapes
+                                or hi[1] - lo[1] > STANDING_MAX_STEP_M):
+                            continue
+                        top = apply(group.T, [[x, hi[1], z]
+                            for x, z in ((lo[0], lo[2]), (hi[0], lo[2]),
+                                         (hi[0], hi[2]), (lo[0], hi[2]))])
+                        heights = [float(point[1]) for point in top]
+                        polygon = [[float(point[0]), float(point[2])] for point in top]
+                        if (max(heights) - min(heights) <= MAX_SUPPORT_FACE_HEIGHT_VARIATION_M
+                                and polygon_area(polygon) >= 4 * ACTOR_SUPPORT_MARGIN_M ** 2):
+                            data["support_surfaces"].append({
+                                "owner": obj["name"],
+                                "prim_path": f"{prim.GetPath()}/{group.ids[index]}",
+                                "height_m": sum(heights) / len(heights),
+                                "polygon_xz": polygon,
+                            })
+            for obj in data["objects"]:
+                tall_boxes = [
+                    box for box in solid_boxes
+                    if box.get("owner") == obj["name"]
+                    and (float(box["max"][1]) - float(box["min"][1])) > STANDING_MAX_STEP_M
+                ]
+                if tall_boxes:
+                    obj["obstacle_bounds_xz"] = [
+                        round(min(float(box["min"][0]) for box in tall_boxes), 3),
+                        round(min(float(box["min"][2]) for box in tall_boxes), 3),
+                        round(max(float(box["max"][0]) for box in tall_boxes), 3),
+                        round(max(float(box["max"][2]) for box in tall_boxes), 3),
+                    ]
+                    obj["obstacle_box_count"] = len(tall_boxes)
+                else:
+                    obj["obstacle_bounds_xz"] = None
+                    obj["obstacle_box_count"] = 0
+            mesh_faces = []
+            for owner, prim in object_prims.items():
+                asset_id = next((obj.get("asset") for obj in data["objects"]
+                                 if obj["name"] == owner), None)
+                if {"character", "human"}.intersection(assets.get(asset_id, {}).get("tags", [])):
+                    continue
+                for child in Usd.PrimRange(prim):
+                    if not child.IsA(UsdGeom.Mesh):
+                        continue
+                    mesh = UsdGeom.Mesh(child)
+                    points = mesh.GetPointsAttr().Get() or []
+                    counts = mesh.GetFaceVertexCountsAttr().Get() or []
+                    indices = mesh.GetFaceVertexIndicesAttr().Get() or []
+                    if not points or not counts or not indices:
+                        continue
+                    matrix = xform_cache.GetLocalToWorldTransform(child)
+                    world_points = [matrix.Transform(point) for point in points]
+                    winding = -1.0 if mesh.GetOrientationAttr().Get() == UsdGeom.Tokens.leftHanded else 1.0
+                    offset = 0
+                    for count in counts:
+                        face_indices = indices[offset:offset + count]
+                        offset += count
+                        if count < 3:
+                            continue
+                        corners = [world_points[index] for index in face_indices]
+                        normal = Gf.Cross(corners[1] - corners[0], corners[2] - corners[0])
+                        if winding * float(normal[1]) <= 1e-8:
+                            continue
+                        heights = [float(point[1]) for point in corners]
+                        if max(heights) - min(heights) > MAX_SUPPORT_FACE_HEIGHT_VARIATION_M:
+                            continue
+                        polygon = [[float(point[0]), float(point[2])] for point in corners]
+                        if polygon_area(polygon) <= 1e-6:
+                            continue
+                        mesh_faces.append({"owner": owner, "prim_path": str(child.GetPath()),
+                                           "height_m": sum(heights) / len(heights),
+                                           "polygon_xz": polygon})
+            primitive_supports = list(data["support_surfaces"])
+            data["support_surfaces"].extend(mesh_faces)
+            # Initial layout must see measured mesh floors, not only cubes and
+            # thin collider tops. Otherwise a landscape's decorative ledges can
+            # become its advertised main floor while the street is discarded.
+            data["standing_spots"] = derive_standing_spots(
+                data["support_surfaces"], solid_boxes,
+                {obj["name"]: obj["heading_deg"] for obj in data["objects"]})
+            floor_heights = {obj["name"]: float(obj["position"][1])
+                             for obj in data["objects"]}
+            floor_levels = {}
+            for spot in data["standing_spots"]:
+                owner = spot["owner"]
+                floor_heights[owner] = min(floor_heights[owner], float(spot["position"][1]))
+                floor_levels.setdefault(owner, set()).add(float(spot['position'][1]))
+            data["surface_spots"] = derive_surface_spots(
+                data["support_surfaces"], solid_boxes, floor_heights)
+            # Every measured flat face remains eligible support. Standing and
+            # surface markers are bounded placement suggestions, not a walkable
+            # mask. Route checks still require continuous body support and
+            # clearance from actual solids at the actor's support level.
+            data["support_surfaces"] = primitive_supports + mesh_faces
+            building_owners = {obj["name"] for obj in data["objects"]
+                               if "building" in assets.get(obj.get("asset"), {}).get("tags", [])}
+            for owner in building_owners:
+                candidates = [spot for spot in data["surface_spots"]
+                              if spot["owner"] == owner
+                              and spot["position"][1] - floor_heights[owner] >= STANDING_BODY_HEIGHT_M]
+                if candidates:
+                    source = max(candidates, key=lambda spot: spot["position"][1])
+                    data["rooftop_spots"].append({"owner": owner, "name": "roof_01",
+                                                  "position": source["position"],
+                                                  "surface": source["surface"]})
+            data["support_surfaces"].extend(spot["surface"] for spot in data["rooftop_spots"]
+                                            if spot["surface"] not in data["support_surfaces"])
+            for roof in data["rooftop_spots"]:
+                building = next(obj for obj in data["objects"] if obj["name"] == roof["owner"])
+                bounds = building.get("obstacle_bounds_xz")
+                candidates = []
+                for spot in data["standing_spots"]:
+                    if spot["owner"] == roof["owner"]:
+                        continue
+                    point = spot["position"]
+                    if point[1] >= roof["position"][1] - STANDING_MAX_STEP_M:
+                        continue
+                    if bounds and (bounds[0] - ACTOR_SUPPORT_MARGIN_M <= point[0]
+                                   <= bounds[2] + ACTOR_SUPPORT_MARGIN_M
+                                   and bounds[1] - ACTOR_SUPPORT_MARGIN_M <= point[2]
+                                   <= bounds[3] + ACTOR_SUPPORT_MARGIN_M):
+                        continue
+                    candidates.append(spot)
+                if candidates:
+                    landing = min(candidates, key=lambda spot: (
+                        float(spot["position"][1]),
+                        math.hypot(spot["position"][0] - roof["position"][0],
+                                   spot["position"][2] - roof["position"][2])))
+                    roof["landing_reference"] = f'{landing["owner"]}:{landing["name"]}'
+            from spatial_regions import derive_spatial_regions
+            data['spatial_regions'] = derive_spatial_regions(data, self.manifest, self.crowd_config)
+            if shot_dir is not None and stage_override is None:
+                existing = self._read_existing_actors(shot_dir / 'shot.usda', None, {})
+                data['existing_actors'] = [dict(actor, appearance=actor['appearance'].to_dict())
+                                           for actor in existing.values()]
+        except Exception as exc:
+            data["read_error"] = str(exc)
         return data
+
+    def _read_placed_vehicle_support(self, performances, initial_states, scene_data):
+        """Measure stationary placed vehicles using the same scene geometry reader.
+
+        Moving vehicle tops require time-dependent rider attachment and are not
+        advertised as static path support.
+        """
+        from pxr import Gf, Usd, UsdGeom
+
+        stage = Usd.Stage.CreateInMemory()
+        UsdGeom.Xform.Define(stage, "/World")
+        known = {obj["name"] for obj in scene_data.get("objects", [])}
+        assets = {asset.get("id"): asset for asset in self.manifest.get("assets", [])}
+        added = False
+        for actor_id, perf in performances.items():
+            if not perf.is_vehicle or actor_id in known:
+                continue
+            state = initial_states.get(actor_id, {})
+            asset = assets.get(state.get("asset_id"), {})
+            asset_path = self.project_root / str(asset.get("path", ""))
+            if not asset.get("path") or not asset_path.is_file():
+                continue
+            position = state.get("position", [0, 0, 0])
+            heading = float(state.get("facing_deg", 0))
+            if any(math.dist(key.position, position) > 0.05
+                   or abs((key.heading_deg - heading + 180) % 360 - 180) > 1.0
+                   for key in perf.keyframes):
+                continue
+            prim = UsdGeom.Xform.Define(stage, f"/World/{actor_id}")
+            prim.AddTranslateOp().Set(Gf.Vec3d(*position))
+            prim.AddRotateYOp().Set(-heading)
+            prim.GetPrim().GetReferences().AddReference(str(asset_path))
+            prim.GetPrim().SetCustomDataByKey("asset_id", str(asset["id"]))
+            added = True
+        if not added:
+            return {"support_surfaces": [], "solid_boxes": []}
+        measured = self._read_scene_context(None, stage_override=stage)
+        return {"support_surfaces": measured.get("support_surfaces", []),
+                "solid_boxes": measured.get("solid_boxes", [])}
 
     def _run_collision_validator(self, shot_path: Path, allow_path: Path) -> Tuple[bool, Dict[str, Any]]:
         """Run validate_collisions.py against the compiled shot."""
         val_script = self.project_root / "tools" / "collision" / "validate_collisions.py"
         if not val_script.exists():
-            return True, {}
+            return False, {"error": "Collision validator is missing", "path": str(val_script)}
         python_bin = self.project_root / ".venv" / "bin" / "python"
         if not python_bin.exists():
             python_bin = Path(sys.executable)
 
         report_json = shot_path.parent / "collision_report.json"
+        # A copied/stale passing report must never stand in for this attempt.
+        report_json.unlink(missing_ok=True)
         cmd = [
             str(python_bin),
             str(val_script),
@@ -947,17 +1971,21 @@ class ShotCompiler:
             "--allow", str(allow_path),
             "--json", str(report_json),
         ]
+        if not self.crowd_config.allow_actor_limb_contacts:
+            cmd.append('--strict-actor-limbs')
+        edits_path = shot_path.parent / "user_edits.usda"
+        if edits_path.exists():
+            cmd.extend(["--user-edits", str(edits_path)])
         try:
             res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            if res.returncode != 0:
-                repair_cmd = cmd + ["--repair"]
-                subprocess.run(repair_cmd, capture_output=True, text=True, timeout=120)
-                res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             if report_json.exists():
                 col_data = json.loads(report_json.read_text(encoding="utf-8"))
             else:
                 col_data = {"raw_output": res.stdout, "raw_error": res.stderr}
-            return res.returncode == 0, col_data
+            clean = (res.returncode == 0 and col_data.get('ok') is True
+                     and not any(col_data.get(key) for key in (
+                         'violations', 'level_violations', 'unprotected_assets', 'unprotected_actors')))
+            return clean, col_data
         except Exception as exc:
             return False, {"error": str(exc)}
 

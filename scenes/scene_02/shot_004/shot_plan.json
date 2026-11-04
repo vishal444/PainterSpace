@@ -1,0 +1,242 @@
+{
+  "schema_version": "1.0",
+  "prompt": "two cars come towars each other, they stop infront of them. The drivers get out, starts shooting each other. One man dies, then the other man runs upto the dead guy and starts dancing.",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "car_1",
+      "asset_id": "cars.car1",
+      "label": "car_1",
+      "at_reference": "west",
+      "facing_reference": "east",
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "car_2",
+      "asset_id": "cars.car2",
+      "label": "car_2",
+      "at_reference": "east",
+      "facing_reference": "west",
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.male",
+      "label": "driver_1",
+      "at_reference": "car_1:driver_seat",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.male",
+      "label": "driver_2",
+      "at_reference": "car_2:driver_seat",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      }
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "drive_toward_1",
+      "function": "drive_toward",
+      "actor_id": "car_1",
+      "params": {
+        "target": "car_2",
+        "mode": "stop_short",
+        "gap": "near"
+      }
+    },
+    {
+      "beat_id": "drive_toward_2",
+      "function": "drive_toward",
+      "actor_id": "car_2",
+      "params": {
+        "target": "car_1",
+        "mode": "stop_short",
+        "gap": "near"
+      }
+    },
+    {
+      "beat_id": "exit_vehicle_3",
+      "function": "exit_vehicle",
+      "actor_id": "human_1",
+      "params": {
+        "door_part": "door_fl",
+        "vehicle": "car_1",
+        "target": "car_1:door_fl_stand",
+        "part": "car_1:door_fl"
+      }
+    },
+    {
+      "beat_id": "exit_vehicle_4",
+      "function": "exit_vehicle",
+      "actor_id": "human_2",
+      "params": {
+        "door_part": "door_fl",
+        "vehicle": "car_2",
+        "target": "car_2:door_fl_stand",
+        "part": "car_2:door_fl"
+      }
+    },
+    {
+      "beat_id": "use_weapon_5",
+      "function": "use_weapon",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "weapon": "pistol",
+        "action": "attack"
+      }
+    },
+    {
+      "beat_id": "use_weapon_6",
+      "function": "use_weapon",
+      "actor_id": "human_2",
+      "params": {
+        "target": "human_1",
+        "weapon": "pistol",
+        "action": "attack"
+      }
+    },
+    {
+      "beat_id": "collapse_or_knockout_7",
+      "function": "collapse_or_knockout",
+      "actor_id": "human_2",
+      "params": {
+        "style": "dying"
+      }
+    },
+    {
+      "beat_id": "run_to_8",
+      "function": "run_to",
+      "actor_id": "human_1",
+      "params": {
+        "target": "human_2",
+        "brief_path": {
+          "points": [
+            [
+              6.384389740380909,
+              0.0,
+              -3.0559231024690963
+            ],
+            [
+              8.200000000000017,
+              0.0,
+              -4.835000991821289
+            ],
+            [
+              9.800000000000011,
+              0.0,
+              -3.2350009918212876
+            ],
+            [
+              11.400000000000006,
+              0.0,
+              -3.2350009918212876
+            ],
+            [
+              13.0,
+              0.0,
+              -1.6350009918212862
+            ],
+            [
+              13.0,
+              0.0,
+              1.5649990081787166
+            ],
+            [
+              11.508950307769606,
+              0.0,
+              3.157520708201047
+            ]
+          ]
+        },
+        "action": "run_to",
+        "auto_crowd_movement": "run_to_8",
+        "arrival_position": [
+          11.508950307769606,
+          0.0,
+          3.157520708201047
+        ],
+        "crowd_movement_source": {
+          "beat_id": "run_to_8",
+          "function": "run_to",
+          "actor_id": "human_1",
+          "params": {
+            "target": "human_2"
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 4.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 5.233021950886098
+      }
+    },
+    {
+      "beat_id": "dance_9",
+      "function": "dance",
+      "actor_id": "human_1",
+      "params": {
+        "style": "groove",
+        "travel": "in_place"
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    }
+  ],
+  "interactions": [],
+  "brief_conflicts": []
+}

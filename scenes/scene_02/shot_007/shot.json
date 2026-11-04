@@ -1,80 +1,117 @@
 {
-  "prompt": "The street is filled with different type of cars. A man does parkour running in the traffic jumping off cars, running through cars etc.",
+  "prompt": "a crowd comes in from the south side takes the corner to the east side road.",
   "version": "1.0",
-  "scene_version": "scene_v2.usda",
+  "scene_version": "scene_v1.usda",
   "fps": 24,
-  "duration_s": 7.708333333333333,
-  "end_frame": 185,
+  "duration_s": 83.25,
+  "end_frame": 1998,
   "camera_prim": "/World/ShotCam",
-  "plan_hash": "ef021462b0959a48",
+  "plan_hash": "c5230c8a37b77bd1",
   "actors": [
     {
-      "actor_id": "car_1",
-      "label": "Sedan1",
-      "asset_id": "cars.car1",
-      "role_tags": [],
-      "appearance": {
-        "color_variant": "default",
-        "tint_rgb": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "height_scale": 1.0,
-        "descriptive_tags": []
-      },
-      "prim_path": "/World/Sedan1"
-    },
-    {
-      "actor_id": "car_2",
-      "label": "Coupe2",
-      "asset_id": "cars.car2",
-      "role_tags": [],
-      "appearance": {
-        "color_variant": "default",
-        "tint_rgb": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "height_scale": 1.0,
-        "descriptive_tags": []
-      },
-      "prim_path": "/World/Coupe2"
-    },
-    {
-      "actor_id": "car_3",
-      "label": "Sedan3",
-      "asset_id": "cars.car1",
-      "role_tags": [],
-      "appearance": {
-        "color_variant": "default",
-        "tint_rgb": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "height_scale": 1.0,
-        "descriptive_tags": []
-      },
-      "prim_path": "/World/Sedan3"
-    },
-    {
       "actor_id": "human_1",
-      "label": "Parkour_Runner",
-      "asset_id": "character.male",
+      "label": "human_1",
+      "asset_id": "character.human",
       "role_tags": [],
       "appearance": {
-        "color_variant": "crimson",
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "prim_path": "/World/human_1"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "human_2",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "red",
         "tint_rgb": [
           0.85,
           0.22,
           0.18
         ],
-        "height_scale": 1.02,
-        "descriptive_tags": []
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
       },
-      "prim_path": "/World/Parkour_Runner"
+      "prim_path": "/World/human_2"
+    },
+    {
+      "actor_id": "human_3",
+      "label": "human_3",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "prim_path": "/World/human_3"
+    },
+    {
+      "actor_id": "human_4",
+      "label": "human_4",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "prim_path": "/World/human_4"
+    },
+    {
+      "actor_id": "human_5",
+      "label": "human_5",
+      "asset_id": "character.human",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      },
+      "prim_path": "/World/human_5"
     }
   ]
 }

@@ -1,13 +1,98 @@
 {
   "schema_version": "1.0",
-  "prompt": "",
+  "prompt": "17 people come out of the buildings and dance together.",
   "seed": 42,
   "setup": [
     {
       "action_type": "place",
       "actor_id": "human_1",
-      "asset_id": "character.human",
-      "label": "Driver",
+      "asset_id": "character.female",
+      "label": "human_1",
+      "at_reference": "ResidentialAvenue:standing_left_01",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.male",
+      "label": "human_2",
+      "at_reference": "ResidentialAvenue:standing_left_03",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_3",
+      "asset_id": "character.female",
+      "label": "human_3",
+      "at_reference": "ResidentialAvenue:standing_left_05",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_4",
+      "asset_id": "character.male",
+      "label": "human_4",
+      "at_reference": "ResidentialAvenue:standing_left_07",
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_5",
+      "asset_id": "character.female",
+      "label": "human_5",
+      "at_reference": "ResidentialAvenue:standing_left_09",
       "appearance": {
         "color_variant": "charcoal",
         "tint_rgb": [
@@ -15,37 +100,265 @@
           0.22,
           0.25
         ],
-        "height_scale": 1.04,
-        "descriptive_tags": []
-      },
-      "position": [
-        3.4,
-        0.0,
-        -5.5
-      ],
-      "facing_deg": 180.0
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      }
     },
     {
       "action_type": "place",
-      "actor_id": "human_2",
-      "asset_id": "character.human",
-      "label": "Runner",
+      "actor_id": "human_6",
+      "asset_id": "character.male",
+      "label": "human_6",
+      "at_reference": "ResidentialAvenue:standing_left_11",
       "appearance": {
-        "color_variant": "light_beige",
+        "color_variant": "purple",
         "tint_rgb": [
-          0.92,
-          0.88,
-          0.78
+          0.72,
+          0.38,
+          0.82
         ],
-        "height_scale": 0.98,
-        "descriptive_tags": []
-      },
-      "position": [
-        -0.6,
-        0.0,
-        -9.0
-      ],
-      "facing_deg": 180.0
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_7",
+      "asset_id": "character.female",
+      "label": "human_7",
+      "at_reference": "ResidentialAvenue:standing_left_13",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_8",
+      "asset_id": "character.male",
+      "label": "human_8",
+      "at_reference": "ResidentialAvenue:standing_left_15",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_9",
+      "asset_id": "character.female",
+      "label": "human_9",
+      "at_reference": "ResidentialAvenue:standing_left_17",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_10",
+      "asset_id": "character.male",
+      "label": "human_10",
+      "at_reference": "ResidentialAvenue:standing_right_02",
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_11",
+      "asset_id": "character.female",
+      "label": "human_11",
+      "at_reference": "ResidentialAvenue:standing_right_04",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_12",
+      "asset_id": "character.male",
+      "label": "human_12",
+      "at_reference": "ResidentialAvenue:standing_right_06",
+      "appearance": {
+        "color_variant": "purple",
+        "tint_rgb": [
+          0.72,
+          0.38,
+          0.82
+        ],
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_13",
+      "asset_id": "character.female",
+      "label": "human_13",
+      "at_reference": "ResidentialAvenue:standing_right_08",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_14",
+      "asset_id": "character.male",
+      "label": "human_14",
+      "at_reference": "ResidentialAvenue:standing_right_10",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_15",
+      "asset_id": "character.female",
+      "label": "human_15",
+      "at_reference": "ResidentialAvenue:standing_right_12",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_16",
+      "asset_id": "character.male",
+      "label": "human_16",
+      "at_reference": "ResidentialAvenue:standing_right_14",
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      }
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_17",
+      "asset_id": "character.female",
+      "label": "human_17",
+      "at_reference": "ResidentialAvenue:standing_right_16",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      }
     }
   ],
   "beats": [
@@ -54,101 +367,1212 @@
       "function": "walk_to",
       "actor_id": "human_1",
       "params": {
-        "target": "Car1:door_fl_stand",
-        "at_time": 0.0
+        "target": "Ground:standing_left_01",
+        "brief_path": {
+          "points": [
+            [
+              -1.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -1.2499999999999998,
+              -8.940696724635266e-10,
+              2.085189444042995
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_1",
+        "arrival_position": [
+          -1.2499999999999998,
+          -8.940696724635266e-10,
+          2.085189444042995
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_1",
+          "function": "walk_to",
+          "actor_id": "human_1",
+          "params": {
+            "target": "Ground:standing_left_01"
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
       },
       "duration_condition": {
         "type": "for_duration",
-        "value": 4.0
+        "value": 3.0
       }
     },
     {
-      "beat_id": "open_part_2",
-      "function": "open_part",
-      "actor_id": "human_1",
-      "params": {
-        "part": "Car1:door_fl",
-        "at_time": 4.0
-      },
-      "duration_condition": {
-        "type": "for_duration",
-        "value": 2.0
-      }
-    },
-    {
-      "beat_id": "wait_3",
-      "function": "wait",
+      "beat_id": "walk_to_2",
+      "function": "walk_to",
       "actor_id": "human_2",
       "params": {
-        "at_time": 0.0
+        "target": "Ground:standing_left_02",
+        "wait_for": [
+          "walk_to_1"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -4.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -3.1005180563869814,
+              -8.940696724635266e-10,
+              -3.2320850584742145
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_2",
+        "arrival_position": [
+          -3.1005180563869814,
+          -8.940696724635266e-10,
+          -3.2320850584742145
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_2",
+          "function": "walk_to",
+          "actor_id": "human_2",
+          "params": {
+            "target": "Ground:standing_left_02",
+            "wait_for": [
+              "walk_to_1"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 3.0
       },
       "duration_condition": {
         "type": "for_duration",
-        "value": 5.0
+        "value": 3.0
       }
     },
     {
-      "beat_id": "run_to_4",
-      "function": "run_to",
-      "actor_id": "human_2",
+      "beat_id": "walk_to_3",
+      "function": "walk_to",
+      "actor_id": "human_3",
       "params": {
-        "target": "beside(human_1, left, 1.4)",
-        "at_time": 5.0
+        "target": "Ground:standing_left_03",
+        "wait_for": [
+          "walk_to_2"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -7.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -5.928896353883958,
+              -8.940696724635266e-10,
+              -5.65461388513371
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_3",
+        "arrival_position": [
+          -5.928896353883958,
+          -8.940696724635266e-10,
+          -5.65461388513371
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_3",
+          "function": "walk_to",
+          "actor_id": "human_3",
+          "params": {
+            "target": "Ground:standing_left_03",
+            "wait_for": [
+              "walk_to_2"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 6.0
       },
       "duration_condition": {
         "type": "for_duration",
-        "value": 2.0
+        "value": 3.0
       }
     },
     {
-      "beat_id": "react_5",
-      "function": "react",
-      "actor_id": "human_2",
+      "beat_id": "walk_to_4",
+      "function": "walk_to",
+      "actor_id": "human_4",
       "params": {
-        "mood": "spooked",
-        "look_at": null,
-        "at_time": 7.0
+        "target": "Ground:standing_left_04",
+        "wait_for": [
+          "walk_to_3"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -10.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -9.96717345989212,
+              -8.940696724635266e-10,
+              -3.861449658335983
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_4",
+        "arrival_position": [
+          -9.96717345989212,
+          -8.940696724635266e-10,
+          -3.861449658335983
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_4",
+          "function": "walk_to",
+          "actor_id": "human_4",
+          "params": {
+            "target": "Ground:standing_left_04",
+            "wait_for": [
+              "walk_to_3"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 9.0
       },
       "duration_condition": {
         "type": "for_duration",
-        "value": 2.0
+        "value": 3.0
       }
     },
     {
-      "beat_id": "turn_to_face_6",
-      "function": "turn_to_face",
+      "beat_id": "walk_to_5",
+      "function": "walk_to",
+      "actor_id": "human_5",
+      "params": {
+        "target": "Ground:standing_left_05",
+        "wait_for": [
+          "walk_to_4"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -13.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -10.38142400660445,
+              -8.940696724635266e-10,
+              3.740949949415299
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_5",
+        "arrival_position": [
+          -10.38142400660445,
+          -8.940696724635266e-10,
+          3.740949949415299
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_5",
+          "function": "walk_to",
+          "actor_id": "human_5",
+          "params": {
+            "target": "Ground:standing_left_05",
+            "wait_for": [
+              "walk_to_4"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 12.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_6",
+      "function": "walk_to",
+      "actor_id": "human_6",
+      "params": {
+        "target": "Ground:standing_left_06",
+        "wait_for": [
+          "walk_to_5"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -16.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -13.139197553549181,
+              -8.940696724635266e-10,
+              -3.6271404841921204
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_6",
+        "arrival_position": [
+          -13.139197553549181,
+          -8.940696724635266e-10,
+          -3.6271404841921204
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_6",
+          "function": "walk_to",
+          "actor_id": "human_6",
+          "params": {
+            "target": "Ground:standing_left_06",
+            "wait_for": [
+              "walk_to_5"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 15.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_7",
+      "function": "walk_to",
+      "actor_id": "human_7",
+      "params": {
+        "target": "Ground:standing_left_07",
+        "wait_for": [
+          "walk_to_6"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -19.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -15.047481990338895,
+              -8.940696724635266e-10,
+              1.7610242440826962
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_7",
+        "arrival_position": [
+          -15.047481990338895,
+          -8.940696724635266e-10,
+          1.7610242440826962
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_7",
+          "function": "walk_to",
+          "actor_id": "human_7",
+          "params": {
+            "target": "Ground:standing_left_07",
+            "wait_for": [
+              "walk_to_6"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 18.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_8",
+      "function": "walk_to",
+      "actor_id": "human_8",
+      "params": {
+        "target": "Ground:standing_left_08",
+        "wait_for": [
+          "walk_to_7"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -22.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -17.081095178430317,
+              -8.940696724635266e-10,
+              -0.8997898951222347
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_8",
+        "arrival_position": [
+          -17.081095178430317,
+          -8.940696724635266e-10,
+          -0.8997898951222347
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_8",
+          "function": "walk_to",
+          "actor_id": "human_8",
+          "params": {
+            "target": "Ground:standing_left_08",
+            "wait_for": [
+              "walk_to_7"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 21.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_9",
+      "function": "walk_to",
+      "actor_id": "human_9",
+      "params": {
+        "target": "Ground:standing_left_09",
+        "wait_for": [
+          "walk_to_8"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              -25.25,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              -17.730968596406917,
+              -8.940696724635266e-10,
+              -3.4902700487486147
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_9",
+        "arrival_position": [
+          -17.730968596406917,
+          -8.940696724635266e-10,
+          -3.4902700487486147
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_9",
+          "function": "walk_to",
+          "actor_id": "human_9",
+          "params": {
+            "target": "Ground:standing_left_09",
+            "wait_for": [
+              "walk_to_8"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 24.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_10",
+      "function": "walk_to",
+      "actor_id": "human_10",
+      "params": {
+        "target": "Ground:standing_right_01",
+        "wait_for": [
+          "walk_to_9"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              1.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              0.6005180563869819,
+              -8.940696724635266e-10,
+              -3.2320850584742145
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_10",
+        "arrival_position": [
+          0.6005180563869819,
+          -8.940696724635266e-10,
+          -3.2320850584742145
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_10",
+          "function": "walk_to",
+          "actor_id": "human_10",
+          "params": {
+            "target": "Ground:standing_right_01",
+            "wait_for": [
+              "walk_to_9"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 27.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_11",
+      "function": "walk_to",
+      "actor_id": "human_11",
+      "params": {
+        "target": "Ground:standing_right_02",
+        "wait_for": [
+          "walk_to_10"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              4.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              5.3009653760197075,
+              -8.940696724635266e-10,
+              3.4037723476194968
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_11",
+        "arrival_position": [
+          5.3009653760197075,
+          -8.940696724635266e-10,
+          3.4037723476194968
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_11",
+          "function": "walk_to",
+          "actor_id": "human_11",
+          "params": {
+            "target": "Ground:standing_right_02",
+            "wait_for": [
+              "walk_to_10"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 30.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_12",
+      "function": "walk_to",
+      "actor_id": "human_12",
+      "params": {
+        "target": "Ground:standing_right_03",
+        "wait_for": [
+          "walk_to_11"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              7.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              7.467173459892117,
+              -8.940696724635266e-10,
+              -3.861449658335985
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_12",
+        "arrival_position": [
+          7.467173459892117,
+          -8.940696724635266e-10,
+          -3.861449658335985
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_12",
+          "function": "walk_to",
+          "actor_id": "human_12",
+          "params": {
+            "target": "Ground:standing_right_03",
+            "wait_for": [
+              "walk_to_11"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 33.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_13",
+      "function": "walk_to",
+      "actor_id": "human_13",
+      "params": {
+        "target": "Ground:standing_right_04",
+        "wait_for": [
+          "walk_to_12"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              10.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              9.800000000000011,
+              -0.019999999552965164,
+              -1.6350009918212862
+            ],
+            [
+              6.600000000000023,
+              -0.019999999552965164,
+              -1.6350009918212862
+            ],
+            [
+              5.0,
+              -0.019999999552965164,
+              -3.2350009918212876
+            ],
+            [
+              4.201082730878392,
+              -8.940696724635266e-10,
+              -5.897096405759602
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_13",
+        "arrival_position": [
+          4.201082730878392,
+          -8.940696724635266e-10,
+          -5.897096405759602
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_13",
+          "function": "walk_to",
+          "actor_id": "human_13",
+          "params": {
+            "target": "Ground:standing_right_04",
+            "wait_for": [
+              "walk_to_12"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 36.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.457525601068511
+      }
+    },
+    {
+      "beat_id": "walk_to_14",
+      "function": "walk_to",
+      "actor_id": "human_14",
+      "params": {
+        "target": "Ground:standing_right_05",
+        "wait_for": [
+          "walk_to_13"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              13.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              10.639197553549177,
+              -8.940696724635266e-10,
+              -3.627140484192125
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_14",
+        "arrival_position": [
+          10.639197553549177,
+          -8.940696724635266e-10,
+          -3.627140484192125
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_14",
+          "function": "walk_to",
+          "actor_id": "human_14",
+          "params": {
+            "target": "Ground:standing_right_05",
+            "wait_for": [
+              "walk_to_13"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 39.45752560106851
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_15",
+      "function": "walk_to",
+      "actor_id": "human_15",
+      "params": {
+        "target": "Ground:standing_right_06",
+        "wait_for": [
+          "walk_to_14"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              16.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              12.547481990338895,
+              -8.940696724635266e-10,
+              1.761024244082693
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_15",
+        "arrival_position": [
+          12.547481990338895,
+          -8.940696724635266e-10,
+          1.761024244082693
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_15",
+          "function": "walk_to",
+          "actor_id": "human_15",
+          "params": {
+            "target": "Ground:standing_right_06",
+            "wait_for": [
+              "walk_to_14"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 42.45752560106851
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_16",
+      "function": "walk_to",
+      "actor_id": "human_16",
+      "params": {
+        "target": "Ground:standing_right_07",
+        "wait_for": [
+          "walk_to_15"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              19.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              14.581095178430317,
+              -8.940696724635266e-10,
+              -0.8997898951222338
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_16",
+        "arrival_position": [
+          14.581095178430317,
+          -8.940696724635266e-10,
+          -0.8997898951222338
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_16",
+          "function": "walk_to",
+          "actor_id": "human_16",
+          "params": {
+            "target": "Ground:standing_right_07",
+            "wait_for": [
+              "walk_to_15"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 45.45752560106851
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "walk_to_17",
+      "function": "walk_to",
+      "actor_id": "human_17",
+      "params": {
+        "target": "Ground:standing_right_08",
+        "wait_for": [
+          "walk_to_16"
+        ],
+        "brief_path": {
+          "points": [
+            [
+              22.75,
+              -0.019999999552965164,
+              -1.2050018310546875
+            ],
+            [
+              15.506521106331384,
+              -8.940696724635266e-10,
+              1.8429971177637365
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_17",
+        "arrival_position": [
+          15.506521106331384,
+          -8.940696724635266e-10,
+          1.8429971177637365
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_17",
+          "function": "walk_to",
+          "actor_id": "human_17",
+          "params": {
+            "target": "Ground:standing_right_08",
+            "wait_for": [
+              "walk_to_16"
+            ]
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 48.45752560106851
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 3.0
+      }
+    },
+    {
+      "beat_id": "dance_18",
+      "function": "dance",
       "actor_id": "human_1",
       "params": {
-        "target": "human_2",
-        "at_time": 7.0
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_17"
+        ]
       },
       "duration_condition": {
         "type": "for_duration",
-        "value": 0.6
+        "value": "medium"
       }
     },
     {
-      "beat_id": "gesture_7",
-      "function": "gesture",
-      "actor_id": "human_1",
+      "beat_id": "dance_19",
+      "function": "dance",
+      "actor_id": "human_2",
       "params": {
-        "move": "acknowledging",
-        "target": null,
-        "at_time": 7.6
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_18"
+        ]
       },
       "duration_condition": {
         "type": "for_duration",
-        "value": 1.4
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_20",
+      "function": "dance",
+      "actor_id": "human_3",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_19"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_21",
+      "function": "dance",
+      "actor_id": "human_4",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_20"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_22",
+      "function": "dance",
+      "actor_id": "human_5",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_21"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_23",
+      "function": "dance",
+      "actor_id": "human_6",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_22"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_24",
+      "function": "dance",
+      "actor_id": "human_7",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_23"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_25",
+      "function": "dance",
+      "actor_id": "human_8",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_24"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_26",
+      "function": "dance",
+      "actor_id": "human_9",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_25"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_27",
+      "function": "dance",
+      "actor_id": "human_10",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_26"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_28",
+      "function": "dance",
+      "actor_id": "human_11",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_27"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_29",
+      "function": "dance",
+      "actor_id": "human_12",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_28"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_30",
+      "function": "dance",
+      "actor_id": "human_13",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_29"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_31",
+      "function": "dance",
+      "actor_id": "human_14",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_30"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_32",
+      "function": "dance",
+      "actor_id": "human_15",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_31"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_33",
+      "function": "dance",
+      "actor_id": "human_16",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_32"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_34",
+      "function": "dance",
+      "actor_id": "human_17",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "dance_33"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
       }
     }
   ],
-  "camera": {
-    "style": "three_quarter_front_left",
-    "actors": [
-      "human_1",
-      "human_2"
-    ],
-    "vantage": "front",
-    "move": "push_in"
-  }
+  "interactions": [
+    {
+      "interaction_id": "exit_and_dance",
+      "participants": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17"
+      ],
+      "actions": [
+        "walk_to_1",
+        "walk_to_2",
+        "walk_to_3",
+        "walk_to_4",
+        "walk_to_5",
+        "walk_to_6",
+        "walk_to_7",
+        "walk_to_8",
+        "walk_to_9",
+        "walk_to_10",
+        "walk_to_11",
+        "walk_to_12",
+        "walk_to_13",
+        "walk_to_14",
+        "walk_to_15",
+        "walk_to_16",
+        "walk_to_17",
+        "dance_18",
+        "dance_19",
+        "dance_20",
+        "dance_21",
+        "dance_22",
+        "dance_23",
+        "dance_24",
+        "dance_25",
+        "dance_26",
+        "dance_27",
+        "dance_28",
+        "dance_29",
+        "dance_30",
+        "dance_31",
+        "dance_32",
+        "dance_33",
+        "dance_34"
+      ],
+      "timing": "sequence",
+      "intent": "",
+      "after": []
+    }
+  ],
+  "brief_conflicts": []
 }

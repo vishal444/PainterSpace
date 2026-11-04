@@ -1,0 +1,66 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "sitting",
+      "start_s": 0.0,
+      "end_s": 1.0,
+      "speed": 1.0,
+      "blend_s": 0.0,
+      "start_frame": 0,
+      "end_frame": 24
+    },
+    {
+      "clip": "standing_up",
+      "start_s": 1.0,
+      "end_s": 2.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 24,
+      "end_frame": 48
+    },
+    {
+      "clip": "shooting_gun",
+      "start_s": 2.0,
+      "end_s": 4.0,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 48,
+      "end_frame": 96
+    },
+    {
+      "clip": "dying_and_falling_backwards",
+      "start_s": 4.0,
+      "end_s": 6.2,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 96,
+      "end_frame": 149
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 6.2,
+      "end_s": 12.75,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 149,
+      "end_frame": 306
+    }
+  ],
+  "exact_windows": false,
+  "look_at_targets": [
+    {
+      "target_pos": [
+        -9.85,
+        0.35,
+        -0.36
+      ],
+      "target_actor": "",
+      "start_s": 2.0,
+      "end_s": 4.0,
+      "weight": 0.85,
+      "yaw_deg": 0.0,
+      "pitch_deg": 1.06
+    }
+  ]
+}

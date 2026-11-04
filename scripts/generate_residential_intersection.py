@@ -13,6 +13,24 @@ ROOT = Path(__file__).resolve().parents[1]
 OBJ = ROOT / "assets/residential_intersection.obj"
 MTL = ROOT / "assets/residential_intersection.mtl"
 
+# The perpendicular road occupies the same open corridor on both axes.
+BLOCK_WIDTH_M = 180.0
+ROAD_HALF_WIDTH_M = 16.8
+SIDEWALK_OFFSET_M = 22.0
+SIDEWALK_WIDTH_M = 10.0
+# Road paint sits on the asphalt and must not become a raised traffic obstacle.
+ROAD_MARKING_HEIGHT_M = 0.02
+
+
+def outside_road_segments(block_width, road_half_width):
+    """Return the two spans outside a centered crossing road."""
+    half_block = block_width / 2.0
+    if road_half_width <= 0 or road_half_width >= half_block:
+        raise ValueError("Road half-width must lie inside the block")
+    length = half_block - road_half_width
+    center = road_half_width + length / 2.0
+    return ((-center, length), (center, length))
+
 
 def signal(m, x, y, side):
     """Traffic signal and street sign at a corner; side is the mast direction."""
@@ -35,34 +53,47 @@ def tree(m, x, y):
 def build():
     m = Mesh()
     # Asphalt city block with two crossing roads.
-    m.box((0, 0, -.35), (180, 180, .7), "asphalt")
-    m.box((0, -22, .08), (180, 10, .18), "sidewalk")
-    m.box((0, 22, .08), (180, 10, .18), "sidewalk")
-    m.box((-22, 0, .08), (10, 180, .18), "sidewalk")
-    m.box((22, 0, .08), (10, 180, .18), "sidewalk")
-    # Continuous curbs create four crisp corners and accessible ramp wedges.
-    for y in (-16.8, 16.8): m.box((0, y, .42), (180, .38, .55), "curb")
-    for x in (-16.8, 16.8): m.box((x, 0, .42), (.38, 180, .55), "curb")
+    m.box((0, 0, -.35), (BLOCK_WIDTH_M, BLOCK_WIDTH_M, .7), "asphalt")
+    # Sidewalks and curbs belong to the four corners, leaving both roads open.
+    for span_center, span_length in outside_road_segments(BLOCK_WIDTH_M, ROAD_HALF_WIDTH_M):
+        for side in (-1, 1):
+            sidewalk_at = side * SIDEWALK_OFFSET_M
+            curb_at = side * ROAD_HALF_WIDTH_M
+            m.box((span_center, sidewalk_at, .08),
+                  (span_length, SIDEWALK_WIDTH_M, .18), "sidewalk")
+            m.box((sidewalk_at, span_center, .08),
+                  (SIDEWALK_WIDTH_M, span_length, .18), "sidewalk")
+            m.box((span_center, curb_at, .42), (span_length, .38, .55), "curb")
+            m.box((curb_at, span_center, .42), (.38, span_length, .55), "curb")
     for x, y in ((-20,-20),(-20,20),(20,-20),(20,20)):
         m.box((x, y, .27), (4.4, 4.4, .14), "limestone")
 
     # Four zebra crossings, two per street, with a clear central junction.
     for x in (-14.0, 14.0):
-        for i in range(7): m.box((x + (i - 3) * .62, 0, .16), (.30, 24, .06), "limestone")
+        for i in range(7): m.box((x + (i - 3) * .62, 0, ROAD_MARKING_HEIGHT_M / 2),
+                                 (.30, 24, ROAD_MARKING_HEIGHT_M), "limestone")
     for y in (-14.0, 14.0):
-        for i in range(7): m.box((0, y + (i - 3) * .62, .16), (24, .30, .06), "limestone")
+        for i in range(7): m.box((0, y + (i - 3) * .62, ROAD_MARKING_HEIGHT_M / 2),
+                                 (24, .30, ROAD_MARKING_HEIGHT_M), "limestone")
     # Center lines stop before the crossing, as on a real junction.
-    for x in range(-78, -19, 7): m.box((x, 0, .14), (3.4, .12, .05), "sign_gold")
-    for x in range(20, 79, 7): m.box((x, 0, .14), (3.4, .12, .05), "sign_gold")
-    for y in range(-78, -19, 7): m.box((0, y, .14), (.12, 3.4, .05), "sign_gold")
-    for y in range(20, 79, 7): m.box((0, y, .14), (.12, 3.4, .05), "sign_gold")
+    for x in range(-78, -19, 7): m.box((x, 0, ROAD_MARKING_HEIGHT_M / 2),
+                                       (3.4, .12, ROAD_MARKING_HEIGHT_M), "sign_gold")
+    for x in range(20, 79, 7): m.box((x, 0, ROAD_MARKING_HEIGHT_M / 2),
+                                     (3.4, .12, ROAD_MARKING_HEIGHT_M), "sign_gold")
+    for y in range(-78, -19, 7): m.box((0, y, ROAD_MARKING_HEIGHT_M / 2),
+                                       (.12, 3.4, ROAD_MARKING_HEIGHT_M), "sign_gold")
+    for y in range(20, 79, 7): m.box((0, y, ROAD_MARKING_HEIGHT_M / 2),
+                                     (.12, 3.4, ROAD_MARKING_HEIGHT_M), "sign_gold")
 
     # Corner traffic signals, hydrants, and street lamps; no vehicles.
+    hydrant_offset = ROAD_HALF_WIDTH_M + 2.5
     for x, y in ((-18,-18),(-18,18),(18,-18),(18,18)):
         signal(m, x, y, "x" if abs(x) >= abs(y) else "y")
-        m.box((x + (3 if x < 0 else -3), y + (3 if y < 0 else -3), 1.0), (.32, .32, 1.0), "metal")
-        m.box((x + (3 if x < 0 else -3), y + (3 if y < 0 else -3), 1.75), (.50, .50, .70), "sign_gold")
-    for x, y in ((-42,-21),(-14,-21),(14,-21),(42,-21),(-42,21),(-14,21),(14,21),(42,21)):
+        hydrant_x = -hydrant_offset if x < 0 else hydrant_offset
+        hydrant_y = -hydrant_offset if y < 0 else hydrant_offset
+        m.box((hydrant_x, hydrant_y, 1.0), (.32, .32, 1.0), "metal")
+        m.box((hydrant_x, hydrant_y, 1.75), (.50, .50, .70), "sign_gold")
+    for x, y in ((-42,-21),(42,-21),(-42,21),(42,21)):
         m.box((x, y, 3.1), (.20, .20, 5.2), "street_lamp")
         m.box((x, y + (1 if y < 0 else -1), 5.6), (1.0, .12, .12), "street_lamp")
 
@@ -79,8 +110,10 @@ def build():
         tree(m, x, -21); tree(m, x, 21)
     for y in (-62,-49,49,62):
         tree(m, -21, y); tree(m, 21, y)
-    for x, y in ((-10,-20),(10,-20),(-10,20),(10,20)):
-        m.box((x, y, 1.0), (1.1, .9, 1.0), "planter")
+    corner_planter_offset = ROAD_HALF_WIDTH_M + 4.0
+    for x in (-corner_planter_offset, corner_planter_offset):
+        for y in (-corner_planter_offset, corner_planter_offset):
+            m.box((x, y, 1.0), (1.1, .9, 1.0), "planter")
 
     ROOT.joinpath("assets").mkdir(exist_ok=True)
     m.write()

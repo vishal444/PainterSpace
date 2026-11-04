@@ -1,0 +1,2903 @@
+{
+  "schema_version": "1.0",
+  "prompt": "19 people come from both sides of the buildings, they come together and starts dancing.",
+  "seed": 42,
+  "setup": [
+    {
+      "action_type": "place",
+      "actor_id": "human_1",
+      "asset_id": "character.human",
+      "label": "human_1",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "position": [
+        -25.31161675814527,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_2",
+      "asset_id": "character.human",
+      "label": "human_2",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "position": [
+        -22.49921489612913,
+        -0.019999999552965164,
+        -15.053798068991929
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_3",
+      "asset_id": "character.human",
+      "label": "human_3",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "position": [
+        -19.686813034112987,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_4",
+      "asset_id": "character.human",
+      "label": "human_4",
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "position": [
+        -16.874411172096845,
+        -0.019999999552965164,
+        -15.101201877709215
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_5",
+      "asset_id": "character.human",
+      "label": "human_5",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      },
+      "position": [
+        -14.062009310080706,
+        -0.019999999552965164,
+        -15.06564902117125
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_6",
+      "asset_id": "character.human",
+      "label": "human_6",
+      "appearance": {
+        "color_variant": "purple",
+        "tint_rgb": [
+          0.72,
+          0.38,
+          0.82
+        ],
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
+      },
+      "position": [
+        -11.249607448064564,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_7",
+      "asset_id": "character.human",
+      "label": "human_7",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "position": [
+        -8.437205586048423,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_8",
+      "asset_id": "character.human",
+      "label": "human_8",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "position": [
+        -5.624803724032282,
+        -0.019999999552965164,
+        -15.053798068991929
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_9",
+      "asset_id": "character.human",
+      "label": "human_9",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "position": [
+        -2.812401862016141,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_10",
+      "asset_id": "character.human",
+      "label": "human_10",
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "position": [
+        0.0,
+        -0.019999999552965164,
+        -15.101201877709215
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_11",
+      "asset_id": "character.human",
+      "label": "human_11",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      },
+      "position": [
+        2.812401862016141,
+        -0.019999999552965164,
+        -15.06564902117125
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_12",
+      "asset_id": "character.human",
+      "label": "human_12",
+      "appearance": {
+        "color_variant": "purple",
+        "tint_rgb": [
+          0.72,
+          0.38,
+          0.82
+        ],
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
+      },
+      "position": [
+        5.624803724032282,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_13",
+      "asset_id": "character.human",
+      "label": "human_13",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "position": [
+        8.437205586048423,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_14",
+      "asset_id": "character.human",
+      "label": "human_14",
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "position": [
+        11.249607448064564,
+        -0.019999999552965164,
+        -15.053798068991929
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_15",
+      "asset_id": "character.human",
+      "label": "human_15",
+      "appearance": {
+        "color_variant": "green",
+        "tint_rgb": [
+          0.24,
+          0.72,
+          0.35
+        ],
+        "height_scale": 0.94,
+        "descriptive_tags": [
+          "short",
+          "green jacket",
+          "bystander"
+        ]
+      },
+      "position": [
+        14.062009310080706,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_16",
+      "asset_id": "character.human",
+      "label": "human_16",
+      "appearance": {
+        "color_variant": "yellow",
+        "tint_rgb": [
+          0.88,
+          0.74,
+          0.18
+        ],
+        "height_scale": 1.02,
+        "descriptive_tags": [
+          "yellow jacket",
+          "average build",
+          "driver"
+        ]
+      },
+      "position": [
+        16.874411172096845,
+        -0.019999999552965164,
+        -15.101201877709215
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_17",
+      "asset_id": "character.human",
+      "label": "human_17",
+      "appearance": {
+        "color_variant": "charcoal",
+        "tint_rgb": [
+          0.22,
+          0.22,
+          0.25
+        ],
+        "height_scale": 1.05,
+        "descriptive_tags": [
+          "tall",
+          "dark coat",
+          "detective"
+        ]
+      },
+      "position": [
+        19.686813034112987,
+        -0.019999999552965164,
+        -15.06564902117125
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_18",
+      "asset_id": "character.human",
+      "label": "human_18",
+      "appearance": {
+        "color_variant": "purple",
+        "tint_rgb": [
+          0.72,
+          0.38,
+          0.82
+        ],
+        "height_scale": 0.96,
+        "descriptive_tags": [
+          "short",
+          "purple jacket",
+          "witness"
+        ]
+      },
+      "position": [
+        22.49921489612913,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    },
+    {
+      "action_type": "place",
+      "actor_id": "human_19",
+      "asset_id": "character.human",
+      "label": "human_19",
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "position": [
+        25.31161675814527,
+        -0.019999999552965164,
+        -15.124903782067857
+      ],
+      "facing_deg": 180.0
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "walk_to_1",
+      "function": "walk_to",
+      "actor_id": "human_1",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -25.31161675814527,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -25.31161675814527,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              -25.31161675814527,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_1",
+        "arrival_position": [
+          -25.31161675814527,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_1",
+          "function": "walk_to",
+          "actor_id": "human_1",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -25.31161675814527,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_2",
+      "function": "walk_to",
+      "actor_id": "human_2",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -22.49921489612913,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -22.49921489612913,
+              -0.019999999552965164,
+              -15.053798068991929
+            ],
+            [
+              -22.49921489612913,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_2",
+        "arrival_position": [
+          -22.49921489612913,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_2",
+          "function": "walk_to",
+          "actor_id": "human_2",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -22.49921489612913,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.697355109617561
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.697355109617561
+      }
+    },
+    {
+      "beat_id": "walk_to_3",
+      "function": "walk_to",
+      "actor_id": "human_3",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -19.686813034112987,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -19.686813034112987,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              -19.686813034112987,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_3",
+        "arrival_position": [
+          -19.686813034112987,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_3",
+          "function": "walk_to",
+          "actor_id": "human_3",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -19.686813034112987,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_4",
+      "function": "walk_to",
+      "actor_id": "human_4",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -16.874411172096845,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -16.874411172096845,
+              -0.019999999552965164,
+              -15.101201877709215
+            ],
+            [
+              -16.874411172096845,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_4",
+        "arrival_position": [
+          -16.874411172096845,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_4",
+          "function": "walk_to",
+          "actor_id": "human_4",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -16.874411172096845,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.731214972987052
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.731214972987052
+      }
+    },
+    {
+      "beat_id": "walk_to_5",
+      "function": "walk_to",
+      "actor_id": "human_5",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -14.062009310080706,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -14.062009310080706,
+              -0.019999999552965164,
+              -15.06564902117125
+            ],
+            [
+              -14.062009310080706,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_5",
+        "arrival_position": [
+          -14.062009310080706,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_5",
+          "function": "walk_to",
+          "actor_id": "human_5",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -14.062009310080706,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.705820075459934
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.705820075459934
+      }
+    },
+    {
+      "beat_id": "walk_to_6",
+      "function": "walk_to",
+      "actor_id": "human_6",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -11.249607448064564,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -11.249607448064564,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              -11.249607448064564,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_6",
+        "arrival_position": [
+          -11.249607448064564,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_6",
+          "function": "walk_to",
+          "actor_id": "human_6",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -11.249607448064564,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_7",
+      "function": "walk_to",
+      "actor_id": "human_7",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -8.437205586048423,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -8.437205586048423,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              -8.437205586048423,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_7",
+        "arrival_position": [
+          -8.437205586048423,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_7",
+          "function": "walk_to",
+          "actor_id": "human_7",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -8.437205586048423,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_8",
+      "function": "walk_to",
+      "actor_id": "human_8",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -5.624803724032282,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -5.624803724032282,
+              -0.019999999552965164,
+              -15.053798068991929
+            ],
+            [
+              -5.624803724032282,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_8",
+        "arrival_position": [
+          -5.624803724032282,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_8",
+          "function": "walk_to",
+          "actor_id": "human_8",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -5.624803724032282,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.697355109617561
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.697355109617561
+      }
+    },
+    {
+      "beat_id": "walk_to_9",
+      "function": "walk_to",
+      "actor_id": "human_9",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          -2.812401862016141,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              -2.812401862016141,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              -2.812401862016141,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_9",
+        "arrival_position": [
+          -2.812401862016141,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_9",
+          "function": "walk_to",
+          "actor_id": "human_9",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              -2.812401862016141,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_10",
+      "function": "walk_to",
+      "actor_id": "human_10",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          0.0,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              0.0,
+              -0.019999999552965164,
+              -15.101201877709215
+            ],
+            [
+              0.0,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_10",
+        "arrival_position": [
+          0.0,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_10",
+          "function": "walk_to",
+          "actor_id": "human_10",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              0.0,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.731214972987052
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.731214972987052
+      }
+    },
+    {
+      "beat_id": "walk_to_11",
+      "function": "walk_to",
+      "actor_id": "human_11",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          2.812401862016141,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              2.812401862016141,
+              -0.019999999552965164,
+              -15.06564902117125
+            ],
+            [
+              2.812401862016141,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_11",
+        "arrival_position": [
+          2.812401862016141,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_11",
+          "function": "walk_to",
+          "actor_id": "human_11",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              2.812401862016141,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.705820075459934
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.705820075459934
+      }
+    },
+    {
+      "beat_id": "walk_to_12",
+      "function": "walk_to",
+      "actor_id": "human_12",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          5.624803724032282,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              5.624803724032282,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              5.624803724032282,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_12",
+        "arrival_position": [
+          5.624803724032282,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_12",
+          "function": "walk_to",
+          "actor_id": "human_12",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              5.624803724032282,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_13",
+      "function": "walk_to",
+      "actor_id": "human_13",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          8.437205586048423,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              8.437205586048423,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              8.437205586048423,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_13",
+        "arrival_position": [
+          8.437205586048423,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_13",
+          "function": "walk_to",
+          "actor_id": "human_13",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              8.437205586048423,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_14",
+      "function": "walk_to",
+      "actor_id": "human_14",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          11.249607448064564,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              11.249607448064564,
+              -0.019999999552965164,
+              -15.053798068991929
+            ],
+            [
+              11.249607448064564,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_14",
+        "arrival_position": [
+          11.249607448064564,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_14",
+          "function": "walk_to",
+          "actor_id": "human_14",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              11.249607448064564,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.697355109617561
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.697355109617561
+      }
+    },
+    {
+      "beat_id": "walk_to_15",
+      "function": "walk_to",
+      "actor_id": "human_15",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          14.062009310080706,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              14.062009310080706,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              14.062009310080706,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_15",
+        "arrival_position": [
+          14.062009310080706,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_15",
+          "function": "walk_to",
+          "actor_id": "human_15",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              14.062009310080706,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_16",
+      "function": "walk_to",
+      "actor_id": "human_16",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          16.874411172096845,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              16.874411172096845,
+              -0.019999999552965164,
+              -15.101201877709215
+            ],
+            [
+              16.874411172096845,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_16",
+        "arrival_position": [
+          16.874411172096845,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_16",
+          "function": "walk_to",
+          "actor_id": "human_16",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              16.874411172096845,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.731214972987052
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.731214972987052
+      }
+    },
+    {
+      "beat_id": "walk_to_17",
+      "function": "walk_to",
+      "actor_id": "human_17",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          19.686813034112987,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              19.686813034112987,
+              -0.019999999552965164,
+              -15.06564902117125
+            ],
+            [
+              19.686813034112987,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_17",
+        "arrival_position": [
+          19.686813034112987,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_17",
+          "function": "walk_to",
+          "actor_id": "human_17",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              19.686813034112987,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.705820075459934
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.705820075459934
+      }
+    },
+    {
+      "beat_id": "walk_to_18",
+      "function": "walk_to",
+      "actor_id": "human_18",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          22.49921489612913,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              22.49921489612913,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              22.49921489612913,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_18",
+        "arrival_position": [
+          22.49921489612913,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_18",
+          "function": "walk_to",
+          "actor_id": "human_18",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              22.49921489612913,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "walk_to_19",
+      "function": "walk_to",
+      "actor_id": "human_19",
+      "params": {
+        "spatial_intent": "approach_crowd",
+        "wait_for": [],
+        "target": [
+          25.31161675814527,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+        "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+        "brief_path": {
+          "points": [
+            [
+              25.31161675814527,
+              -0.019999999552965164,
+              -15.124903782067857
+            ],
+            [
+              25.31161675814527,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ]
+          ]
+        },
+        "action": "walk_to",
+        "auto_crowd_movement": "walk_to_19",
+        "arrival_position": [
+          25.31161675814527,
+          -0.019999999552965164,
+          -1.4775009155273438
+        ],
+        "crowd_movement_source": {
+          "beat_id": "walk_to_19",
+          "function": "walk_to",
+          "actor_id": "human_19",
+          "params": {
+            "spatial_intent": "approach_crowd",
+            "wait_for": [],
+            "target": [
+              25.31161675814527,
+              -0.019999999552965164,
+              -1.4775009155273438
+            ],
+            "spatial_source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+            "spatial_destination_region": "ResidentialAvenue:floor_1dd3689b1879434e"
+          },
+          "duration_condition": {
+            "type": "for_duration",
+            "value": 9.748144904671795
+          }
+        }
+      },
+      "start_condition": {
+        "type": "at",
+        "value": 0.0
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": 9.748144904671795
+      }
+    },
+    {
+      "beat_id": "dance_20",
+      "function": "dance",
+      "actor_id": "human_1",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_21",
+      "function": "dance",
+      "actor_id": "human_2",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_22",
+      "function": "dance",
+      "actor_id": "human_3",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_23",
+      "function": "dance",
+      "actor_id": "human_4",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_24",
+      "function": "dance",
+      "actor_id": "human_5",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_25",
+      "function": "dance",
+      "actor_id": "human_6",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_26",
+      "function": "dance",
+      "actor_id": "human_7",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_27",
+      "function": "dance",
+      "actor_id": "human_8",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_28",
+      "function": "dance",
+      "actor_id": "human_9",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_29",
+      "function": "dance",
+      "actor_id": "human_10",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_30",
+      "function": "dance",
+      "actor_id": "human_11",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_31",
+      "function": "dance",
+      "actor_id": "human_12",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_32",
+      "function": "dance",
+      "actor_id": "human_13",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_33",
+      "function": "dance",
+      "actor_id": "human_14",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_34",
+      "function": "dance",
+      "actor_id": "human_15",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_35",
+      "function": "dance",
+      "actor_id": "human_16",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_36",
+      "function": "dance",
+      "actor_id": "human_17",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_37",
+      "function": "dance",
+      "actor_id": "human_18",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    },
+    {
+      "beat_id": "dance_38",
+      "function": "dance",
+      "actor_id": "human_19",
+      "params": {
+        "style": "groove",
+        "travel": "in_place",
+        "wait_for": [
+          "walk_to_1",
+          "walk_to_10",
+          "walk_to_11",
+          "walk_to_12",
+          "walk_to_13",
+          "walk_to_14",
+          "walk_to_15",
+          "walk_to_16",
+          "walk_to_17",
+          "walk_to_18",
+          "walk_to_19",
+          "walk_to_2",
+          "walk_to_3",
+          "walk_to_4",
+          "walk_to_5",
+          "walk_to_6",
+          "walk_to_7",
+          "walk_to_8",
+          "walk_to_9"
+        ]
+      },
+      "duration_condition": {
+        "type": "for_duration",
+        "value": "medium"
+      }
+    }
+  ],
+  "interactions": [
+    {
+      "interaction_id": "approach_crowd",
+      "participants": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17",
+        "human_18",
+        "human_19"
+      ],
+      "actions": [
+        "walk_to_1",
+        "walk_to_2",
+        "walk_to_3",
+        "walk_to_4",
+        "walk_to_5",
+        "walk_to_6",
+        "walk_to_7",
+        "walk_to_8",
+        "walk_to_9",
+        "walk_to_10",
+        "walk_to_11",
+        "walk_to_12",
+        "walk_to_13",
+        "walk_to_14",
+        "walk_to_15",
+        "walk_to_16",
+        "walk_to_17",
+        "walk_to_18",
+        "walk_to_19"
+      ],
+      "timing": "simultaneous",
+      "intent": "",
+      "after": []
+    },
+    {
+      "interaction_id": "dance_together",
+      "participants": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17",
+        "human_18",
+        "human_19"
+      ],
+      "actions": [
+        "dance_20",
+        "dance_21",
+        "dance_22",
+        "dance_23",
+        "dance_24",
+        "dance_25",
+        "dance_26",
+        "dance_27",
+        "dance_28",
+        "dance_29",
+        "dance_30",
+        "dance_31",
+        "dance_32",
+        "dance_33",
+        "dance_34",
+        "dance_35",
+        "dance_36",
+        "dance_37",
+        "dance_38"
+      ],
+      "timing": "simultaneous",
+      "intent": "dance together",
+      "after": [
+        "approach_crowd"
+      ]
+    }
+  ],
+  "brief_conflicts": [],
+  "spatial_intents": [
+    {
+      "intent_id": "approach_crowd",
+      "actors": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17",
+        "human_18",
+        "human_19"
+      ],
+      "movements": {
+        "human_1": "walk_to_1",
+        "human_2": "walk_to_2",
+        "human_3": "walk_to_3",
+        "human_4": "walk_to_4",
+        "human_5": "walk_to_5",
+        "human_6": "walk_to_6",
+        "human_7": "walk_to_7",
+        "human_8": "walk_to_8",
+        "human_9": "walk_to_9",
+        "human_10": "walk_to_10",
+        "human_11": "walk_to_11",
+        "human_12": "walk_to_12",
+        "human_13": "walk_to_13",
+        "human_14": "walk_to_14",
+        "human_15": "walk_to_15",
+        "human_16": "walk_to_16",
+        "human_17": "walk_to_17",
+        "human_18": "walk_to_18",
+        "human_19": "walk_to_19"
+      },
+      "source_region": "ResidentialAvenue:approach_e07091ecc823ac71",
+      "destination_region": "ResidentialAvenue:floor_1dd3689b1879434e",
+      "departure_timing": "simultaneous",
+      "gait": "walk",
+      "bindings": {
+        "human_1": {
+          "source": [
+            -25.31161675814527,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            -25.31161675814527,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_2": {
+          "source": [
+            -22.49921489612913,
+            -0.019999999552965164,
+            -15.053798068991929
+          ],
+          "destination": [
+            -22.49921489612913,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2562009310080706,
+          "destination_radius_m": 1.2562009310080706,
+          "source_solid_radius_m": 1.2562009310080706,
+          "destination_solid_radius_m": 1.2562009310080706
+        },
+        "human_3": {
+          "source": [
+            -19.686813034112987,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            -19.686813034112987,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_4": {
+          "source": [
+            -16.874411172096845,
+            -0.019999999552965164,
+            -15.101201877709215
+          ],
+          "destination": [
+            -16.874411172096845,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.208797122290785,
+          "destination_radius_m": 1.208797122290785,
+          "source_solid_radius_m": 1.208797122290785,
+          "destination_solid_radius_m": 1.208797122290785
+        },
+        "human_5": {
+          "source": [
+            -14.062009310080706,
+            -0.019999999552965164,
+            -15.06564902117125
+          ],
+          "destination": [
+            -14.062009310080706,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2443499788287493,
+          "destination_radius_m": 1.2443499788287493,
+          "source_solid_radius_m": 1.2443499788287493,
+          "destination_solid_radius_m": 1.2443499788287493
+        },
+        "human_6": {
+          "source": [
+            -11.249607448064564,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            -11.249607448064564,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_7": {
+          "source": [
+            -8.437205586048423,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            -8.437205586048423,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_8": {
+          "source": [
+            -5.624803724032282,
+            -0.019999999552965164,
+            -15.053798068991929
+          ],
+          "destination": [
+            -5.624803724032282,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2562009310080706,
+          "destination_radius_m": 1.2562009310080706,
+          "source_solid_radius_m": 1.2562009310080706,
+          "destination_solid_radius_m": 1.2562009310080706
+        },
+        "human_9": {
+          "source": [
+            -2.812401862016141,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            -2.812401862016141,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_10": {
+          "source": [
+            0.0,
+            -0.019999999552965164,
+            -15.101201877709215
+          ],
+          "destination": [
+            0.0,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.208797122290785,
+          "destination_radius_m": 1.208797122290785,
+          "source_solid_radius_m": 1.208797122290785,
+          "destination_solid_radius_m": 1.208797122290785
+        },
+        "human_11": {
+          "source": [
+            2.812401862016141,
+            -0.019999999552965164,
+            -15.06564902117125
+          ],
+          "destination": [
+            2.812401862016141,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2443499788287493,
+          "destination_radius_m": 1.2443499788287493,
+          "source_solid_radius_m": 1.2443499788287493,
+          "destination_solid_radius_m": 1.2443499788287493
+        },
+        "human_12": {
+          "source": [
+            5.624803724032282,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            5.624803724032282,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_13": {
+          "source": [
+            8.437205586048423,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            8.437205586048423,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_14": {
+          "source": [
+            11.249607448064564,
+            -0.019999999552965164,
+            -15.053798068991929
+          ],
+          "destination": [
+            11.249607448064564,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2562009310080706,
+          "destination_radius_m": 1.2562009310080706,
+          "source_solid_radius_m": 1.2562009310080706,
+          "destination_solid_radius_m": 1.2562009310080706
+        },
+        "human_15": {
+          "source": [
+            14.062009310080706,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            14.062009310080706,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_16": {
+          "source": [
+            16.874411172096845,
+            -0.019999999552965164,
+            -15.101201877709215
+          ],
+          "destination": [
+            16.874411172096845,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.208797122290785,
+          "destination_radius_m": 1.208797122290785,
+          "source_solid_radius_m": 1.208797122290785,
+          "destination_solid_radius_m": 1.208797122290785
+        },
+        "human_17": {
+          "source": [
+            19.686813034112987,
+            -0.019999999552965164,
+            -15.06564902117125
+          ],
+          "destination": [
+            19.686813034112987,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2443499788287493,
+          "destination_radius_m": 1.2443499788287493,
+          "source_solid_radius_m": 1.2443499788287493,
+          "destination_solid_radius_m": 1.2443499788287493
+        },
+        "human_18": {
+          "source": [
+            22.49921489612913,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            22.49921489612913,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_19": {
+          "source": [
+            25.31161675814527,
+            -0.019999999552965164,
+            -15.124903782067857
+          ],
+          "destination": [
+            25.31161675814527,
+            -0.019999999552965164,
+            -1.4775009155273438
+          ],
+          "generated_start": true,
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "_search": {
+          "attempts": 1,
+          "variant": 0
+        }
+      }
+    }
+  ]
+}

@@ -1,296 +1,302 @@
 [
   {
     "actor": "human_1",
-    "asset": "Coupe2",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_2",
-    "asset": "human_1",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Coupe2",
-    "asset": "human_1",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "human_1",
-    "asset": "car_2",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "car_2",
-    "asset": "human_1",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Coupe2",
-    "asset": "human_1",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_1",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
     "actor": "human_1",
-    "asset": "cars.car2",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Parkour_Runner",
-    "asset": "Coupe2",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "car_2",
-    "asset": "Parkour_Runner",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Coupe2",
-    "asset": "Parkour_Runner",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Parkour_Runner",
-    "asset": "car_2",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "car_2",
-    "asset": "Parkour_Runner",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Coupe2",
-    "asset": "Parkour_Runner",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Parkour_Runner",
-    "asset": "cars.car2",
-    "t0": 2.0,
-    "t1": 13.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_1",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
     "actor": "human_1",
-    "asset": "Coupe2",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_2",
-    "asset": "human_1",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_1",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Coupe2",
-    "asset": "human_1",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "human_1",
-    "asset": "car_2",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "human_2",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_2",
-    "asset": "human_1",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_2",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Coupe2",
-    "asset": "human_1",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "human_2",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "human_1",
-    "asset": "cars.car2",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_2",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Parkour_Runner",
-    "asset": "Coupe2",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "human_2",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_2",
-    "asset": "Parkour_Runner",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "human_3",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Coupe2",
-    "asset": "Parkour_Runner",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_3",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Parkour_Runner",
-    "asset": "car_2",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "human_3",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_2",
-    "asset": "Parkour_Runner",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_3",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Coupe2",
-    "asset": "Parkour_Runner",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "human_3",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Parkour_Runner",
-    "asset": "cars.car2",
-    "t0": 3.2,
-    "t1": 14.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_3",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "human_1",
-    "asset": "Sedan1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_4",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_1",
-    "asset": "human_1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "human_4",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Sedan1",
-    "asset": "human_1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_4",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "human_1",
-    "asset": "car_1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "human_4",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_1",
-    "asset": "human_1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_4",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Sedan1",
-    "asset": "human_1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "human_4",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "human_1",
-    "asset": "cars.car1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "human_5",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Parkour_Runner",
-    "asset": "Sedan1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_5",
+    "asset": "Ground",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_1",
-    "asset": "Parkour_Runner",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "human_5",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Sedan1",
-    "asset": "Parkour_Runner",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_5",
+    "asset": "environment.residential_intersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "Parkour_Runner",
-    "asset": "car_1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "human_5",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   },
   {
-    "actor": "car_1",
-    "asset": "Parkour_Runner",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Sedan1",
-    "asset": "Parkour_Runner",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
-  },
-  {
-    "actor": "Parkour_Runner",
-    "asset": "cars.car1",
-    "t0": 6.0,
-    "t1": 17.2,
-    "max_depth_m": 0.5
+    "actor": "Human_human_5",
+    "asset": "ResidentialIntersection",
+    "joints": [
+      "Foot",
+      "Toe",
+      "Leg"
+    ],
+    "max_depth_m": 0.25
   }
 ]

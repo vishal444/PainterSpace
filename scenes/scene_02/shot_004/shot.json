@@ -1,0 +1,88 @@
+{
+  "prompt": "two cars come towars each other, they stop infront of them. The drivers get out, starts shooting each other. One man dies, then the other man runs upto the dead guy and starts dancing.",
+  "version": "1.0",
+  "scene_version": "scene_v1.usda",
+  "fps": 24,
+  "duration_s": 12.75,
+  "end_frame": 306,
+  "camera_prim": "/World/ShotCam",
+  "plan_hash": "d2970abe7e92daf2",
+  "actors": [
+    {
+      "actor_id": "car_1",
+      "label": "car_1",
+      "asset_id": "cars.car1",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/car_1"
+    },
+    {
+      "actor_id": "car_2",
+      "label": "car_2",
+      "asset_id": "cars.car2",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "default",
+        "tint_rgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": []
+      },
+      "prim_path": "/World/car_2"
+    },
+    {
+      "actor_id": "human_1",
+      "label": "driver_1",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "blue",
+        "tint_rgb": [
+          0.22,
+          0.45,
+          0.85
+        ],
+        "height_scale": 1.0,
+        "descriptive_tags": [
+          "blue jacket",
+          "average build",
+          "hero"
+        ]
+      },
+      "prim_path": "/World/driver_1"
+    },
+    {
+      "actor_id": "human_2",
+      "label": "driver_2",
+      "asset_id": "character.male",
+      "role_tags": [],
+      "appearance": {
+        "color_variant": "red",
+        "tint_rgb": [
+          0.85,
+          0.22,
+          0.18
+        ],
+        "height_scale": 1.06,
+        "descriptive_tags": [
+          "tall",
+          "red jacket",
+          "mechanic"
+        ]
+      },
+      "prim_path": "/World/driver_2"
+    }
+  ]
+}

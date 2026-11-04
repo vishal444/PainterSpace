@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "actor_contact_policy": "full_body",
+  "time_steps": 613,
+  "actors": [
+    "driver_2",
+    "driver_1"
+  ],
+  "assets": [
+    "ResidentialAvenue",
+    "car_1",
+    "car_2",
+    "Ground"
+  ],
+  "unprotected_assets": [],
+  "unprotected_actors": [],
+  "violations": [],
+  "level_violations": []
+}

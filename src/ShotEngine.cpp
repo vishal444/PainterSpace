@@ -611,6 +611,12 @@ ShotEngine::UsdStageInfo ShotEngine::inspectUsdStage(const QString& stagePath) {
         info.cameraPath = QString("/%1/%2").arg(info.defaultPrim.isEmpty() ? QStringLiteral("World") : info.defaultPrim, camName);
     }
 
+    QFile rigFile(fileInfo.dir().filePath("camera_rig.json"));
+    if (rigFile.open(QIODevice::ReadOnly)) {
+        const auto rig = QJsonDocument::fromJson(rigFile.readAll()).object();
+        const QString id = rig["active_camera"].toString();
+        if (!id.isEmpty() && QFileInfo::exists(fileInfo.dir().filePath("cam_" + id + ".usda"))) info.cameraPath = "/World/Cameras/" + id;
+    }
     info.valid = true;
     return info;
 }
@@ -970,7 +976,7 @@ ShotEngine::UsdRenderResult ShotEngine::renderOpenUsdStage(const QString& stageP
         stagePath, rendererPattern,
         "--frames", QString("%1:%2").arg(startFrame).arg(endFrame),
         "--cam", resolvedCameraPath,
-        "--purposes", "guide",
+        "--purposes", "render",
         "--imageWidth", QString::number(width),
         "--enableDomeLightVisibility"
     });

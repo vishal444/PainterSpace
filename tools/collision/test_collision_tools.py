@@ -80,7 +80,7 @@ def prism_mesh(stage, path, r, y0, y1, n=12):
 # ---------------------------------------------------------------- assets
 shutil.copy(f"{REPO_ROOT}/assets/usdc_assets/cars/detailed_car.usdc", f"{W}/assets/cars/car1.usdc")
 shutil.copy(f"{REPO_ROOT}/assets/usdc_assets/humans/human.usdc", f"{W}/assets/humans/human.usdc")
-shutil.copy(f"{REPO_ROOT}/assets/usdc_assets/humans/walk.usdc", f"{W}/assets/humans/walk.usdc")
+shutil.copy(f"{REPO_ROOT}/assets/usdc_assets/human_actions/walk.usdc", f"{W}/assets/humans/walk.usdc")
 
 # tree: trunk + one low branch + a big canopy far above head height
 t = Usd.Stage.CreateNew(f"{W}/assets/tree.usdc")

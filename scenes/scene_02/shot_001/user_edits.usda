@@ -5,4 +5,18 @@
 
 over "World"
 {
+    def Xform "OakTree" (
+        customData = {
+            string asset_id = "trees.oak_tree"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/trees/oak_tree.norm.usda@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (-12.219554901123047, 0, 16.876989364624023)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
 }
+

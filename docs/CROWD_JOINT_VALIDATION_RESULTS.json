@@ -1,0 +1,168 @@
+{
+  "date": "2026-10-24",
+  "implementation": {
+    "coordination": "bounded conflict-directed partial-priority search (PBS-style) with safe-interval low-level routing",
+    "local_avoidance": "No ORCA/RVO implementation is claimed.",
+    "joint_nodes_in_successful_replay": 23,
+    "config": {
+      "buffer_m": 0.12,
+      "cell_size_m": 0.4,
+      "departure_step_s": 0.25,
+      "max_delay_s": 8.0,
+      "max_expansions": 4096,
+      "layout_beam_width": 48,
+      "layout_candidates": 128,
+      "arena_perimeter_samples": 32,
+      "max_formations": 4096,
+      "priority_retries": 4,
+      "max_joint_nodes": 128,
+      "level_tolerance_m": 0.12,
+      "destination_rings": 6,
+      "destination_candidates": 256,
+      "allow_actor_limb_contacts": true
+    },
+    "scenery_clearance": "Full limb reach of locomotion and following stationary performances; committed wave groups reserve paths regardless of source-list order."
+  },
+  "tests": {
+    "command": ".venv/bin/python -m pytest tests -q --basetemp /private/tmp/painterspace-joint-final-suite",
+    "passed": 218,
+    "elapsed_s": 27.35,
+    "additional_cases": [
+      "Side-aisle yielding with failed priority reversal at three scales",
+      "Continuous moving-body and final-hold separation",
+      "Time-varying reach on both sides of a conflict",
+      "Bounded-search failure and priority cycles",
+      "Meeting and arrival relocation for following gestures at three reaches",
+      "Full real-character bake near a solid with and without following gestures",
+      "Wave reorder preserves reservations for groups later in the source list"
+    ]
+  },
+  "archived_club_replay": {
+    "source_plan": "scenes/scene_02/.deleted_shots/shot_004_018409ca-2044-4612-8231-f235baa783b0/shot_plan.json",
+    "scene": "/private/tmp/painterspace-crowd-check/scene.usda",
+    "shot": "/private/tmp/painterspace-crowd-check/joint_final/shot.usda",
+    "actors": 20,
+    "duration_s": 70.375,
+    "compile_success": true,
+    "compile_elapsed_s": 125.66670529195108,
+    "collision_report": {
+      "ok": true,
+      "actor_contact_policy": "core_body",
+      "time_steps": 3379,
+      "actors": [
+        "Human_1",
+        "Human_2",
+        "Human_3",
+        "Human_4",
+        "Human_5",
+        "Human_6",
+        "Human_7",
+        "Human_8",
+        "Human_9",
+        "Human_10",
+        "Human_11",
+        "Human_12",
+        "Human_13",
+        "Human_14",
+        "Human_15",
+        "Human_16",
+        "Human_17",
+        "Human_18",
+        "Human_19",
+        "Human_20"
+      ],
+      "assets": [
+        "GrandNightClub",
+        "Ground"
+      ],
+      "unprotected_assets": [],
+      "unprotected_actors": [],
+      "violations": [],
+      "level_violations": []
+    },
+    "validation": {
+      "success": true,
+      "lint_passed": false,
+      "collision_passed": true,
+      "camera_passed": false,
+      "bake_errors": [],
+      "lint_warnings": [
+        "Actor 'human_5' heading (-45.0\u00b0) deviates from travel direction (230.7\u00b0) by 84.3\u00b0 at t=6.63s"
+      ],
+      "collision_report": {
+        "ok": true,
+        "actor_contact_policy": "core_body",
+        "time_steps": 3379,
+        "actors": [
+          "Human_1",
+          "Human_2",
+          "Human_3",
+          "Human_4",
+          "Human_5",
+          "Human_6",
+          "Human_7",
+          "Human_8",
+          "Human_9",
+          "Human_10",
+          "Human_11",
+          "Human_12",
+          "Human_13",
+          "Human_14",
+          "Human_15",
+          "Human_16",
+          "Human_17",
+          "Human_18",
+          "Human_19",
+          "Human_20"
+        ],
+        "assets": [
+          "GrandNightClub",
+          "Ground"
+        ],
+        "unprotected_assets": [],
+        "unprotected_actors": [],
+        "violations": [],
+        "level_violations": []
+      },
+      "camera_warnings": [
+        "Actor 'human_3' is very far from camera (42.7 m) at t=0.0 s",
+        "Actor 'human_3' is very far from camera (42.6 m) at t=35.2 s",
+        "Actor 'human_3' is very far from camera (42.6 m) at t=70.4 s",
+        "Actor 'human_4' is very far from camera (42.9 m) at t=0.0 s",
+        "Actor 'human_5' is very far from camera (42.9 m) at t=35.2 s",
+        "Actor 'human_5' is very far from camera (42.8 m) at t=70.4 s",
+        "Actor 'human_7' is very far from camera (43.4 m) at t=0.0 s",
+        "Actor 'human_7' is very far from camera (47.3 m) at t=35.2 s",
+        "Actor 'human_7' is very far from camera (42.9 m) at t=70.4 s",
+        "Actor 'human_9' is very far from camera (40.2 m) at t=0.0 s",
+        "Actor 'human_9' is very far from camera (42.1 m) at t=35.2 s",
+        "Actor 'human_9' is very far from camera (42.1 m) at t=70.4 s",
+        "Actor 'human_10' is very far from camera (40.8 m) at t=0.0 s",
+        "Actor 'human_13' is very far from camera (42.7 m) at t=0.0 s",
+        "Actor 'human_13' is very far from camera (42.7 m) at t=35.2 s",
+        "Actor 'human_13' is very far from camera (42.7 m) at t=70.4 s",
+        "Actor 'human_15' is very far from camera (43.1 m) at t=35.2 s",
+        "Actor 'human_15' is very far from camera (43.1 m) at t=70.4 s",
+        "Actor 'human_17' is very far from camera (43.0 m) at t=0.0 s",
+        "Actor 'human_17' is very far from camera (43.1 m) at t=35.2 s",
+        "Actor 'human_17' is very far from camera (42.7 m) at t=70.4 s",
+        "Actor 'human_18' is very far from camera (42.0 m) at t=0.0 s",
+        "Actor 'human_18' is very far from camera (45.9 m) at t=35.2 s",
+        "Actor 'human_19' is very far from camera (41.2 m) at t=0.0 s",
+        "Actor 'human_19' is very far from camera (42.4 m) at t=35.2 s",
+        "Actor 'human_19' is very far from camera (42.4 m) at t=70.4 s"
+      ],
+      "prompt_adherence": {
+        "passed": true,
+        "violations": [],
+        "checks": {}
+      }
+    },
+    "scope": "Full new bake and full sampled validation under the requested core-body policy, not selected historical frames. Live user shots were not regenerated."
+  },
+  "limits": [
+    "Bounded spatial, temporal and priority search remains incomplete; other inputs can exhaust its budgets.",
+    "Collision validation is sampled, not a continuous skeletal-body proof.",
+    "The archived replay still reports a heading warning and 26 camera warnings."
+  ]
+}

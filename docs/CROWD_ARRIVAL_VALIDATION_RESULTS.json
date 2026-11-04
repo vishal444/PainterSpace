@@ -1,0 +1,56 @@
+{
+  "task_id": "shot_005_20261025_090317",
+  "stage": "scenes/scene_02/shot_005/shot.usda",
+  "actor_count": 20,
+  "regression_tests_passed": 178,
+  "arrival_tolerance_m": 2.0,
+  "validation": {
+    "success": true,
+    "lint_passed": true,
+    "collision_passed": true,
+    "camera_passed": true,
+    "bake_errors": [],
+    "lint_warnings": [],
+    "collision_report": {
+      "ok": true,
+      "actor_contact_policy": "core_body",
+      "time_steps": 1149,
+      "actors": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5",
+        "human_6",
+        "human_7",
+        "human_8",
+        "human_9",
+        "human_10",
+        "human_11",
+        "human_12",
+        "human_13",
+        "human_14",
+        "human_15",
+        "human_16",
+        "human_17",
+        "human_18",
+        "human_19",
+        "human_20"
+      ],
+      "assets": [
+        "GrandNightClub",
+        "Ground"
+      ],
+      "unprotected_assets": [],
+      "unprotected_actors": [],
+      "violations": [],
+      "level_violations": []
+    },
+    "camera_warnings": [],
+    "prompt_adherence": {
+      "passed": true,
+      "violations": [],
+      "checks": {}
+    }
+  }
+}

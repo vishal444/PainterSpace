@@ -2,22 +2,87 @@
   "success": true,
   "lint_passed": true,
   "collision_passed": true,
+  "collision_skipped": false,
   "camera_passed": true,
+  "bake_errors": [],
   "lint_warnings": [],
   "collision_report": {
     "ok": true,
-    "time_steps": 769,
+    "actor_contact_policy": "full_body",
+    "time_steps": 637,
     "actors": [
-      "Driver_1",
-      "Driver_2"
+      "human_1",
+      "human_2",
+      "human_3",
+      "human_4",
+      "human_5",
+      "human_6",
+      "human_7",
+      "human_8",
+      "human_9",
+      "human_10",
+      "human_11",
+      "human_12",
+      "human_13"
     ],
     "assets": [
-      "OakTree",
-      "Red_Car",
-      "Black_Car"
+      "ResidentialAvenue",
+      "Ground"
     ],
     "unprotected_assets": [],
-    "violations": []
+    "unprotected_actors": [],
+    "violations": [],
+    "level_violations": []
   },
-  "camera_warnings": []
+  "camera_warnings": [],
+  "prompt_adherence": {
+    "passed": true,
+    "violations": [],
+    "checks": {
+      "building": {
+        "required": true,
+        "found": true,
+        "asset_id": "buildings.test_stair_building"
+      }
+    }
+  },
+  "crowd_repair": {
+    "retries": 0,
+    "attempts": [
+      {
+        "attempt": 0,
+        "planning_buffer_m": 0.3,
+        "success": true,
+        "error": null,
+        "collision_report": {
+          "ok": true,
+          "actor_contact_policy": "full_body",
+          "time_steps": 637,
+          "actors": [
+            "human_1",
+            "human_2",
+            "human_3",
+            "human_4",
+            "human_5",
+            "human_6",
+            "human_7",
+            "human_8",
+            "human_9",
+            "human_10",
+            "human_11",
+            "human_12",
+            "human_13"
+          ],
+          "assets": [
+            "ResidentialAvenue",
+            "Ground"
+          ],
+          "unprotected_assets": [],
+          "unprotected_actors": [],
+          "violations": [],
+          "level_violations": []
+        }
+      }
+    ]
+  }
 }

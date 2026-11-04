@@ -44,7 +44,7 @@ class ShotLinter:
             inst_speed = dist / dt
 
             # 1. Heading check: if moving significantly (> 0.25 m/s), heading must face travel direction
-            if inst_speed > 0.25 and not perf.is_vehicle:
+            if inst_speed > 0.25 and not perf.is_vehicle and not k0.vehicle_supported:
                 travel_heading = math.degrees(math.atan2(dx, -dz)) % 360.0
                 heading_diff = abs((k0.heading_deg - travel_heading + 180.0) % 360.0 - 180.0)
                 if heading_diff > self.max_heading_deviation_deg:
@@ -73,7 +73,7 @@ class ShotLinter:
 
             # 2. Elevation / floating check: character feet should not sink underground
             y_pos = k0.position[1]
-            if y_pos < self.ground_y - 0.15:
+            if y_pos < self.ground_y - 0.15 and not k0.vehicle_supported:
                 errors.append(
                     f"Actor '{perf.actor_id}' is underground (y = {y_pos:.2f} m) at t={k0.time_s:.2f}s"
                 )

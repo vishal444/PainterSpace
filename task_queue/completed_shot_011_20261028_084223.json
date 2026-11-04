@@ -1,0 +1,6645 @@
+{
+  "has_existing_stage": true,
+  "instructions": "CRITICAL INSTRUCTION FOR IDE CHATBOT / LLM: You are acting STRICTLY as the LLM API endpoint. The LLM must respond ONLY with the tools call JSON ({\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}), write that JSON to task_queue/llm_response.json, display that JSON in chat, and END EXECUTION IMMEDIATELY THERE. Use the prompt when present, combine it with relevant drawn routes and explicit timeline segments, and use timeline segments alone when the prompt is empty. An empty timeline adds no constraint. DO NOT run compile_shot.py, DO NOT execute any Python/shell scripts, and DO NOT author or edit .usda files directly. The PainterSpace C++ desktop application watches task_queue/llm_response.json and will execute the function calls, resolve semantic coordinates, compile the USD stage, and run collision validation itself.",
+  "llm_call": {
+    "instruction": "Keep the starting scene assets exactly as they are. Use existing scene objects; do not place, replace, remove, or change buildings or other environment assets, even if a prompt mentions a missing feature. Respond ONLY with the tools call JSON matching schema: {\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}. Write this JSON to task_queue/llm_response.json and end execution immediately there.",
+    "execution_policy": "LLM responds ONLY with tools call JSON; execution ends there."
+  },
+  "llm_endpoint_mode": true,
+  "manifest_summary": {
+    "assets": [
+      {
+        "id": "environment.downtown_tower",
+        "tags": [
+          "environment",
+          "building",
+          "city"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.grand_harbour",
+        "tags": [
+          "environment",
+          "harbour",
+          "waterfront"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.ocean_horizon",
+        "tags": [
+          "environment",
+          "ocean",
+          "water"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.residential_avenue",
+        "tags": [
+          "environment",
+          "building",
+          "avenue",
+          "street"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.residential_intersection",
+        "tags": [
+          "environment",
+          "building",
+          "intersection",
+          "street"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "environment.residential_neighborhood",
+        "tags": [
+          "environment",
+          "building",
+          "neighborhood",
+          "street"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "character.female",
+        "tags": [
+          "character",
+          "human",
+          "female",
+          "woman",
+          "rigged",
+          "animated"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "character.human",
+        "tags": [
+          "character",
+          "human",
+          "rigged",
+          "animated"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "character.male",
+        "tags": [
+          "character",
+          "human",
+          "male",
+          "man",
+          "rigged",
+          "animated"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "cars.car1",
+        "tags": [
+          "vehicle",
+          "car",
+          "car1"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "door_fl_stand",
+          "door_fr_stand",
+          "door_rl_stand",
+          "door_rr_stand",
+          "driver_seat",
+          "passenger_seat",
+          "seat_rear_left",
+          "seat_rear_right",
+          "hood_strike",
+          "door_fl_strike"
+        ],
+        "surfaces": [
+          "roof",
+          "hood",
+          "trunk"
+        ]
+      },
+      {
+        "id": "cars.car2",
+        "tags": [
+          "vehicle",
+          "car",
+          "car2"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "door_l_stand",
+          "door_r_stand",
+          "driver_seat",
+          "passenger_seat",
+          "seat_rear_left",
+          "seat_rear_right",
+          "hood_strike",
+          "door_fl_strike",
+          "door_fl_stand",
+          "door_fr_stand",
+          "door_rl_stand",
+          "door_rr_stand"
+        ],
+        "surfaces": [
+          "roof",
+          "hood",
+          "trunk"
+        ]
+      },
+      {
+        "id": "trees.birch_tree",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "birch"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.birch_tree_lush",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "birch",
+          "lush"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.oak_tree",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "oak"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.oak_tree_lush",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "oak",
+          "lush"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.pine_tree",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "pine"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "trees.pine_tree_lush",
+        "tags": [
+          "tree",
+          "nature",
+          "foliage",
+          "prop",
+          "pine",
+          "lush"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.city_square",
+        "tags": [
+          "building",
+          "environment",
+          "city",
+          "square"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.grand_night_club",
+        "tags": [
+          "building",
+          "environment",
+          "grand",
+          "night",
+          "club"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "corner",
+          "entrance"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.high_end_club_small",
+        "tags": [
+          "building",
+          "environment",
+          "high",
+          "end",
+          "club",
+          "small"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "buildings.test_stair_building",
+        "tags": [
+          "building",
+          "stairs",
+          "test"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right",
+          "stairs_main_bottom",
+          "stairs_main_top"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "cameras.alexa_mini_lf",
+        "tags": [
+          "camera",
+          "alexa",
+          "mini",
+          "lf"
+        ],
+        "anchors": [],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.circle_table",
+        "tags": [
+          "furniture",
+          "circle",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.cupboard_glass",
+        "tags": [
+          "furniture",
+          "cupboard",
+          "glass"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.cupboard_wood",
+        "tags": [
+          "furniture",
+          "cupboard",
+          "wood"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.oval_table",
+        "tags": [
+          "furniture",
+          "oval",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.rounded_square_table",
+        "tags": [
+          "furniture",
+          "rounded",
+          "square",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      },
+      {
+        "id": "furnitures.square_table",
+        "tags": [
+          "furniture",
+          "square",
+          "table"
+        ],
+        "anchors": [
+          "stand_front",
+          "stand_back",
+          "stand_left",
+          "stand_right"
+        ],
+        "surfaces": []
+      }
+    ],
+    "clips": [
+      "run",
+      "walk",
+      "jump",
+      "opening_door_inwards",
+      "reaction",
+      "soccer_tripping_down",
+      "start_walking",
+      "spooked",
+      "acknowledging",
+      "arm_stretching",
+      "breakdance_freeze_var_3",
+      "brutal_assassination",
+      "chapa_giratoria",
+      "cheering",
+      "clapping",
+      "climbing",
+      "crawling",
+      "crouch_to_stand",
+      "defeat_expression",
+      "dodging_right",
+      "elbow_punch",
+      "falling",
+      "floating",
+      "head_hit_during_fight",
+      "jogging_with_box",
+      "jumping_down",
+      "kick_to_the_groin",
+      "kiss",
+      "kneeling_down",
+      "left_hook",
+      "macaco_side",
+      "martelo_2",
+      "nervously_look_around",
+      "playing_drums",
+      "pointing_forward",
+      "praying",
+      "pulling_lever",
+      "sad_walk_arc_right",
+      "silly_dancing",
+      "singing",
+      "sitting_clap",
+      "sitting",
+      "slow_jog_backwards",
+      "swimming",
+      "boxing_block",
+      "administering_cpr",
+      "angry_point",
+      "ascending_stairs",
+      "backflip",
+      "basketball_dribble",
+      "being_carried",
+      "being_cocky",
+      "being_strangled",
+      "bored",
+      "braced_hang_shimmy",
+      "button_pushing",
+      "cards",
+      "cartwheel",
+      "casting_a_spell",
+      "charge",
+      "climbing_a_rope",
+      "climbing_down_wall",
+      "climbing_down",
+      "climbing_ladder",
+      "climbing_slanted_roof",
+      "closing_a_lid_or_trunk",
+      "closing",
+      "cocky_head_turn",
+      "combo_punch",
+      "counting",
+      "crawling_backwards",
+      "crazy_gesture",
+      "crouched_sneaking_right",
+      "crying",
+      "descending_stairs_fast",
+      "descending_stairs",
+      "diagonal_wall_run",
+      "digging",
+      "dismissing_gesture",
+      "dive_roll",
+      "dodge_while_sitting",
+      "dodging_back",
+      "driving",
+      "drunk_idle",
+      "dying_and_falling_backwards",
+      "dying",
+      "entering_car",
+      "entering_code",
+      "evading_a_threat",
+      "exiting_car",
+      "fall_flat",
+      "falling_flat_impact",
+      "falling_from_losing_balance",
+      "falling_into_pool_on_back",
+      "falling_into_pool",
+      "falling_in_air_idle",
+      "fast_run",
+      "finding_object_on_ground",
+      "fishing_cast",
+      "fishing_idle",
+      "freehang_drop",
+      "gaming",
+      "getting_up",
+      "grabbing_pistol",
+      "groving_to_music_energetically",
+      "guitar_playing",
+      "happy_hand_gesture",
+      "happy_female_gesture",
+      "having_a_meeting",
+      "hiding_grab",
+      "hit_on_legs",
+      "hit_on_side_of_body",
+      "hit_on_the_back",
+      "holding_down",
+      "honking_horn",
+      "hostage_situation_idle_hostage_with_hands_on_neck",
+      "injured_stumble_idle",
+      "injured_walking",
+      "jogging",
+      "jumping_rope",
+      "kick_soccerball",
+      "kicking",
+      "kneeling_inspecting",
+      "kneeling",
+      "knife_idle",
+      "knocked_down",
+      "knocked_out",
+      "knocked_unconscious_on_chair",
+      "landing_on_four_limbs",
+      "laying_seizure",
+      "lengthy_head_nod",
+      "lifting",
+      "listening_to_music",
+      "looking_around",
+      "looking_down",
+      "looking",
+      "lying_down",
+      "male_confident_standing_pose",
+      "male_sitting_pose",
+      "male_sitting_yoga_pose",
+      "male_relaxed_standing_pose",
+      "moonwalk",
+      "neck_stretching",
+      "open_door_outwards",
+      "opening",
+      "patting",
+      "piano_playing",
+      "pointing_fiinger",
+      "pull_heavy_object",
+      "pulling_a_rope",
+      "punching",
+      "push_stop",
+      "push",
+      "rallying",
+      "rapping",
+      "reacting_startled",
+      "receive_soccerball",
+      "receiving_cpr",
+      "restrain",
+      "rope_swinging",
+      "run_backward",
+      "run_to_dive",
+      "running_up_stairs",
+      "sad_idle",
+      "salute",
+      "searching_files_high",
+      "shaking_hands_2",
+      "shooting_gun",
+      "shoulder_throw_victim",
+      "shrugging",
+      "sideways_stabbing",
+      "sitting_disapproval",
+      "sitting_thumbs_up",
+      "sitting_to_a_chair",
+      "sleeping_idle",
+      "slipping",
+      "smoking",
+      "sneak_walk",
+      "spat_in_face",
+      "speedbag",
+      "spinning",
+      "stable_sword_outward_slash",
+      "stand_to_roll",
+      "stand_to_sit",
+      "standing_arguing",
+      "standing_clap",
+      "standing_up",
+      "standing",
+      "stick_bat_on_hand_idle",
+      "superhero_flying",
+      "sweep_fall",
+      "talking_on_a_cell_phone",
+      "talking_phone_pacing",
+      "talking_casually",
+      "talking_energetically",
+      "talking_expressively",
+      "threatening",
+      "throw_object",
+      "toss_grenade",
+      "tripping",
+      "typing",
+      "using_a_filing_cabinet",
+      "vault_over_box",
+      "victory",
+      "walking_up_the_stairs",
+      "walking_with_shopping_bag",
+      "waving",
+      "wheelchair",
+      "withdrawing_sword",
+      "writhing_in_pain_laying_down",
+      "writing",
+      "yelling_out",
+      "yelling",
+      "backward_walking_turn",
+      "drunk_idle_variation_2",
+      "drunk_idle_variation",
+      "drunk_run_backward",
+      "drunk_run_forward",
+      "drunk_running_left_turn",
+      "drunk_turn",
+      "drunk_walk_backwards",
+      "drunk_walk",
+      "drunk_walking_turn",
+      "machine_gun_gunplay",
+      "run_backward_arc_right"
+    ]
+  },
+  "prompt": "Two people are talking, suddenly they both argue and one man go and sit on the steps, the other man starts dancing then the person sitting on the stairs come up and hits the dancing guy and he falls down.",
+  "provider": "ide_chat_llm_endpoint",
+  "response_file": "task_queue/llm_response.json",
+  "scene_stage": "scenes/scene_03/scene.usda",
+  "stage_type": "shot",
+  "status": "completed",
+  "target_stage": "scenes/scene_03/shot_011/shot.usda",
+  "task_id": "shot_011_20261028_084223",
+  "scene_context": {
+    "objects": [
+      {
+        "name": "Ground",
+        "asset_id": "Ground",
+        "position": [
+          0.0,
+          -0.04,
+          0.0
+        ],
+        "heading_deg": 0.0,
+        "bounds_m": null,
+        "pivot": null,
+        "obstacle_bounds_xz": null,
+        "obstacle_box_count": 0,
+        "collision_covered": true,
+        "stairs": {}
+      },
+      {
+        "name": "CitySquare",
+        "asset_id": "buildings.city_square",
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "heading_deg": 0.0,
+        "bounds_m": [
+          40.0,
+          4.31,
+          48.0
+        ],
+        "pivot": "Origin at y=-0.36m relative to base",
+        "obstacle_bounds_xz": [
+          -20.0,
+          -24.0,
+          20.0,
+          24.0
+        ],
+        "obstacle_box_count": 49,
+        "collision_covered": true,
+        "stairs": {
+          "ascending_steps": {
+            "width_m": 6.0,
+            "rise_m": 1.7000000017881396,
+            "tread_count": 10
+          },
+          "descending_steps": {
+            "width_m": 6.0,
+            "rise_m": 1.7000000017881394,
+            "tread_count": 10
+          }
+        }
+      }
+    ],
+    "authored_zones": [],
+    "standing_spots": [
+      {
+        "reference": "Ground:standing_left_01",
+        "position": [
+          -4.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.41000000000000014,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_02",
+        "position": [
+          -4.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_03",
+        "position": [
+          -5.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.3155227098001767,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_04",
+        "position": [
+          -5.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.282673870705143,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_05",
+        "position": [
+          -7.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.780395655298001,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_06",
+        "position": [
+          -7.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.3482234095113785,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_07",
+        "position": [
+          -8.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.269730670662963,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_08",
+        "position": [
+          -8.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.9623351399877107,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_09",
+        "position": [
+          -10.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_10",
+        "position": [
+          -10.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.76,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_11",
+        "position": [
+          -11.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.050694384696514,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_12",
+        "position": [
+          -11.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.76,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_13",
+        "position": [
+          -13.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.551102702403779,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_14",
+        "position": [
+          -13.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.551102702403779,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_15",
+        "position": [
+          -14.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.0526751627220348,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_16",
+        "position": [
+          -14.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.0526751627220348,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_17",
+        "position": [
+          -19.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.451938358957383,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_18",
+        "position": [
+          -19.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.451938358957383,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_19",
+        "position": [
+          -4.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_20",
+        "position": [
+          -5.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_21",
+        "position": [
+          -5.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_22",
+        "position": [
+          -7.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_23",
+        "position": [
+          -7.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.5595083193439985,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_24",
+        "position": [
+          -8.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_25",
+        "position": [
+          -8.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.582653627876071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_26",
+        "position": [
+          -10.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_27",
+        "position": [
+          -10.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_28",
+        "position": [
+          -11.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.345471776740597,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_29",
+        "position": [
+          -11.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_30",
+        "position": [
+          -13.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.99718617413885,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_31",
+        "position": [
+          -13.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_32",
+        "position": [
+          -14.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.8929144096997823,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_33",
+        "position": [
+          -14.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.8929144096997823,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_34",
+        "position": [
+          -16.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_35",
+        "position": [
+          -16.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_36",
+        "position": [
+          -17.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_37",
+        "position": [
+          -17.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_38",
+        "position": [
+          -19.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.1408234309370475,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_39",
+        "position": [
+          -19.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.1408234309370475,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_40",
+        "position": [
+          -1.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_41",
+        "position": [
+          -2.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_42",
+        "position": [
+          -4.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.4375673929629338,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_43",
+        "position": [
+          -5.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_44",
+        "position": [
+          -5.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.8401760525203796,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_45",
+        "position": [
+          -7.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_46",
+        "position": [
+          -7.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.853085956552858,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_47",
+        "position": [
+          -8.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_48",
+        "position": [
+          -8.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.4629079812419612,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_49",
+        "position": [
+          -10.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_50",
+        "position": [
+          -10.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_51",
+        "position": [
+          -11.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.085088487596484,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_52",
+        "position": [
+          -11.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_53",
+        "position": [
+          -13.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.994762186499503,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_54",
+        "position": [
+          -13.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_55",
+        "position": [
+          -14.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.2493268420838013,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_56",
+        "position": [
+          -14.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_57",
+        "position": [
+          -16.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_58",
+        "position": [
+          -16.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6371010119826008,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_59",
+        "position": [
+          -17.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_60",
+        "position": [
+          -17.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.046325563253567,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_61",
+        "position": [
+          -19.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.399724242741797,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_62",
+        "position": [
+          -19.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.399724242741797,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_63",
+        "position": [
+          -1.25,
+          -8.940696724635266e-10,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.2100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_left_64",
+        "position": [
+          -2.75,
+          -8.940696724635266e-10,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.2100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_01",
+        "position": [
+          4.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.4802082881417189,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_02",
+        "position": [
+          4.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_03",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.797386992275175,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_04",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.590482580524332,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_05",
+        "position": [
+          7.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.2757594539282033,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_06",
+        "position": [
+          7.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.769694947870451,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_07",
+        "position": [
+          9.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.767661900764357,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_08",
+        "position": [
+          9.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.119628892800727,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_09",
+        "position": [
+          10.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.0505568998093535,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_10",
+        "position": [
+          10.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.0505568998093535,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_11",
+        "position": [
+          12.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.5507921648854452,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_12",
+        "position": [
+          12.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.5507921648854452,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_13",
+        "position": [
+          13.75,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.0513714920052544,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_14",
+        "position": [
+          13.75,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.0513714920052544,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_15",
+        "position": [
+          15.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.5550900811686889,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_16",
+        "position": [
+          15.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.5550900811686889,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_17",
+        "position": [
+          18.25,
+          -8.940696724635266e-10,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.4562071878125773,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_18",
+        "position": [
+          18.25,
+          -8.940696724635266e-10,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.4562071878125773,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_19",
+        "position": [
+          4.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_20",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_21",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_22",
+        "position": [
+          7.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_23",
+        "position": [
+          7.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.710689970694315,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_24",
+        "position": [
+          9.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_25",
+        "position": [
+          9.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.847272868611486,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_26",
+        "position": [
+          10.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.289907840638538,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_27",
+        "position": [
+          10.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.289907840638538,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_28",
+        "position": [
+          12.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.8836999063327586,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_29",
+        "position": [
+          12.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.8836999063327586,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_30",
+        "position": [
+          13.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.585174068113998,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_31",
+        "position": [
+          13.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.585174068113998,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_32",
+        "position": [
+          15.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6682700508158368,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_33",
+        "position": [
+          15.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6682700508158368,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_34",
+        "position": [
+          16.75,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_35",
+        "position": [
+          16.75,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_36",
+        "position": [
+          18.25,
+          -8.940696724635266e-10,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6380247136258577,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_37",
+        "position": [
+          18.25,
+          -8.940696724635266e-10,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6380247136258577,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_38",
+        "position": [
+          0.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_39",
+        "position": [
+          1.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_40",
+        "position": [
+          3.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7527283768466857,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_41",
+        "position": [
+          4.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.888544415498414,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_42",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_43",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.326649967957291,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_44",
+        "position": [
+          7.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_45",
+        "position": [
+          7.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.802770035022523,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_46",
+        "position": [
+          9.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_47",
+        "position": [
+          9.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 6.2901987257407255,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_48",
+        "position": [
+          10.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.9125396342592325,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_49",
+        "position": [
+          10.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.9125396342592325,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_50",
+        "position": [
+          12.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.696607810610366,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_51",
+        "position": [
+          12.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.696607810610366,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_52",
+        "position": [
+          13.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.695690047431777,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_53",
+        "position": [
+          13.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.695690047431777,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_54",
+        "position": [
+          15.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.123799757776783,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_55",
+        "position": [
+          15.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.123799757776783,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_56",
+        "position": [
+          16.75,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_57",
+        "position": [
+          16.75,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_58",
+        "position": [
+          18.25,
+          -8.940696724635266e-10,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.107752391469804,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_59",
+        "position": [
+          18.25,
+          -8.940696724635266e-10,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.107752391469804,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_60",
+        "position": [
+          0.25,
+          -8.940696724635266e-10,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.2100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_61",
+        "position": [
+          1.75,
+          -8.940696724635266e-10,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.2100000065565113,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_62",
+        "position": [
+          3.25,
+          -8.940696724635266e-10,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.2240953282131994,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_63",
+        "position": [
+          4.75,
+          -8.940696724635266e-10,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.8189714487698843,
+        "collision_verified": true
+      },
+      {
+        "reference": "Ground:standing_right_64",
+        "position": [
+          6.25,
+          -8.940696724635266e-10,
+          -5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_01",
+        "position": [
+          -4.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.41000000000000014,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_02",
+        "position": [
+          -4.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_03",
+        "position": [
+          -5.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.3155227098001767,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_04",
+        "position": [
+          -5.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.282673870705143,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_05",
+        "position": [
+          -7.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.780395655298001,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_06",
+        "position": [
+          -7.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.3482234095113785,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_07",
+        "position": [
+          -8.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.269730670662963,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_08",
+        "position": [
+          -8.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.9623351399877107,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_09",
+        "position": [
+          -10.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_10",
+        "position": [
+          -10.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.76,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_11",
+        "position": [
+          -11.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.050694384696514,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_12",
+        "position": [
+          -11.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.76,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_13",
+        "position": [
+          -13.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.551102702403779,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_14",
+        "position": [
+          -13.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.551102702403779,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_15",
+        "position": [
+          -14.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.0526751627220348,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_16",
+        "position": [
+          -14.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.0526751627220348,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_17",
+        "position": [
+          -19.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.451938358957383,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_18",
+        "position": [
+          -19.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.451938358957383,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_19",
+        "position": [
+          -4.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_20",
+        "position": [
+          -5.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_21",
+        "position": [
+          -5.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_22",
+        "position": [
+          -7.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_23",
+        "position": [
+          -7.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.5595083193439985,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_24",
+        "position": [
+          -8.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_25",
+        "position": [
+          -8.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.582653627876071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_26",
+        "position": [
+          -10.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_27",
+        "position": [
+          -10.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_28",
+        "position": [
+          -11.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.345471776740597,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_29",
+        "position": [
+          -11.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_30",
+        "position": [
+          -13.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.99718617413885,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_31",
+        "position": [
+          -13.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.26,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_32",
+        "position": [
+          -14.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.8929144096997823,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_33",
+        "position": [
+          -14.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.8929144096997823,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_34",
+        "position": [
+          -16.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_35",
+        "position": [
+          -16.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_36",
+        "position": [
+          -17.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_37",
+        "position": [
+          -17.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_38",
+        "position": [
+          -19.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.1408234309370475,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_39",
+        "position": [
+          -19.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.1408234309370475,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_40",
+        "position": [
+          -1.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.1300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_41",
+        "position": [
+          -2.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.1300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_42",
+        "position": [
+          -4.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6850519323800426,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_43",
+        "position": [
+          -5.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_44",
+        "position": [
+          -5.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.973112849324377,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_45",
+        "position": [
+          -7.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_46",
+        "position": [
+          -7.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.853085956552858,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_47",
+        "position": [
+          -8.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_48",
+        "position": [
+          -8.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.4629079812419612,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_49",
+        "position": [
+          -10.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_50",
+        "position": [
+          -10.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_51",
+        "position": [
+          -11.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.085088487596484,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_52",
+        "position": [
+          -11.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_53",
+        "position": [
+          -13.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.994762186499503,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_54",
+        "position": [
+          -13.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_55",
+        "position": [
+          -14.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.2493268420838013,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_56",
+        "position": [
+          -14.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.7599999999999998,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_57",
+        "position": [
+          -16.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_58",
+        "position": [
+          -16.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6371010119826008,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_59",
+        "position": [
+          -17.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_60",
+        "position": [
+          -17.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.046325563253567,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_61",
+        "position": [
+          -19.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.399724242741797,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_62",
+        "position": [
+          -19.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.399724242741797,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_63",
+        "position": [
+          -1.25,
+          0.044999999329447746,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.6300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_left_64",
+        "position": [
+          -2.75,
+          0.044999999329447746,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.6300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_01",
+        "position": [
+          4.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.4802082881417189,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_02",
+        "position": [
+          4.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_03",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.797386992275175,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_04",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.590482580524332,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_05",
+        "position": [
+          7.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.2757594539282033,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_06",
+        "position": [
+          7.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.769694947870451,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_07",
+        "position": [
+          9.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.767661900764357,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_08",
+        "position": [
+          9.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.119628892800727,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_09",
+        "position": [
+          10.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.0505568998093535,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_10",
+        "position": [
+          10.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.0505568998093535,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_11",
+        "position": [
+          12.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.5507921648854452,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_12",
+        "position": [
+          12.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.5507921648854452,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_13",
+        "position": [
+          13.75,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.0513714920052544,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_14",
+        "position": [
+          13.75,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.0513714920052544,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_15",
+        "position": [
+          15.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.5550900811686889,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_16",
+        "position": [
+          15.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.5550900811686889,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_17",
+        "position": [
+          18.25,
+          0.044999999329447746,
+          -0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.4562071878125773,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_18",
+        "position": [
+          18.25,
+          0.044999999329447746,
+          0.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 0.4562071878125773,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_19",
+        "position": [
+          4.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_20",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_21",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_22",
+        "position": [
+          7.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_23",
+        "position": [
+          7.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.710689970694315,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_24",
+        "position": [
+          9.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_25",
+        "position": [
+          9.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.847272868611486,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_26",
+        "position": [
+          10.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.289907840638538,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_27",
+        "position": [
+          10.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.289907840638538,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_28",
+        "position": [
+          12.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.8836999063327586,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_29",
+        "position": [
+          12.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.8836999063327586,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_30",
+        "position": [
+          13.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.585174068113998,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_31",
+        "position": [
+          13.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.585174068113998,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_32",
+        "position": [
+          15.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6682700508158368,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_33",
+        "position": [
+          15.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6682700508158368,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_34",
+        "position": [
+          16.75,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_35",
+        "position": [
+          16.75,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.574999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_36",
+        "position": [
+          18.25,
+          0.044999999329447746,
+          -2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6380247136258577,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_37",
+        "position": [
+          18.25,
+          0.044999999329447746,
+          2.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.6380247136258577,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_38",
+        "position": [
+          0.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.1300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_39",
+        "position": [
+          1.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.1300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_40",
+        "position": [
+          3.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.1573245071360563,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_41",
+        "position": [
+          4.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.0831226595708943,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_42",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_43",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.440842922136626,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_44",
+        "position": [
+          7.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.25,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_45",
+        "position": [
+          7.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.882560805030257,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_46",
+        "position": [
+          9.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.75,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_47",
+        "position": [
+          9.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 6.351330570425201,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_48",
+        "position": [
+          10.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.9125396342592325,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_49",
+        "position": [
+          10.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 5.9125396342592325,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_50",
+        "position": [
+          12.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.696607810610366,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_51",
+        "position": [
+          12.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 4.696607810610366,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_52",
+        "position": [
+          13.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.695690047431777,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_53",
+        "position": [
+          13.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.695690047431777,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_54",
+        "position": [
+          15.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.123799757776783,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_55",
+        "position": [
+          15.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.123799757776783,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_56",
+        "position": [
+          16.75,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_57",
+        "position": [
+          16.75,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.074999988079071,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_58",
+        "position": [
+          18.25,
+          0.044999999329447746,
+          -3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.107752391469804,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_59",
+        "position": [
+          18.25,
+          0.044999999329447746,
+          3.75
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.107752391469804,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_60",
+        "position": [
+          0.25,
+          0.044999999329447746,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.6300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_61",
+        "position": [
+          1.75,
+          0.044999999329447746,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.6300000065565112,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_62",
+        "position": [
+          3.25,
+          0.044999999329447746,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 2.6418554151367273,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_63",
+        "position": [
+          4.75,
+          0.044999999329447746,
+          5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 3.1590188404767785,
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:standing_right_64",
+        "position": [
+          6.25,
+          0.044999999329447746,
+          -5.25
+        ],
+        "facing_deg": 0.0,
+        "clearance_m": 1.75,
+        "collision_verified": true
+      }
+    ],
+    "rooftop_spots": [],
+    "surface_spots": [
+      {
+        "reference": "CitySquare:surface_001",
+        "position": [
+          0.0,
+          1.6999999982118608,
+          -6.16
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_002",
+        "position": [
+          -16.0,
+          0.6800000035762788,
+          -16.32
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_003",
+        "position": [
+          16.0,
+          0.6800000035762788,
+          -16.32
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_004",
+        "position": [
+          -16.8,
+          0.6800000035762788,
+          0.0
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_005",
+        "position": [
+          16.8,
+          0.6800000035762788,
+          0.0
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_006",
+        "position": [
+          -16.0,
+          0.6800000035762788,
+          17.28
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_007",
+        "position": [
+          16.0,
+          0.6800000035762788,
+          17.28
+        ],
+        "collision_verified": true
+      },
+      {
+        "reference": "CitySquare:surface_008",
+        "position": [
+          -12.4,
+          0.3100000059604645,
+          5.76
+        ],
+        "collision_verified": true
+      }
+    ],
+    "unprotected_scene_objects": [],
+    "anchor_support": {
+      "supported_anchors": [
+        "Ground:standing_left_01",
+        "Ground:standing_left_02",
+        "Ground:standing_left_03",
+        "Ground:standing_left_04",
+        "Ground:standing_left_05",
+        "Ground:standing_left_06",
+        "Ground:standing_left_07",
+        "Ground:standing_left_08",
+        "Ground:standing_left_09",
+        "Ground:standing_left_10",
+        "Ground:standing_left_11",
+        "Ground:standing_left_12",
+        "Ground:standing_left_13",
+        "Ground:standing_left_14",
+        "Ground:standing_left_15",
+        "Ground:standing_left_16",
+        "Ground:standing_left_17",
+        "Ground:standing_left_18",
+        "Ground:standing_left_19",
+        "Ground:standing_left_20",
+        "Ground:standing_left_21",
+        "Ground:standing_left_22",
+        "Ground:standing_left_23",
+        "Ground:standing_left_24",
+        "Ground:standing_left_25",
+        "Ground:standing_left_26",
+        "Ground:standing_left_27",
+        "Ground:standing_left_28",
+        "Ground:standing_left_29",
+        "Ground:standing_left_30",
+        "Ground:standing_left_31",
+        "Ground:standing_left_32",
+        "Ground:standing_left_33",
+        "Ground:standing_left_34",
+        "Ground:standing_left_35",
+        "Ground:standing_left_36",
+        "Ground:standing_left_37",
+        "Ground:standing_left_38",
+        "Ground:standing_left_39",
+        "Ground:standing_left_40",
+        "Ground:standing_left_41",
+        "Ground:standing_left_42",
+        "Ground:standing_left_43",
+        "Ground:standing_left_44",
+        "Ground:standing_left_45",
+        "Ground:standing_left_46",
+        "Ground:standing_left_47",
+        "Ground:standing_left_48",
+        "Ground:standing_left_49",
+        "Ground:standing_left_50",
+        "Ground:standing_left_51",
+        "Ground:standing_left_52",
+        "Ground:standing_left_53",
+        "Ground:standing_left_54",
+        "Ground:standing_left_55",
+        "Ground:standing_left_56",
+        "Ground:standing_left_57",
+        "Ground:standing_left_58",
+        "Ground:standing_left_59",
+        "Ground:standing_left_60",
+        "Ground:standing_left_61",
+        "Ground:standing_left_62",
+        "Ground:standing_left_63",
+        "Ground:standing_left_64",
+        "Ground:standing_right_01",
+        "Ground:standing_right_02",
+        "Ground:standing_right_03",
+        "Ground:standing_right_04",
+        "Ground:standing_right_05",
+        "Ground:standing_right_06",
+        "Ground:standing_right_07",
+        "Ground:standing_right_08",
+        "Ground:standing_right_09",
+        "Ground:standing_right_10",
+        "Ground:standing_right_11",
+        "Ground:standing_right_12",
+        "Ground:standing_right_13",
+        "Ground:standing_right_14",
+        "Ground:standing_right_15",
+        "Ground:standing_right_16",
+        "Ground:standing_right_17",
+        "Ground:standing_right_18",
+        "Ground:standing_right_19",
+        "Ground:standing_right_20",
+        "Ground:standing_right_21",
+        "Ground:standing_right_22",
+        "Ground:standing_right_23",
+        "Ground:standing_right_24",
+        "Ground:standing_right_25",
+        "Ground:standing_right_26",
+        "Ground:standing_right_27",
+        "Ground:standing_right_28",
+        "Ground:standing_right_29",
+        "Ground:standing_right_30",
+        "Ground:standing_right_31",
+        "Ground:standing_right_32",
+        "Ground:standing_right_33",
+        "Ground:standing_right_34",
+        "Ground:standing_right_35",
+        "Ground:standing_right_36",
+        "Ground:standing_right_37",
+        "Ground:standing_right_38",
+        "Ground:standing_right_39",
+        "Ground:standing_right_40",
+        "Ground:standing_right_41",
+        "Ground:standing_right_42",
+        "Ground:standing_right_43",
+        "Ground:standing_right_44",
+        "Ground:standing_right_45",
+        "Ground:standing_right_46",
+        "Ground:standing_right_47",
+        "Ground:standing_right_48",
+        "Ground:standing_right_49",
+        "Ground:standing_right_50",
+        "Ground:standing_right_51",
+        "Ground:standing_right_52",
+        "Ground:standing_right_53",
+        "Ground:standing_right_54",
+        "Ground:standing_right_55",
+        "Ground:standing_right_56",
+        "Ground:standing_right_57",
+        "Ground:standing_right_58",
+        "Ground:standing_right_59",
+        "Ground:standing_right_60",
+        "Ground:standing_right_61",
+        "Ground:standing_right_62",
+        "Ground:standing_right_63",
+        "Ground:standing_right_64",
+        "CitySquare:standing_left_01",
+        "CitySquare:standing_left_02",
+        "CitySquare:standing_left_03",
+        "CitySquare:standing_left_04",
+        "CitySquare:standing_left_05",
+        "CitySquare:standing_left_06",
+        "CitySquare:standing_left_07",
+        "CitySquare:standing_left_08",
+        "CitySquare:standing_left_09",
+        "CitySquare:standing_left_10",
+        "CitySquare:standing_left_11",
+        "CitySquare:standing_left_12",
+        "CitySquare:standing_left_13",
+        "CitySquare:standing_left_14",
+        "CitySquare:standing_left_15",
+        "CitySquare:standing_left_16",
+        "CitySquare:standing_left_17",
+        "CitySquare:standing_left_18",
+        "CitySquare:standing_left_19",
+        "CitySquare:standing_left_20",
+        "CitySquare:standing_left_21",
+        "CitySquare:standing_left_22",
+        "CitySquare:standing_left_23",
+        "CitySquare:standing_left_24",
+        "CitySquare:standing_left_25",
+        "CitySquare:standing_left_26",
+        "CitySquare:standing_left_27",
+        "CitySquare:standing_left_28",
+        "CitySquare:standing_left_29",
+        "CitySquare:standing_left_30",
+        "CitySquare:standing_left_31",
+        "CitySquare:standing_left_32",
+        "CitySquare:standing_left_33",
+        "CitySquare:standing_left_34",
+        "CitySquare:standing_left_35",
+        "CitySquare:standing_left_36",
+        "CitySquare:standing_left_37",
+        "CitySquare:standing_left_38",
+        "CitySquare:standing_left_39",
+        "CitySquare:standing_left_40",
+        "CitySquare:standing_left_41",
+        "CitySquare:standing_left_42",
+        "CitySquare:standing_left_43",
+        "CitySquare:standing_left_44",
+        "CitySquare:standing_left_45",
+        "CitySquare:standing_left_46",
+        "CitySquare:standing_left_47",
+        "CitySquare:standing_left_48",
+        "CitySquare:standing_left_49",
+        "CitySquare:standing_left_50",
+        "CitySquare:standing_left_51",
+        "CitySquare:standing_left_52",
+        "CitySquare:standing_left_53",
+        "CitySquare:standing_left_54",
+        "CitySquare:standing_left_55",
+        "CitySquare:standing_left_56",
+        "CitySquare:standing_left_57",
+        "CitySquare:standing_left_58",
+        "CitySquare:standing_left_59",
+        "CitySquare:standing_left_60",
+        "CitySquare:standing_left_61",
+        "CitySquare:standing_left_62",
+        "CitySquare:standing_left_63",
+        "CitySquare:standing_left_64",
+        "CitySquare:standing_right_01",
+        "CitySquare:standing_right_02",
+        "CitySquare:standing_right_03",
+        "CitySquare:standing_right_04",
+        "CitySquare:standing_right_05",
+        "CitySquare:standing_right_06",
+        "CitySquare:standing_right_07",
+        "CitySquare:standing_right_08",
+        "CitySquare:standing_right_09",
+        "CitySquare:standing_right_10",
+        "CitySquare:standing_right_11",
+        "CitySquare:standing_right_12",
+        "CitySquare:standing_right_13",
+        "CitySquare:standing_right_14",
+        "CitySquare:standing_right_15",
+        "CitySquare:standing_right_16",
+        "CitySquare:standing_right_17",
+        "CitySquare:standing_right_18",
+        "CitySquare:standing_right_19",
+        "CitySquare:standing_right_20",
+        "CitySquare:standing_right_21",
+        "CitySquare:standing_right_22",
+        "CitySquare:standing_right_23",
+        "CitySquare:standing_right_24",
+        "CitySquare:standing_right_25",
+        "CitySquare:standing_right_26",
+        "CitySquare:standing_right_27",
+        "CitySquare:standing_right_28",
+        "CitySquare:standing_right_29",
+        "CitySquare:standing_right_30",
+        "CitySquare:standing_right_31",
+        "CitySquare:standing_right_32",
+        "CitySquare:standing_right_33",
+        "CitySquare:standing_right_34",
+        "CitySquare:standing_right_35",
+        "CitySquare:standing_right_36",
+        "CitySquare:standing_right_37",
+        "CitySquare:standing_right_38",
+        "CitySquare:standing_right_39",
+        "CitySquare:standing_right_40",
+        "CitySquare:standing_right_41",
+        "CitySquare:standing_right_42",
+        "CitySquare:standing_right_43",
+        "CitySquare:standing_right_44",
+        "CitySquare:standing_right_45",
+        "CitySquare:standing_right_46",
+        "CitySquare:standing_right_47",
+        "CitySquare:standing_right_48",
+        "CitySquare:standing_right_49",
+        "CitySquare:standing_right_50",
+        "CitySquare:standing_right_51",
+        "CitySquare:standing_right_52",
+        "CitySquare:standing_right_53",
+        "CitySquare:standing_right_54",
+        "CitySquare:standing_right_55",
+        "CitySquare:standing_right_56",
+        "CitySquare:standing_right_57",
+        "CitySquare:standing_right_58",
+        "CitySquare:standing_right_59",
+        "CitySquare:standing_right_60",
+        "CitySquare:standing_right_61",
+        "CitySquare:standing_right_62",
+        "CitySquare:standing_right_63",
+        "CitySquare:standing_right_64",
+        "CitySquare:surface_001",
+        "CitySquare:surface_002",
+        "CitySquare:surface_003",
+        "CitySquare:surface_004",
+        "CitySquare:surface_005",
+        "CitySquare:surface_006",
+        "CitySquare:surface_007",
+        "CitySquare:surface_008"
+      ],
+      "unsupported_anchors": [],
+      "unverified_anchors": []
+    }
+  },
+  "current_shot_state": {
+    "objects": [
+      {
+        "id": "CitySquare",
+        "asset": "buildings.city_square",
+        "category": "building",
+        "position": [
+          0,
+          -0.36,
+          0
+        ],
+        "heading_deg": 0
+      }
+    ],
+    "camera": {
+      "aspect": 1.78,
+      "focal_mm": 35,
+      "fov_deg": 54.43,
+      "heading_deg": 0,
+      "look_at": [
+        0,
+        0,
+        -5.65
+      ],
+      "path": "/World/ShotCam",
+      "pitch_deg": -8,
+      "position": [
+        0,
+        2.2,
+        10
+      ],
+      "vertical_fov_deg": 32.27
+    }
+  },
+  "director_brief_digest": "",
+  "planner_rules": "You are the PainterSpace General Shot Planner.\nFOUNDATIONAL LAW: Never emit raw (x, y, z) coordinates or `pos(...)` strings.\nAlways compose shots by calling `FunctionCatalog` methods with semantic references:\n- Relative selectors: `in_front_of(actor, gap)`, `behind(actor, gap)`, `beside(actor, left|right, gap)`, `left_of(actor, gap)`, `right_of(actor, gap)`, `nearest_to(actor, type)`\n- World directions: north = -Z, east = +X, south = +Z, west = -X; diagonals combine these axes. Use cardinal references for absolute movement (for example `northwest`), and actor-relative selectors for left, right, forward, or backward.\n- Scene objects: use an exact name from Current Scene Objects as a target for that object's authored origin. A bare word such as `center` is not an object or zone reference unless it is explicitly listed. For 'the center of' an object, use its name only when its pivot describes that center; otherwise use an authored zone or anchor. Never invent a reference to translate prose into geometry.\n- Combine the user's prompt with drawn routes for participating actors. Use `follow_path(actor=<owner>, path_id=<route ID>)` for their travel instead of guessing a cardinal destination. The compiler derives vehicle versus pedestrian motion and route duration from the route data. Routes for actors unrelated to the prompt remain optional guides.\nKeep the starting scene assets exactly as they are. Reuse the listed Current Scene Objects; do not place, replace, remove, or change buildings or other environment assets to make the prompt work. A library asset is not part of the scene unless it appears in Current Scene Objects.\nIf an action needs an asset or feature absent from the starting scene, do not add a substitute asset or invent an anchor. Use only actions the starting assets support.\nUse stable actor IDs (human_1, human_2) for later calls. Use stage_pair only for specifically requested paired interactions, such as a one-on-one fight or a kiss. Stage again with contact spacing before a kiss if the participants have moved apart. Do not turn a crowd fight into a list of pairs.\nFor fights between groups, use group_fight(group_a, group_b). It animates opposing groups without fixed opponents or pair arenas. Optional destinations_a and destinations_b list distinct supported run-in spots in membership order; omit them for participants already in position. When others join an existing fight, include the original fighters in their groups and sequence the group_fight after the initiating fight's real beat event. Individual attack/defense calls remain for explicitly directed exchanges between named opponents.\nKeep crowd members at distinct supported starting spots and give simultaneous arrivals separate destinations. Do not direct several actors to occupy the same actor or anchor. Sequence a later phase with a real returned beat ID or ready_event in `after`; a function name such as `attack` is not an event ID.\nInterpret shared actions in the prompt as overlapping action: conversation, discussion, fighting, and kissing involve both characters in the same interval. Emit adjacent reciprocal calls for an attack and its defense or hit reaction; a single hug_or_kiss call names both participants through its target. Give reciprocal calls the same timing, and use `after` between them only when the prompt explicitly orders them in sequence. Actions connected by 'while', 'as', 'together', or 'at the same time' should overlap; actions connected by 'then' or 'after' should follow in order.\nCRITICAL EXECUTION RULE: Respond ONLY with the tools call JSON matching schema: `{\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}`. Your execution MUST end there. DO NOT execute scripts, commands, or tools; PainterSpace executes the plan.\nNever emit numeric times, distances, angles or geometry; use named levels and segment IDs.\nExplicit Director timeline segments set action and timing. Combine the prompt with them when provided; compile the timeline alone when there is no prompt. An empty timeline adds no constraint.\nPreferred choices must use listed alternatives. Report prose conflicts in brief_conflicts.\nScene inventory, standing spots, stairs, and authored zones are in scene_context. Vehicle anchors and surfaces are in manifest_summary. Use director_brief_digest for Director constraints.\nUse scene_context.surface_spots for placement or walking on measured flat elevated surfaces. These references are derived from scene geometry; do not invent surface names or coordinates.\n\nFor standing-character placements at scene-object anchors, use only references listed in scene_context.anchor_support.supported_anchors when measured support faces are present. Do not use unsupported_anchors for standing placements or paired interactions. Other reference types are not verified by this anchor list; do not assume they provide standing support. A different meeting center cannot repair an unsupported starting placement. Scene-derived standing references (standing_left_* and standing_right_*) are measured on connected floor; only collision-verified spots have clearance from all scene objects. Use separate references for crowd members. If no supported standing reference is available, do not invent ground or move scene assets.\nUse scene_context.rooftop_spots for prompts that start on top of a building. Place the actor at a listed rooftop reference, then use jump_down with its landing_reference as the target when one is provided. Never infer a roof position from bounds or invent a rooftop reference.\nUse scene_context object dimensions, headings, standing-spot positions, and authored zones to judge spatial relationships. Use only scene-authored zone markers; generic manifest lane names do not establish a road in this scene. When scene_context.unprotected_scene_objects is nonempty, the compiler cannot certify actor or vehicle placement near those assets; do not claim a safe route through them.\n",
+  "strict_llm_protocol": {
+    "role": "You are acting STRICTLY as the LLM API endpoint for PainterSpace.",
+    "mandate": "When sending prompt using the task queue, always make sure the LLM responds only with the tools call json, and the execution should end there. make this explicit in the LLM call.",
+    "must_do": [
+      "1. Read this file (task_queue/pending_request.json).",
+      "2. Use the prompt when present, combine it with relevant drawn routes and explicit timeline segments, and use timeline segments alone when the prompt is empty. An empty timeline adds no constraint. Choose only symbolic catalog calls.",
+      "3. Write ONLY the tools call JSON response to task_queue/llm_response.json with schema: {\"calls\": [{\"function\": \"...\", \"args\": {...}}, ...]}.",
+      "4. Output that JSON block in chat and END YOUR EXECUTION IMMEDIATELY THERE."
+    ],
+    "must_never_do": [
+      "DO NOT run the queue processor, planner, compiler, simulator, animation bake, validator, renderer, or ANY Python/shell commands while handling this pending request.",
+      "DO NOT write or edit .usda files directly.",
+      "DO NOT perform the program's execution or compilation work yourself \u2014 the PainterSpace C++ desktop app watches task_queue/llm_response.json and automatically executes the function calls, compiles shot.usda, and validates collisions itself."
+    ]
+  },
+  "semantic_reference_grammar": {
+    "rule": "Use exact scene object names, authored zone markers, listed anchors or spots, and world directions. A bare 'center' is invalid unless that exact reference is listed. To target an object's center, use its name only when its pivot identifies the center. Never emit numeric geometry, timing or angles.",
+    "scene_object_names": [
+      "Ground",
+      "CitySquare"
+    ],
+    "examples": [
+      {
+        "at": "Ground:standing_left_01"
+      }
+    ]
+  },
+  "function_catalog_schemas": [
+    {
+      "type": "function",
+      "function": {
+        "name": "approach",
+        "description": "Execute approach on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "gait": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "argue",
+        "description": "Execute argue on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "center": {
+              "type": "string"
+            },
+            "intensity": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "attack",
+        "description": "Attack using manifest clips, such as left_hook, elbow_punch or punching.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "moves": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "back_up_to",
+        "description": "Step, jog, or run backward toward target while keeping torso/head facing forward.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "pace": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "board_vehicle",
+        "description": "Scalable function to seat 1, 2, 4, or N occupants into any vehicle.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "occupants": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "occupants"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "brake_to_stop",
+        "description": "Execute brake_to_stop on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "braking": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "carry_to",
+        "description": "Carry a box, bag, or heavy object to a semantic target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "item_style": {
+              "type": "string"
+            },
+            "pace": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "celebrate",
+        "description": "Actor celebrates (`cheer`, `victory`, `clap`, `rally`, `fist_pump`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "check_plan",
+        "description": "Run plan consistency checks on the current plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "climb_stairs",
+        "description": "Traverse a staircase ascending or descending with cadence matching and continuous elevation.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "stairs": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "pace": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "stairs"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "climb_surface",
+        "description": "Actor climbs up or down a vertical or slanted surface (`wall`, `ladder`, `rope`, `roof`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "close_door",
+        "description": "Execute close_door on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "door_part": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "close_part",
+        "description": "Execute close_part on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "part_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "part_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "collapse_or_knockout",
+        "description": "Actor slips, trips, collapses, or is knocked unconscious (`knocked_out`, `knocked_down`, `dying`, `sweep_fall`, `slip`, `trip`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "converse",
+        "description": "Execute converse on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "center": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "crawl_to",
+        "description": "Crawl low along the ground (forward or backward) toward a semantic target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "dance",
+        "description": "Actor dances (`groove`, `silly`, `breakdance`, `moonwalk`); travel is `in_place` or `travel`.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "travel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "defend_or_block",
+        "description": "Guard or evade (`block`, `dodge_back`, `dodge_right`); `threat`, `attacker`, and `target` name the opponent.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "threat": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "attacker": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "describe_actor",
+        "description": "Describe actor ID, label, asset, appearance, and role tags.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "disembark_vehicle",
+        "description": "Scalable function to disembark occupants from a vehicle.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "occupants": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "disperse",
+        "description": "Execute disperse on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "dodge",
+        "description": "Execute dodge on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "threat": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "when_closer_than": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive",
+        "description": "Actor acts as driver seated in vehicle, moving with vehicle controls.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_along",
+        "description": "Execute drive_along on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "zone_or_lane": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "zone_or_lane"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_past",
+        "description": "Execute drive_past on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "lateral_gap": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_to",
+        "description": "Execute drive_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_toward",
+        "description": "Execute drive_toward on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "emote",
+        "description": "Actor expresses a distinct emotion or attitude (`cry`, `yell`, `shrug`, `nod`, `dismiss`, `bored`, `salute`, `threaten`, `cocky`, `sad`, `laugh`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "emotion": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "enter_vehicle",
+        "description": "Actor approaches and boards a vehicle seat (`driver_seat`, `passenger_seat`, `seat_rear_left`, `seat_rear_right`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "seat": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "exit_vehicle",
+        "description": "Actor opens vehicle door, rises from seat, and steps out onto the roadway stand anchor.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "door_part": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "fall",
+        "description": "Execute fall on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "find_actor",
+        "description": "Find actor IDs matching descriptive wording (e.g. 'the tall one', 'red jacket').",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "descriptors": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "descriptors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flee_from",
+        "description": "Execute flee_from on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "threat": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "into_zone": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "threat"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "flinch",
+        "description": "Execute flinch on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "fly_to",
+        "description": "Fly or levitate/float through the air to a target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "follow",
+        "description": "Execute follow on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "until": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "follow_path",
+        "description": "Follow an authored route by ID; geometry is resolved only by the compiler.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "path_id": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "path_id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "gesture",
+        "description": "Execute gesture on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "move": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "greet",
+        "description": "Execute greet on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "group_fight",
+        "description": "Fight as opposing groups without fixed opponents; optional destinations give each member a separate run-in spot, in membership order.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "group_a": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "group_b": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "destinations_a": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "destinations_b": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "moves": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "group_a",
+            "group_b"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "hit_reaction",
+        "description": "Execute hit_reaction on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "strike_move": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "honk_horn",
+        "description": "Driver honks the vehicle horn (`honking_horn`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "vehicle": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "huddle",
+        "description": "Execute huddle on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "center": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "hug_or_kiss",
+        "description": "Actor shares an affectionate gesture (`kiss`, `pat`, `comfort`) with another actor.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "inspect_area",
+        "description": "Actor scans or searches the surrounding area (`look_around`, `nervous`, `look_down`, `search_ground`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "interact_object",
+        "description": "Actor manipulates a world prop or mechanism (`push_button`, `pull_lever`, `enter_code`, `open_cabinet`, `search_high`, `dig`, `type`, `write`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jog_to",
+        "description": "Execute jog_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jump_down",
+        "description": "Execute jump_down on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jump_on",
+        "description": "Execute jump_on on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "jump_over",
+        "description": "Execute jump_over on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "obstacle": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "obstacle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "kneel",
+        "description": "Actor kneels down on one or both knees (`kneel`, `pray`, `inspect`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "lie_down",
+        "description": "Actor lies down flat on the ground or a surface (`sleep`, `rest`, `writhe`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_actors",
+        "description": "List all currently placed actors in the shot.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_anchors",
+        "description": "List valid anchors for an asset or actor.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_or_actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_or_actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_assets",
+        "description": "List all valid asset IDs and placeable assets in the project library.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_clips",
+        "description": "List available animation clips, optionally filtered by category.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "category": {
+              "type": "string"
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_surfaces",
+        "description": "List top surfaces available for jumping or sitting on.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_or_actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_or_actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_zones",
+        "description": "List all named zones authored in the scene.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "look_at",
+        "description": "Execute look_at on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "medical_aid",
+        "description": "Actor administers emergency medical care (`cpr`) to a patient on the ground.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "patient": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "patient"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "open_door",
+        "description": "Execute open_door on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "door_part": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "open_part",
+        "description": "Execute open_part on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "part_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "part_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pace_while_talking",
+        "description": "Walk/pace while talking on a cell phone.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "perform",
+        "description": "Choose an action for a named user segment, or after a segment completion.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "during": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "variant": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "action"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "perform_acrobatics",
+        "description": "Actor performs an acrobatic maneuver (`backflip`, `cartwheel`, `macaco`, `spin`, `breakdance_freeze`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "move": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "perform_activity",
+        "description": "Actor performs a recreational, musical, or athletic activity (`guitar`, `piano`, `drums`, `sing`, `rap`, `basketball`, `soccer_kick`, `jump_rope`, `fish`, `smoke`, `cards`, `gaming`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "activity": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pick_up",
+        "description": "Execute pick_up on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "object_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "object_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "place",
+        "description": "Place an asset instance at a reference with a unique actor record.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_id": {
+              "type": "string"
+            },
+            "at_reference": {
+              "type": "string"
+            },
+            "facing_reference": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "role_tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "appearance": {
+              "type": "string"
+            },
+            "in_vehicle": {
+              "type": "string"
+            },
+            "seat": {
+              "type": "string"
+            },
+            "at": {
+              "type": "string"
+            },
+            "facing": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "asset_id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "place_group",
+        "description": "Place multiple actors in a formation.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "group_name": {
+              "type": "string"
+            },
+            "asset_id": {
+              "type": "string"
+            },
+            "at_reference": {
+              "type": "string"
+            },
+            "formation": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "group_name",
+            "asset_id"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pull_object",
+        "description": "Actor pulls a heavy object or rope (`heavy`, `rope`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "push",
+        "description": "Execute push on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "put_down",
+        "description": "Execute put_down on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface_reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface_reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "react",
+        "description": "Execute react on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "mood": {
+              "type": "string"
+            },
+            "look_at": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "when_closer_than": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "remove",
+        "description": "Remove an actor from the shot.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "reverse_to",
+        "description": "Execute reverse_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "vehicle",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "run_to",
+        "description": "Execute run_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_appearance",
+        "description": "Customize appearance variant or build.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "color_variant": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            },
+            "tint_rgb": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_lights",
+        "description": "Execute set_lights on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vehicle": {
+              "type": "string"
+            },
+            "headlights": {
+              "type": "boolean"
+            },
+            "hazards": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "vehicle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "shake_hands",
+        "description": "Actor shakes hands with another actor (`shaking_hands_2`), automatically facing them.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "shove",
+        "description": "Execute shove on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "sit_in",
+        "description": "Seat character in a vehicle or interior seat anchor (e.g. car_1:driver_seat).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "seat_anchor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "seat_anchor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "sit_on",
+        "description": "Execute sit_on on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "seat_anchor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "seat_anchor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "sneak_to",
+        "description": "Execute sneak_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stage_pair",
+        "description": "Route two actors to a shared meeting point, face them, and synchronize their arrival (`combat`, `contact`, `conversational`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "spacing": {
+              "type": "string"
+            },
+            "center": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actors"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stand_at",
+        "description": "Execute stand_at on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "facing_reference": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stand_up",
+        "description": "Execute stand_up on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stumble_to",
+        "description": "Limp, stagger, or stumble (injured, drunk, or sad) toward a semantic target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "swim_to",
+        "description": "Swim toward a target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "take_cover",
+        "description": "Execute take_cover on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "surface": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "surface"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "throw_toward",
+        "description": "Actor throws an object or projectile toward a target (`overhand`, `toss`, `grenade`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "turn_to_face",
+        "description": "Execute turn_to_face on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "reference"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "use_phone",
+        "description": "Actor uses a mobile phone (`talk`, `pace`, `text`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "use_weapon",
+        "description": "Actor draws or attacks with a weapon (`pistol`, `rifle`, `sword`, `knife`) against a target.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "weapon": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "vault_over",
+        "description": "Actor vaults, hurdles, or dive-rolls over an obstacle (`vault`, `dive_roll`, `roll`).",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "obstacle": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "obstacle"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "wait",
+        "description": "Execute wait on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "until": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "walk_to",
+        "description": "Execute walk_to on the shot plan.",
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "actor": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "with_event": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "target"
+          ]
+        }
+      }
+    }
+  ],
+  "completed_stage": "/Users/vishaljose/PainterSpace/scenes/scene_03/shot_011/shot.usda"
+}

@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "actor_contact_policy": "full_body",
+  "time_steps": 3841,
+  "actors": [
+    "human_1",
+    "human_2",
+    "human_3"
+  ],
+  "assets": [
+    "ResidentialIntersection",
+    "Ground"
+  ],
+  "unprotected_assets": [],
+  "unprotected_actors": [],
+  "violations": [],
+  "level_violations": []
+}

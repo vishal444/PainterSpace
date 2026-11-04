@@ -7,11 +7,16 @@ inserts idle fills, enforces settle holds, and outputs a complete resolved timel
 from __future__ import annotations
 
 import math
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from plan_model import Beat, ShotPlan, StructuredError, TimingCondition
+from plan_model import Beat, ShotPlan, StructuredError
 from semantic_references import DURATION_LEVELS, GAP_BETWEEN_BODIES, GAP_TO_VEHICLE, ReferenceResolver
+
+
+# A long jump uses a brief takeoff followed by a gravity-timed fall.
+FALL_GRAVITY_MPS2 = 9.81
+JUMP_TAKEOFF_S = 0.35
 
 
 @dataclass
@@ -94,11 +99,18 @@ class TimelineResolver:
         actor_last_beat: Dict[str, str] = {}
 
         for b in beats:
-            # Implicit actor sequential dependency if no condition specified
-            if b.start_condition is None:
-                if b.actor_id in actor_last_beat:
-                    dependencies[b.beat_id].add(actor_last_beat[b.actor_id])
-            else:
+            for predecessor in b.params.get("wait_for", []):
+                if predecessor not in beat_map:
+                    return None, StructuredError("TIMING_DEPENDENCY", "Unknown shared-phase predecessor", beat_id=b.beat_id,
+                                                 details={"predecessor": predecessor})
+                dependencies[b.beat_id].add(predecessor)
+            # A timing condition can constrain the start of a beat, but it does
+            # not erase the order of actions already authored for this actor.
+            # In particular, synthesized `at` times for paired meetings must
+            # not let a later kiss overtake the preceding fight.
+            if b.actor_id in actor_last_beat:
+                dependencies[b.beat_id].add(actor_last_beat[b.actor_id])
+            if b.start_condition is not None:
                 cond = b.start_condition
                 if cond.type in ("after", "with"):
                     ref = str(cond.value)
@@ -209,8 +221,18 @@ class TimelineResolver:
                     ev_key = f"{target_aid}.stopped"
                     start_time = events.get(ev_key, actor_end_times.get(target_aid, start_time))
 
+            if beat.params.get("wait_for"):
+                start_time = max(start_time, *(resolved_beats[parent].end_time
+                                               for parent in beat.params["wait_for"]))
+
+            # Bounded crowd coordination can move a whole simultaneous phase
+            # to a later common departure. Keep causal and authored conditions;
+            # exact windows below still reject incompatible retiming.
+            if beat.params.get('crowd_not_before_s') is not None:
+                start_time = max(start_time, float(beat.params['crowd_not_before_s']))
+
             # Ensure start time is not before actor's previous action
-            if start_time < actor_end_times.get(aid, 0.0):
+            if start_time < actor_end_times.get(aid, 0.0) - 1e-7:
                 is_cont = bool(beat.params.get("continuous", False))
                 locomotion_fns = (
                     "walk_to", "run_to", "drive_to", "climb_stairs",
@@ -234,6 +256,15 @@ class TimelineResolver:
                     if parent_b and parent_b in resolved_beats:
                         target_t = resolved_beats[parent_b].end_time
                 duration = max(0.5, (target_t - start_time) if target_t is not None else self._default_duration_for_function(beat))
+            elif beat.function == "jump_down" and self.ref_resolver and beat.params.get("target"):
+                state = actor_initial_states.get(aid, {})
+                source = provisional_positions.get(aid, [])
+                start_y = source[-1][2] if source else float(state.get("position", [0, 0, 0])[1])
+                target, _ = self.ref_resolver.resolve(str(beat.params["target"]), actor_initial_states,
+                                                      start_time, source_actor_id=aid)
+                drop = max(0.0, start_y - float(target.position[1])) if target else 0.0
+                duration = max(self._default_duration_for_function(beat),
+                               JUMP_TAKEOFF_S + math.sqrt(2.0 * drop / FALL_GRAVITY_MPS2))
             elif b_id in estimated_durations:
                 duration = float(estimated_durations[b_id])
             elif self.duration_estimator:
@@ -241,7 +272,17 @@ class TimelineResolver:
             else:
                 duration = self._default_duration_for_function(beat)
 
-            duration = max(0.2, duration)
+            if beat.params.get("exact_window"):
+                exact_start, exact_end = beat.params["exact_window"]
+                if abs(start_time - exact_start) > 1e-8:
+                    return None, StructuredError("BRIEF_OVERLAP", "A planned action overlaps an authoritative window", beat_id=b_id)
+                duration = exact_end - exact_start
+            elif beat.params.get('auto_interaction_approach') or beat.params.get('auto_crowd_movement'):
+                # Timed crowd edges can be shorter than one fifth of a second.
+                # Clamping them would shift later reservations and erase waits.
+                duration = max(0.0, duration)
+            else:
+                duration = max(0.2, duration)
             end_time = start_time + duration
 
             # Register events
@@ -262,7 +303,18 @@ class TimelineResolver:
                 b_events[f"{aid}.stopped"] = end_time
                 b_events[f"{b_id}.stopped"] = end_time
 
+            if beat.params.get("brief_segment"):
+                b_events[f"{aid}.{beat.params['brief_segment']}"] = end_time
             events.update(b_events)
+
+            resolved_params = dict(beat.params)
+            if beat.function == "group_fight":
+                # Every preceding arrival is resolved by the phase barrier.
+                # Preserve these positions for synthesis regardless of actor order.
+                resolved_params["opponent_positions"] = {
+                    opponent: list(self._sample_traj(provisional_positions[opponent], start_time))
+                    for opponent in beat.params.get("opponents", [])
+                    if opponent in provisional_positions}
 
             resolved_b = ResolvedBeat(
                 beat_id=b_id,
@@ -271,14 +323,15 @@ class TimelineResolver:
                 start_time=start_time,
                 end_time=end_time,
                 duration=duration,
-                params=beat.params,
+                params=resolved_params,
                 events=b_events,
             )
             resolved_beats[b_id] = resolved_b
             actor_end_times[aid] = end_time
 
             # Update provisional trajectory for aid
-            self._update_provisional_trajectory(aid, start_time, end_time, beat, provisional_positions)
+            self._update_provisional_trajectory(aid, start_time, end_time, beat, provisional_positions,
+                                                actor_initial_states)
 
             # Check dependent nodes
             for dep_id, deps in dependencies.items():
@@ -286,6 +339,13 @@ class TimelineResolver:
                     in_degree[dep_id] -= 1
                     if in_degree[dep_id] == 0:
                         queue.append(dep_id)
+
+        # Expose one timeline event for each linked, multi-participant action.
+        for beat in resolved_beats.values():
+            group_id = beat.params.get("group_id")
+            if group_id:
+                events[f"{group_id}.started"] = beat.start_time
+                events[f"{group_id}.finished"] = beat.end_time
 
         # 4. Compute total shot duration
         total_duration = max((b.end_time for b in resolved_beats.values()), default=2.0)
@@ -300,6 +360,10 @@ class TimelineResolver:
             )
 
         # 5. Insert idle fills for actors with gaps
+        # Completion times already drove dependent actions and event triggers.
+        # A tail extension must not retroactively invalidate those constraints
+        # or an explicitly authored duration.
+        referenced_beats = {parent for parents in dependencies.values() for parent in parents}
         all_resolved_beats: List[ResolvedBeat] = []
         actor_schedules: Dict[str, List[ResolvedBeat]] = {}
 
@@ -333,10 +397,18 @@ class TimelineResolver:
 
             # Tail idle fill (or extend continuous activity like dance / perform_activity)
             if curr_time < total_duration:
-                if full_actor_beats and full_actor_beats[-1].function in ("dance", "perform_activity", "celebrate"):
+                if (full_actor_beats and not full_actor_beats[-1].params.get("exact_window")
+                        and full_actor_beats[-1].function in ("dance", "perform_activity", "celebrate")
+                        and full_actor_beats[-1].beat_id not in referenced_beats
+                        and beat_map[full_actor_beats[-1].beat_id].duration_condition is None):
                     last_b = full_actor_beats[-1]
                     last_b.end_time = total_duration
                     last_b.duration = total_duration - last_b.start_time
+                    for event in (f'{last_b.beat_id}.finished', f'{aid}.finished'):
+                        last_b.events[event] = total_duration
+                        events[event] = total_duration
+                    if last_b.params.get('group_id'):
+                        events[f"{last_b.params['group_id']}.finished"] = total_duration
                 else:
                     tail_idle = ResolvedBeat(
                         beat_id=f"idle_{aid}_{int(curr_time * 100)}",
@@ -364,6 +436,11 @@ class TimelineResolver:
         return timeline, None
 
     def _extract_beat_id_from_event(self, ref: str, beat_map: Dict[str, Beat]) -> Optional[str]:
+        if ref in beat_map:
+            return ref
+        for suffix in (".finished", ".started", ".arrived"):
+            if ref.endswith(suffix) and ref[:-len(suffix)] in beat_map:
+                return ref[:-len(suffix)]
         if "." in ref:
             prefix = ref.split(".", 1)[0]
             if prefix in beat_map:
@@ -444,13 +521,14 @@ class TimelineResolver:
             return traj[0][1], traj[0][2], traj[0][3]
         if t >= traj[-1][0]:
             return traj[-1][1], traj[-1][2], traj[-1][3]
-        for i in range(len(traj) - 1):
-            t0, x0, y0, z0 = traj[i]
-            t1, x1, y1, z1 = traj[i + 1]
-            if t0 <= t <= t1:
-                alpha = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
-                return x0 + alpha * (x1 - x0), y0 + alpha * (y1 - y0), z0 + alpha * (z1 - z0)
-        return traj[-1][1], traj[-1][2], traj[-1][3]
+        from bisect import bisect_left
+        # Trajectories are time ordered. Binary search matters when crowd route
+        # checks sample each other actor thousands of times.
+        i = max(0, bisect_left(traj, (t, -math.inf, -math.inf, -math.inf)) - 1)
+        t0, x0, y0, z0 = traj[i]
+        t1, x1, y1, z1 = traj[i + 1]
+        alpha = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+        return x0 + alpha * (x1 - x0), y0 + alpha * (y1 - y0), z0 + alpha * (z1 - z0)
 
     def _update_provisional_trajectory(
         self,
@@ -459,9 +537,16 @@ class TimelineResolver:
         end_time: float,
         beat: Beat,
         provisional: Dict[str, List[Tuple[float, float, float, float]]],
+        initial_states: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         last_pos = self._sample_traj(provisional.get(aid, []), start_time)
         traj = provisional.setdefault(aid, [])
+
+        if beat.params.get("brief_path"):
+            from director_brief import resolve_path_for_actor
+            provisional[aid] = [p for p in traj if p[0] < start_time]
+            provisional[aid].extend((t, *pos) for t, pos, _ in resolve_path_for_actor(beat.params["brief_path"], [start_time, end_time]))
+            return
 
         target = beat.params.get("target") or beat.params.get("to")
         resolved_pos: Optional[List[float]] = None
@@ -471,7 +556,9 @@ class TimelineResolver:
             live_states: Dict[str, Dict[str, Any]] = {}
             for k, k_traj in provisional.items():
                 p_xyz = self._sample_traj(k_traj, start_time)
-                live_states[k] = {"position": [p_xyz[0], p_xyz[1], p_xyz[2]], "facing_deg": 0.0}
+                live_states[k] = dict((initial_states or {}).get(k, {}),
+                                      position=[p_xyz[0], p_xyz[1], p_xyz[2]],
+                                      facing_deg=(initial_states or {}).get(k, {}).get('facing_deg', 0.0))
             res, err = self.ref_resolver.resolve(str(target), live_states, start_time, source_actor_id=aid)
             if not err and res is not None:
                 resolved_pos = list(res.position)
@@ -484,12 +571,26 @@ class TimelineResolver:
             else:
                 new_pos[2] += 12.0
         elif beat.function in (
+            "exit_vehicle",
             "walk_to", "run_to", "sneak_to", "jog_to", "approach", "stand_at",
             "crawl_to", "stumble_to", "back_up_to", "carry_to", "swim_to", "fly_to",
             "vault_over", "climb_surface",
         ):
             if resolved_pos is not None:
                 new_pos = resolved_pos
+                if beat.function == "approach":
+                    # Match the synthesized endpoint. Routing the next interaction
+                    # from the target's exact position makes its partner appear to
+                    # occupy the same source point.
+                    gap = GAP_BETWEEN_BODIES.get(
+                        str(beat.params.get("gap", "conversational")).lower(), 1.3)
+                    dx, dz = new_pos[0] - last_pos[0], new_pos[2] - last_pos[2]
+                    distance = math.hypot(dx, dz)
+                    if distance > 1e-3:
+                        scale = gap / distance
+                        new_pos = [new_pos[0] - dx * scale,
+                                   new_pos[1] - (new_pos[1] - last_pos[1]) * scale,
+                                   new_pos[2] - dz * scale]
             else:
                 new_pos[2] += 3.0
         elif beat.function == "dodge":

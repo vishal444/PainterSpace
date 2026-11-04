@@ -1,34 +1,244 @@
 {
+  "plan_review": {
+    "passed": true,
+    "requirements": [],
+    "violations": [],
+    "overrides": [],
+    "pending_spatial_bindings": [],
+    "scope": "explicit English timing cues, ordered group phases and from-direction clauses"
+  },
+  "spatial_intents": [
+    {
+      "intent_id": "crowd_walk_south_to_east",
+      "actors": [
+        "human_1",
+        "human_2",
+        "human_3",
+        "human_4",
+        "human_5"
+      ],
+      "movements": {
+        "human_1": "walk_to_1",
+        "human_2": "walk_to_2",
+        "human_3": "walk_to_3",
+        "human_4": "walk_to_4",
+        "human_5": "walk_to_5"
+      },
+      "source_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+      "destination_region": "ResidentialIntersection:entry_754871f0f4135c47",
+      "departure_timing": "simultaneous",
+      "gait": "walk",
+      "bindings": {
+        "human_1": {
+          "source": [
+            15.124954782067858,
+            -0.019999999552965164,
+            67.5
+          ],
+          "destination": [
+            73.12480372403228,
+            -0.019999999552965164,
+            0.0
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "via_points": [
+            [
+              15.124954782067858,
+              -0.019999999552965164,
+              15.124904782067857
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_2": {
+          "source": [
+            15.05384906899193,
+            -0.019999999552965164,
+            71.05411862816186
+          ],
+          "destination": [
+            70.31240186201615,
+            -0.019999999552965164,
+            0.0
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "via_points": [
+            [
+              15.05384906899193,
+              -0.019999999552965164,
+              15.053799068991928
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2562009310080706,
+          "destination_radius_m": 1.2562009310080706,
+          "source_solid_radius_m": 1.2562009310080706,
+          "destination_solid_radius_m": 1.2562009310080706
+        },
+        "human_3": {
+          "source": [
+            15.124954782067858,
+            -0.019999999552965164,
+            74.60823725632372
+          ],
+          "destination": [
+            67.5,
+            -0.019999999552965164,
+            0.0
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "via_points": [
+            [
+              15.124954782067858,
+              -0.019999999552965164,
+              15.124904782067857
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.1850952179321421,
+          "destination_radius_m": 1.1850952179321421,
+          "source_solid_radius_m": 1.1850952179321421,
+          "destination_solid_radius_m": 1.1850952179321421
+        },
+        "human_4": {
+          "source": [
+            15.101252877709216,
+            -0.019999999552965164,
+            78.16235588448558
+          ],
+          "destination": [
+            64.68759813798385,
+            -0.019999999552965164,
+            0.0
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "via_points": [
+            [
+              15.101252877709216,
+              -0.019999999552965164,
+              15.101202877709214
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.208797122290785,
+          "destination_radius_m": 1.208797122290785,
+          "source_solid_radius_m": 1.208797122290785,
+          "destination_solid_radius_m": 1.208797122290785
+        },
+        "human_5": {
+          "source": [
+            15.065700021171251,
+            -0.019999999552965164,
+            81.71647451264744
+          ],
+          "destination": [
+            61.87519627596772,
+            -0.019999999552965164,
+            0.0
+          ],
+          "generated_start": true,
+          "source_region": "ResidentialIntersection:entry_c0c3a1f8c3de37aa",
+          "via_points": [
+            [
+              15.065700021171251,
+              -0.019999999552965164,
+              15.06565002117125
+            ]
+          ],
+          "generated_heading": true,
+          "generated_duration": true,
+          "source_radius_m": 1.2443499788287493,
+          "destination_radius_m": 1.2443499788287493,
+          "source_solid_radius_m": 1.2443499788287493,
+          "destination_solid_radius_m": 1.2443499788287493
+        },
+        "_search": {
+          "attempts": 1,
+          "variant": 0
+        }
+      },
+      "source_regions": [],
+      "via_regions": [
+        "ResidentialIntersection:corner_cd67516d7621b037"
+      ],
+      "origin_layout": "specified"
+    }
+  ],
   "success": true,
   "lint_passed": true,
   "collision_passed": true,
+  "collision_skipped": false,
   "camera_passed": true,
+  "bake_errors": [],
   "lint_warnings": [],
   "collision_report": {
     "ok": true,
-    "time_steps": 371,
+    "actor_contact_policy": "full_body",
+    "time_steps": 3997,
     "actors": [
-      "Parkour_Runner"
+      "human_1",
+      "human_2",
+      "human_3",
+      "human_4",
+      "human_5"
     ],
     "assets": [
-      "OakTree",
-      "Sedan1",
-      "Coupe2",
-      "Sedan3"
+      "ResidentialIntersection",
+      "Ground"
     ],
     "unprotected_assets": [],
-    "violations": []
+    "unprotected_actors": [],
+    "violations": [],
+    "level_violations": []
   },
   "camera_warnings": [],
   "prompt_adherence": {
     "passed": true,
     "violations": [],
-    "checks": {
-      "car": {
-        "required": true,
-        "found": true,
-        "asset_id": "cars.car1"
+    "checks": {}
+  },
+  "crowd_repair": {
+    "retries": 0,
+    "attempts": [
+      {
+        "attempt": 0,
+        "planning_buffer_m": 0.3,
+        "success": true,
+        "error": null,
+        "collision_report": {
+          "ok": true,
+          "actor_contact_policy": "full_body",
+          "time_steps": 3997,
+          "actors": [
+            "human_1",
+            "human_2",
+            "human_3",
+            "human_4",
+            "human_5"
+          ],
+          "assets": [
+            "ResidentialIntersection",
+            "Ground"
+          ],
+          "unprotected_assets": [],
+          "unprotected_actors": [],
+          "violations": [],
+          "level_violations": []
+        },
+        "spatial_layout_variant": 0
       }
-    }
+    ]
   }
 }

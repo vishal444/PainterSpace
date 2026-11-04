@@ -7,97 +7,47 @@
 
 def Xform "World"
 {
-    def DomeLight "LateAfternoonAmbient"
+    def DomeLight "BaseAmbient"
     {
-        color3f inputs:color = (0.42, 0.38, 0.48)
-        float inputs:intensity = 0.55
+        color3f inputs:color = (0.35, 0.42, 0.55)
+        float inputs:intensity = 0.45
     }
 
-    def DistantLight "LateAfternoonSun"
+    def DistantLight "BaseKeyLight"
     {
         float angle = 0.53
-        color3f inputs:color = (1, 0.82, 0.65)
-        float inputs:intensity = 2.4
-        float3 xformOp:rotateXYZ = (-25, -45, 0)
+        color3f inputs:color = (0.95, 0.88, 0.78)
+        float inputs:intensity = 1.6
+        float3 xformOp:rotateXYZ = (-35, -25, 0)
         uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
     }
 
-    def Xform "StreetAvenue" (
+    def Xform "Ground"
+    {
+        float3 xformOp:scale = (310, 0.08, 89.035)
+        double3 xformOp:translate = (0, -0.04, -0.31749916076660156)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+
+        def Cube "Floor"
+        {
+            color3f[] primvars:displayColor = [(0.16, 0.2, 0.24)] (
+                interpolation = "constant"
+            )
+            double size = 1
+        }
+    }
+
+    def Xform "ResidentialAvenue" (
         customData = {
             string asset_id = "environment.residential_avenue"
             string forward_axis = "-Z"
-            string world_state_role = "environment"
-        }
-        references = @../../assets/usdc_assets/environments/residential_avenue.usdc@</root>
-    )
-    {
-        float3 xformOp:rotateXYZ = (0, 90, 0)
-        double3 xformOp:scale = (0.25, 0.25, 0.25)
-        double3 xformOp:translate = (0, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
-    }
-
-    def Xform "Car1" (
-        active = false
-        customData = {
-            string asset_id = "cars.car1"
-            string forward_axis = "-Z"
             string world_state_role = "object"
         }
-        references = @../../assets/usdc_assets/cars/car1.usdc@</Car>
-    )
-    {
-        color3f[] primvars:displayColor = [(0.78, 0.14, 0.12)] (
-            interpolation = "constant"
-        )
-        token visibility = "invisible"
-        float3 xformOp:rotateXYZ = (0, 180, 0)
-        double3 xformOp:translate = (1.65, 0, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
-    }
-
-    def Scope "Zones"
-    {
-        def Cube "sidewalk" (
-            customData = {
-                string description = "Sidewalk along the curb where Driver walks"
-            }
-        )
-        {
-            uniform token purpose = "guide"
-            float size = 1
-            token visibility = "invisible"
-            double3 xformOp:scale = (1.6, 0.02, 24)
-            double3 xformOp:translate = (3.1, 0.01, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-        }
-
-        def Cube "roadway" (
-            customData = {
-                string description = "Roadway beside parked car where Runner sprints"
-            }
-        )
-        {
-            uniform token purpose = "guide"
-            float size = 1
-            token visibility = "invisible"
-            double3 xformOp:scale = (2.8, 0.02, 24)
-            double3 xformOp:translate = (-0.6, 0.01, 0)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
-        }
-    }
-
-    def Xform "OakTree" (
-        customData = {
-            string asset_id = "trees.oak_tree"
-            string forward_axis = "-Z"
-            string world_state_role = "object"
-        }
-        prepend references = @../../assets/usdc_assets/trees/oak_tree.norm.usda@
+        prepend references = @../../assets/usdc_assets/environments/residential_avenue.usdc@
     )
     {
         float3 xformOp:rotateXYZ = (0, 0, 0)
-        double3 xformOp:translate = (-3.1829967498779297, 0, 4.741829872131348)
+        double3 xformOp:translate = (0, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
     }
 }

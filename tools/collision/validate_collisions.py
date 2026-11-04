@@ -2,10 +2,16 @@
 """
 validate_collisions.py - fail any shot where a character's body passes through another asset.
 
-For every time step (default 2 per frame, so fast motion cannot tunnel) it poses the character's
+For every time step (default 2 per frame) it poses the character's
 skeleton, builds capsules along the bones, and measures the distance to every collision shape of
 every other object in world space (manifest assets, inline primitive objects, and other actors).
 Doors, hood, etc. are tested at their CURRENT transform in USD.
+Between characters, arm/leg contacts are permitted by default while pelvis,
+torso, neck and head contacts remain blocked. --strict-actor-limbs restores
+full-body character-to-character checks. Character-to-object checks always
+include all body parts.
+These posed-body checks are sampled; they do not prove collision freedom between
+samples. The compiler separately checks synthesized actor-root envelopes continuously.
 
   python tools/collision/validate_collisions.py shot.usda --manifest manifest.json [--allow allow.json] [--json report.json]
 
@@ -19,7 +25,9 @@ Every key except "actor" is optional. "shape" matches by prefix ("door_fr" cover
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import json
+import math
 import os
 import sys
 
@@ -27,7 +35,9 @@ import numpy as np
 from pxr import Usd, UsdGeom
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from contact_windows import contains_time, window_error
 from colliders import (
+    STEP_HEIGHT_M,
     VISIBLE_PURPOSES,
     AssetDB,
     CharacterModel,
@@ -36,13 +46,15 @@ from colliders import (
     l2w,
     scene_objects,
     segment_distance,
+    is_limb_segment,
     world_groups,
 )
 
 
 def _allowed(rules, actor, obj, shape_id, part, joint, sec, depth=0.0):
     effective_part = part or "body"
-    for r in rules or []:
+    candidates = (rules.get(actor, []) + rules.get(None, [])) if isinstance(rules, dict) else (rules or ())
+    for r in candidates:
         if r.get("actor") not in (None, actor):
             continue
         if r.get("asset") not in (None, obj.asset_id, obj.name):
@@ -55,9 +67,7 @@ def _allowed(rules, actor, obj, shape_id, part, joint, sec, depth=0.0):
                 continue
         if r.get("joints") and not any(j.lower() in joint.lower() for j in r["joints"]):
             continue
-        if "t0" in r and sec < r["t0"]:
-            continue
-        if "t1" in r and sec > r["t1"]:
+        if not contains_time(r, sec):
             continue
         if "max_depth_m" in r and depth > float(r["max_depth_m"]):
             continue
@@ -65,7 +75,30 @@ def _allowed(rules, actor, obj, shape_id, part, joint, sec, depth=0.0):
     return False
 
 
-def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allow=None):
+def _invalid_contact_windows(allow, allow_actor_limb_contacts):
+    invalid = [{'rule_index': index, 'actor': rule.get('actor'), 'asset': rule.get('asset'),
+                'reason': reason}
+               for index, rule in enumerate(allow or []) if (reason := window_error(rule))]
+    if not invalid:
+        return None
+    return {'ok': False, 'actor_contact_policy': 'core_body' if allow_actor_limb_contacts else 'full_body',
+            'time_steps': 0, 'actors': [], 'assets': [], 'unprotected_assets': [],
+            'unprotected_actors': [], 'violations': [], 'level_violations': [],
+            'error': {'error_code': 'CONTACT_WINDOW_INVALID',
+                      'message': 'Contact timing is invalid; spatial clearance cannot repair it.',
+                      'details': {'rules': invalid}}}
+
+
+def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allow=None,
+             sample_times=None, check_levels=True, allow_actor_limb_contacts=True):
+    invalid = _invalid_contact_windows(allow, allow_actor_limb_contacts)
+    if invalid:
+        return invalid
+    # Contact rules are consulted for every penetrating capsule. Index once
+    # instead of scanning the entire shot's rules on each limb comparison.
+    indexed_allow = {}
+    for rule in allow or []:
+        indexed_allow.setdefault(rule.get("actor"), []).append(rule)
     objs = scene_objects(stage, db)
     actors = [o for o in objs if o.is_actor]
     props = [o for o in objs if not o.is_actor and o.protected]
@@ -74,7 +107,7 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
         for o in objs
         if not o.is_actor
         and not o.protected
-        and not o.asset_id.startswith(("environment.", "environments."))
+        and not any(tag in (o.entry or {}).get("tags", []) for tag in ("environment", "camera"))
     ]
 
     tcps = stage.GetTimeCodesPerSecond() or 24.0
@@ -82,14 +115,19 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
     end = stage.GetEndTimeCode() if t1 is None else float(t1)
     if end < start:
         end = start
-    times = np.arange(start, end + 1e-9, 1.0 / max(1, substeps))
+    times = (np.asarray(sample_times, dtype=float) if sample_times is not None
+             else np.arange(start, end + 1e-9, 1.0 / max(1, substeps)))
 
     models = {}
+    unprotected_actors = []
     for a in actors:
         try:
-            models[a.name] = CharacterModel(stage, a)
+            model = CharacterModel(stage, a)
+            if not model.segs and not model.spheres:
+                raise ValueError(f"{a.path} has no usable body segments")
+            models[a.name] = model
         except ValueError:
-            pass
+            unprotected_actors.append(a.name)
     actors = [a for a in actors if a.name in models]
 
     rec = {}
@@ -101,10 +139,11 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
         live_props = [p for p in props if is_visible(p.prim, tc)]
         live_actors = [a for a in actors if is_visible(a.prim, tc)]
         groups = {p.name: world_groups(stage, p, tc, xc, bbc) for p in live_props}
+        actor_joints = {a.name: models[a.name].joint_world(tc, xc) for a in live_actors}
 
         # 1. Actor vs. Asset / Inline Object
         for a in live_actors:
-            pts, rad, lab = models[a.name].samples(tc, xc)
+            pts, rad, lab = models[a.name].samples(tc, xc, joints=actor_joints[a.name])
             if len(pts) == 0:
                 continue
             max_r = float(rad.max()) + margin
@@ -126,7 +165,7 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
                         sid = grp.ids[box_idx]
                         j_label = lab[int(pi_idx)]
                         depth = float(-D[pi_idx, ci_idx])
-                        if _allowed(allow, a.name, p, sid, grp.part, j_label, sec, depth):
+                        if _allowed(indexed_allow, a.name, p, sid, grp.part, j_label, sec, depth):
                             continue
                         if depth > worst_d:
                             worst_d = depth
@@ -168,9 +207,7 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
             veh_name = al.get("asset")
             if not act_name or not veh_name or act_name not in models:
                 continue
-            if "t0" in al and sec < al["t0"]:
-                continue
-            if "t1" in al and sec > al["t1"]:
+            if not contains_time(al, sec):
                 continue
             veh_prop = next((p for p in live_props if p.name == veh_name or p.asset_id == veh_name), None)
             if not veh_prop:
@@ -194,7 +231,14 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
             if len(pts) == 0:
                 continue
             P_veh = apply(inv_M, pts)
-            roof_viol = P_veh[:, 1] - c_max[1]
+            # Once the actor is outside the cabin footprint, rising beside the
+            # door is not a roof penetration. Points still under the roof remain
+            # checked during entry and exit as well as while seated.
+            inside_roof = ((P_veh[:, 0] >= c_min[0]) & (P_veh[:, 0] <= c_max[0])
+                           & (P_veh[:, 2] >= c_min[2]) & (P_veh[:, 2] <= c_max[2]))
+            if not np.any(inside_roof):
+                continue
+            roof_viol = np.where(inside_roof, P_veh[:, 1] - c_max[1], -np.inf)
             worst_idx = int(np.argmax(roof_viol))
             worst_pen = float(roof_viol[worst_idx])
             if worst_pen > tol:
@@ -223,20 +267,55 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
         # 2. Actor vs. Actor (full-body capsules: torso + limbs)
         if len(live_actors) > 1:
             capsules = {
-                a.name: (models[a.name].body_capsules(tc, xc) if hasattr(models[a.name], "body_capsules") else models[a.name].torso_capsules(tc, xc))
+                a.name: (models[a.name].body_capsules(tc, xc, joints=actor_joints[a.name]) if hasattr(models[a.name], "body_capsules") else models[a.name].torso_capsules(tc, xc))
                 for a in live_actors
             }
+            if allow_actor_limb_contacts:
+                # Limb contacts are permitted only between characters. The
+                # actor-vs-solid pass above continues checking every body part.
+                capsules = {name: [part for part in parts if not is_limb_segment(part[3])]
+                            for name, parts in capsules.items()}
+            segment_bounds = {
+                name: [(min(p[0], q[0]), max(p[0], q[0]),
+                        min(p[1], q[1]), max(p[1], q[1]),
+                        min(p[2], q[2]), max(p[2], q[2]))
+                       for p, q, _, _ in parts]
+                for name, parts in capsules.items()
+            }
+            # Whole-body bounds reject distant actors before the much more
+            # expensive segment-to-segment tests. Include capsule radii and
+            # the requested margin so this cannot discard a real collision.
+            capsule_bounds = {}
+            for name, parts in capsules.items():
+                if not parts:
+                    continue
+                low = np.min([np.minimum(p, q) - (radius + margin + tol)
+                              for p, q, radius, _ in parts], axis=0)
+                high = np.max([np.maximum(p, q) + (radius + margin + tol)
+                               for p, q, radius, _ in parts], axis=0)
+                capsule_bounds[name] = (low, high)
             for i in range(len(live_actors)):
                 for j in range(i + 1, len(live_actors)):
                     a1, a2 = live_actors[i], live_actors[j]
+                    bounds1 = capsule_bounds.get(a1.name)
+                    bounds2 = capsule_bounds.get(a2.name)
+                    if bounds1 is None or bounds2 is None or np.any(bounds1[1] < bounds2[0]) or np.any(bounds2[1] < bounds1[0]):
+                        continue
                     worst_d = 0.0
                     worst_info = None
-                    for p1, q1, r1, l1 in capsules[a1.name]:
-                        for p2, q2, r2, l2 in capsules[a2.name]:
+                    for index1, (p1, q1, r1, l1) in enumerate(capsules[a1.name]):
+                        b1 = segment_bounds[a1.name][index1]
+                        for index2, (p2, q2, r2, l2) in enumerate(capsules[a2.name]):
+                            b2 = segment_bounds[a2.name][index2]
+                            reach = r1 + r2 + margin + tol
+                            if (b1[0] > b2[1] + reach or b2[0] > b1[1] + reach or
+                                    b1[2] > b2[3] + reach or b2[2] > b1[3] + reach or
+                                    b1[4] > b2[5] + reach or b2[4] > b1[5] + reach):
+                                continue
                             dist = segment_distance(p1, q1, p2, q2) - (r1 + r2 + margin)
                             if dist < -tol:
                                 depth = float(-dist)
-                                if _allowed(allow, a1.name, a2, "body", "body", l1, sec, depth) or _allowed(allow, a2.name, a1, "body", "body", l2, sec, depth):
+                                if _allowed(indexed_allow, a1.name, a2, "body", "body", l1, sec, depth) or _allowed(indexed_allow, a2.name, a1, "body", "body", l2, sec, depth):
                                     continue
                                 if depth > worst_d:
                                     worst_d = depth
@@ -272,31 +351,32 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
                                 push_out_m=[round(float(v), 3) for v in g_dir * (worst_d + tol)],
                             )
 
-        # 3. Moving Vehicle vs. Vehicle / Prop
-        moving_vehicles = [
+        # 3. Any animated rigid asset (vehicle, animal, or prop) vs. other solids.
+        # Skeletal actors are checked above using their posed body capsules.
+        moving_solids = [
             p for p in live_props
-            if ("car" in p.asset_id.lower() or "vehicle" in p.asset_id.lower())
-            and any(op.GetNumTimeSamples() > 1 for op in UsdGeom.Xformable(p.prim).GetOrderedXformOps())
+            if any(op.GetNumTimeSamples() > 1 for op in UsdGeom.Xformable(p.prim).GetOrderedXformOps())
         ]
-        for v_obj in moving_vehicles:
+        for v_obj in moving_solids:
             v_grps = groups.get(v_obj.name, [])
             if not v_grps:
                 continue
             v_pts_list = []
             for vg in v_grps:
-                if vg.part is None:  # main chassis boxes
+                if vg.part is None:  # main collision boxes, excluding moving attachments
                     corners = vg.corners_world().reshape(-1, 3)
-                    # Filter points above ground clearance (y > 0.35m) so tires don't trigger on road/curbs
-                    high_pts = corners[corners[:, 1] > 0.35]
+                    # Centers catch full containment, where every corner lies
+                    # on or outside the other box's surface.
+                    points = np.vstack((corners, apply(vg.T, vg.c)))
+                    # Ground contact and step-height curbs are support surfaces.
+                    high_pts = points[points[:, 1] > STEP_HEIGHT_M]
                     if len(high_pts) > 0:
                         v_pts_list.append(high_pts)
             if not v_pts_list:
                 continue
             v_pts = np.vstack(v_pts_list)
             for p_other in live_props:
-                if p_other.name == v_obj.name or p_other.asset_id.startswith(("environment.", "environments.")):
-                    continue
-                if any(k in p_other.name.lower() for k in ("stage", "bridge", "street", "ground", "road")):
+                if p_other.name == v_obj.name or (p_other in moving_solids and p_other.name < v_obj.name):
                     continue
                 for grp in groups.get(p_other.name, []):
                     P_local = grp.local(v_pts)
@@ -313,7 +393,7 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
                         box_idx = int(cand[ci_idx])
                         sid = grp.ids[box_idx]
                         depth = float(-D[pi_idx, ci_idx])
-                        if _allowed(allow, v_obj.name, p_other, sid, grp.part, "chassis", sec, depth):
+                        if _allowed(indexed_allow, v_obj.name, p_other, sid, grp.part, "body", sec, depth):
                             continue
                         if depth > worst_d:
                             worst_d = depth
@@ -341,41 +421,120 @@ def validate(stage, db, t0=None, t1=None, substeps=2, tol=0.01, margin=0.0, allo
                             r.update(
                                 worst_depth_m=worst_d,
                                 worst_s=sec,
-                                body_part="chassis",
+                            body_part="body",
                                 shape=sid,
                                 push_out_m=[round(float(v), 3) for v in g_dir * (worst_d + tol)],
                             )
 
-    stairs = None
-    try:
-        import plan_path as pp
-        stairs = pp.scene_stairs(stage, db, t=start)
-    except Exception:
-        pass
-    level_viol = check_level_integrity(stage, db, live_actors, times, stairs=stairs)
+    level_viol = _level_violations(stage, db, actors, times, allow=allow) if check_levels else []
 
     viol = sorted(rec.values(), key=lambda r: -r["worst_depth_m"])
     for r in viol:
-        r["first_s"], r["last_s"], r["worst_s"] = (round(r[k], 3) for k in ("first_s", "last_s", "worst_s"))
-        r["worst_depth_m"] = round(r["worst_depth_m"], 3)
-        r["advice"] = (
-            f"{r['actor']} passes through {r['instance']} ({r['asset']}, part '{r['part']}') "
-            f"from {r['first_s']} s to {r['last_s']} s, up to {r['worst_depth_m']} m deep ({r['body_part']}). "
-            f"Move {r['actor']} by {r['push_out_m']} m at {r['worst_s']} s, or re-plan the route (plan_path.py) / use an anchor."
-        )
+        _finalize_violation(r)
     return {
-        "ok": (not viol) and (not level_viol),
+        "ok": (not viol) and (not level_viol) and (not unprotected) and (not unprotected_actors),
+        "actor_contact_policy": "core_body" if allow_actor_limb_contacts else "full_body",
         "time_steps": len(times),
         "actors": [a.name for a in actors],
         "assets": [p.name for p in props],
         "unprotected_assets": unprotected,
+        "unprotected_actors": unprotected_actors,
         "violations": viol,
         "level_violations": level_viol,
     }
 
 
-def check_level_integrity(stage, db, actors, times, stairs=None):
-    """Verifies that characters changing floor level pass through an authored stair portal."""
+def _finalize_violation(r):
+    r["first_s"], r["last_s"], r["worst_s"] = (round(r[k], 3) for k in ("first_s", "last_s", "worst_s"))
+    r["worst_depth_m"] = round(r["worst_depth_m"], 3)
+    r["advice"] = (
+        f"{r['actor']} passes through {r['instance']} ({r['asset']}, part '{r['part']}') "
+        f"from {r['first_s']} s to {r['last_s']} s, up to {r['worst_depth_m']} m deep ({r['body_part']}). "
+        f"Move {r['actor']} by {r['push_out_m']} m at {r['worst_s']} s, or re-plan the route (plan_path.py) / use an anchor."
+    )
+
+
+def _level_violations(stage, db, actors, times, allow=None):
+    stairs = None
+    try:
+        import plan_path as pp
+        stairs = pp.scene_stairs(stage, db, t=float(times[0]))
+    except Exception:
+        pass
+    return check_level_integrity(stage, db, actors, times, stairs=stairs, allow=allow)
+
+
+def _open_stage(stage_path, user_edits=None):
+    if user_edits:
+        from pxr import Sdf
+        root = Sdf.Layer.FindOrOpen(stage_path)
+        edits = Sdf.Layer.FindOrOpen(user_edits)
+        return Usd.Stage.Open(root, edits) if root and edits else None
+    return Usd.Stage.Open(stage_path)
+
+
+def _validate_chunk(args):
+    stage_path, manifest_path, user_edits, times, substeps, tol, margin, allow, allow_actor_limb_contacts = args
+    stage = _open_stage(stage_path, user_edits)
+    if not stage:
+        raise ValueError(f"cannot open {stage_path}")
+    return validate(stage, AssetDB(manifest_path), substeps=substeps, tol=tol, margin=margin,
+                    allow=allow, sample_times=times, check_levels=False,
+                    allow_actor_limb_contacts=allow_actor_limb_contacts)
+
+
+def validate_parallel(stage, db, stage_path, manifest_path, user_edits=None, t0=None, t1=None,
+                      substeps=2, tol=0.01, margin=0.0, allow=None, workers=1,
+                      allow_actor_limb_contacts=True):
+    """Validate disjoint time samples in separate USD processes, then merge exact checks."""
+    invalid = _invalid_contact_windows(allow, allow_actor_limb_contacts)
+    if invalid:
+        return invalid
+    start = stage.GetStartTimeCode() if t0 is None else float(t0)
+    end = max(start, stage.GetEndTimeCode() if t1 is None else float(t1))
+    times = np.arange(start, end + 1e-9, 1.0 / max(1, substeps))
+    worker_count = min(max(1, workers), len(times))
+    # One second of samples per process amortizes USD stage loading.
+    if worker_count == 1 or len(times) < worker_count * max(1, int((stage.GetTimeCodesPerSecond() or 24) * substeps)):
+        return validate(stage, db, t0, t1, substeps, tol, margin, allow,
+                        allow_actor_limb_contacts=allow_actor_limb_contacts)
+
+    chunks = [part.tolist() for part in np.array_split(times, worker_count) if len(part)]
+    tasks = [(stage_path, manifest_path, user_edits, part, substeps, tol, margin, allow, allow_actor_limb_contacts)
+             for part in chunks]
+    with ProcessPoolExecutor(max_workers=len(tasks)) as pool:
+        reports = list(pool.map(_validate_chunk, tasks))
+
+    merged = reports[0].copy()
+    merged["time_steps"] = sum(report["time_steps"] for report in reports)
+    merged["unprotected_assets"] = sorted(set().union(*(report["unprotected_assets"] for report in reports)))
+    merged["unprotected_actors"] = sorted(set().union(*(report["unprotected_actors"] for report in reports)))
+    violations = {}
+    for report in reports:
+        for item in report["violations"]:
+            key = (item["actor"], item["instance"], item["part"])
+            if key not in violations:
+                violations[key] = item.copy()
+                continue
+            current = violations[key]
+            current["first_s"] = min(current["first_s"], item["first_s"])
+            current["last_s"] = max(current["last_s"], item["last_s"])
+            current["frames"] += item["frames"]
+            if item["worst_depth_m"] > current["worst_depth_m"]:
+                for field in ("worst_depth_m", "worst_s", "body_part", "shape", "push_out_m"):
+                    current[field] = item[field]
+    merged["violations"] = sorted(violations.values(), key=lambda r: -r["worst_depth_m"])
+    for item in merged["violations"]:
+        _finalize_violation(item)
+    actors = [obj for obj in scene_objects(stage, db) if obj.is_actor and obj.name in merged["actors"]]
+    merged["level_violations"] = _level_violations(stage, db, actors, times, allow=allow)
+    merged["ok"] = not (merged["violations"] or merged["level_violations"] or
+                        merged["unprotected_assets"] or merged["unprotected_actors"])
+    return merged
+
+
+def check_level_integrity(stage, db, actors, times, stairs=None, allow=None):
+    """Require a stair portal or a scheduled airborne interval for level changes."""
     violations = []
     tcps = stage.GetTimeCodesPerSecond() or 24.0
     for a in actors:
@@ -387,6 +546,15 @@ def check_level_integrity(stage, db, actors, times, stairs=None):
 
         y_vals = [p[1][1] for p in positions]
         if max(y_vals) - min(y_vals) > 1.8:
+            airborne = [rule for rule in (allow or [])
+                        if rule.get("vertical_transition") and rule.get("actor") == a.name]
+            uncovered_change = sum(
+                abs(curr[1][1] - prev[1][1])
+                for prev, curr in zip(positions, positions[1:])
+                if not any(contains_time(rule, prev[0]) and contains_time(rule, curr[0])
+                           for rule in airborne))
+            if uncovered_change <= 1.8:
+                continue
             passed_stair = False
             for sec, pos in positions:
                 for s in (stairs or []):
@@ -603,11 +771,16 @@ def main(argv=None):
     ap.add_argument("stage", nargs="?", help="USD stage path")
     ap.add_argument("--stage", dest="stage_opt", help="USD stage path (optional flag alias)")
     ap.add_argument("--manifest", required=True)
+    ap.add_argument("--user-edits", help="manual scene edits layer to compose over the stage")
     ap.add_argument("--allow")
     ap.add_argument("--json", help="write JSON report to file path (or '-' for stdout)")
     ap.add_argument("--substeps", type=int, default=2)
+    ap.add_argument("--workers", type=int, default=min(4, os.cpu_count() or 1),
+                    help="parallel USD validation processes (1 disables parallelism)")
     ap.add_argument("--tol", type=float, default=0.01, help="penetration allowed before it counts (m)")
     ap.add_argument("--margin", type=float, default=0.0, help="extra clearance to demand around every body part (m)")
+    ap.add_argument('--strict-actor-limbs', action='store_false', dest='allow_actor_limb_contacts',
+                    help='also reject arm/leg contacts between characters (default: protect core bodies only)')
     ap.add_argument("--t0", type=float)
     ap.add_argument("--t1", type=float)
     ap.add_argument("--apply-intents", action="store_true", help="route any actor with customData go_to before checking")
@@ -617,7 +790,7 @@ def main(argv=None):
     stage_path = a.stage_opt or a.stage
     if not stage_path:
         ap.error("stage path is required")
-    stage = Usd.Stage.Open(stage_path)
+    stage = _open_stage(stage_path, a.user_edits)
     if not stage:
         print("cannot open", stage_path, file=sys.stderr)
         return 2
@@ -644,10 +817,17 @@ def main(argv=None):
     # Do not accept unconstrained customData allow_contact on stage prims;
     # allow rules are only accepted from compiler-generated files (allow_collisions.json / --allow).
 
-    rep = validate(stage, db, a.t0, a.t1, a.substeps, a.tol, a.margin, rules or None)
+    if a.workers < 1:
+        ap.error("--workers must be at least 1")
+    def run_validation():
+        return validate_parallel(stage, db, stage_path, a.manifest, a.user_edits,
+                                 a.t0, a.t1, a.substeps, a.tol, a.margin, rules or None, a.workers,
+                                 allow_actor_limb_contacts=a.allow_actor_limb_contacts)
+
+    rep = run_validation()
     if not rep["ok"] and a.repair:
         if repair_violations(stage, db, rep):
-            rep = validate(stage, db, a.t0, a.t1, a.substeps, a.tol, a.margin, rules or None)
+            rep = run_validation()
             rep["repaired"] = True
 
     if a.json == "-":
@@ -658,12 +838,18 @@ def main(argv=None):
             json.dump(rep, f, indent=2)
             f.write("\n")
     if rep.get("unprotected_assets"):
-        print("WARNING: unprotected assets (no colliders):", ", ".join(rep["unprotected_assets"]), file=sys.stderr)
+        print("FAIL: assets without collision shapes:", ", ".join(rep["unprotected_assets"]), file=sys.stderr)
+    if rep.get("unprotected_actors"):
+        print("FAIL: actors without usable skeletons:", ", ".join(rep["unprotected_actors"]), file=sys.stderr)
     if rep["ok"]:
         tag = "PASS (auto-repaired)" if rep.get("repaired") else "PASS"
         print(f"{tag}  {len(rep['actors'])} actor(s) vs {len(rep['assets'])} asset(s), {rep['time_steps']} time steps")
         return 0
-    print(f"FAIL  {len(rep['violations'])} penetration(s):")
+    print(
+        f"FAIL  {len(rep['violations'])} penetration(s), "
+        f"{len(rep['unprotected_assets'])} solid asset(s) without colliders, "
+        f"{len(rep['unprotected_actors'])} actor(s) without usable skeletons:"
+    )
     for v in rep["violations"]:
         print("  -", v["advice"])
     return 1

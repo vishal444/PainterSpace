@@ -35,15 +35,26 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from pxr import Gf, Usd, UsdGeom, UsdLux, UsdSkel
+from PIL import Image
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux, UsdShade, UsdSkel
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shot_library"))
 from colliders import (HIDDEN_HELPER_NAMES, REACH_HEIGHT_M, STEP_HEIGHT_M, VISIBLE_PURPOSES, R4, R4_axis, T4,
                        apply, heading_deg, joint_leaf, l2w, mat_to_list, np2gf_rows)
+from support_surfaces import (MAX_SUPPORT_FACE_HEIGHT_VARIATION_M,
+                              ACTOR_SUPPORT_MARGIN_M, derive_surface_spots)
 
 AXES = {"+X": (1, 0, 0), "-X": (-1, 0, 0), "+Y": (0, 1, 0), "-Y": (0, -1, 0), "+Z": (0, 0, 1), "-Z": (0, 0, -1)}
 NORM_OP = "xformOp:transform:painterspaceNorm"
-SKIP_CATEGORIES = ("environment",)          # too large for per-voxel colliders; see README
+SKIP_CATEGORIES = ()                        # all asset categories are eligible for collision ingestion
+# Skin, hair, and fabric are dielectrics. Some character exports give every
+# surface a fractional metallic value and connect glossiness directly to
+# roughness, producing a silvery film over the diffuse texture. Keep the
+# source diffuse color unchanged while correcting that reflective finish.
+CHARACTER_FINISH_ROUGHNESS = 0.65
+CHARACTER_FINISH_SPECULAR = 0.25
+CHARACTER_TEXTURE_MAX_SIZE = 2048
 
 
 class IngestError(Exception):
@@ -215,6 +226,46 @@ def gather(root, xc, skip_paths=(), M_pre=None, tris=True):
     return np.concatenate(out)
 
 
+def measured_asset_surfaces(triangles, collision_shapes, floor_height, tags=()):
+    """Derive placeable top references from normalized asset mesh geometry."""
+    triangles = np.asarray(triangles, float)
+    if triangles.size == 0:
+        return {}
+    normals = np.cross(triangles[:, 1] - triangles[:, 0],
+                       triangles[:, 2] - triangles[:, 0])
+    flat = np.ptp(triangles[:, :, 1], axis=1) <= MAX_SUPPORT_FACE_HEIGHT_VARIATION_M
+    upward = normals[:, 1] > 1e-8
+    faces = [{"owner": "asset", "height_m": float(np.mean(triangles[i, :, 1])),
+              "polygon_xz": triangles[i][:, [0, 2]].tolist()}
+             for i in np.flatnonzero(flat & upward)]
+    solids = []
+    for shape in collision_shapes:
+        if shape.get("part") or shape.get("type", "box") != "box":
+            continue
+        center = shape.get("center", [0, 0, 0])
+        size = shape.get("size", [0, 0, 0])
+        solids.append({"owner": "asset",
+                       "min": [float(center[i]) - float(size[i]) / 2 for i in range(3)],
+                       "max": [float(center[i]) + float(size[i]) / 2 for i in range(3)]})
+        x0, z0 = solids[-1]["min"][0], solids[-1]["min"][2]
+        x1, z1 = solids[-1]["max"][0], solids[-1]["max"][2]
+        faces.append({"owner": "asset", "height_m": solids[-1]["max"][1],
+                      "polygon_xz": [[x0, z0], [x1, z0], [x1, z1], [x0, z1]]})
+    spots = derive_surface_spots(faces, solids, {"asset": float(floor_height)},
+                                 spatial_cell_m=ACTOR_SUPPORT_MARGIN_M)
+    surfaces = {}
+    for spot in spots:
+        surfaces[spot["name"]] = {
+            "center": [round(float(value), 3) for value in spot["position"]],
+            "height_m": round(float(spot["position"][1]), 3),
+            "usable_for": ["place", "stand_at", "jump_on", "sit_on"],
+        }
+    if surfaces and {"vehicle", "car", "truck"}.intersection(tags):
+        highest = max(surfaces.values(), key=lambda surface: surface["height_m"])
+        surfaces["roof"] = dict(highest)
+    return surfaces
+
+
 def subdivide(T, maxlen, limit=4_000_000):
     done = []
     while len(T):
@@ -240,6 +291,12 @@ def _decompose_single_band(tris, voxel, step, reach, gap, max_boxes):
     tris_band = tris[keep]
     if len(tris_band) == 0:
         return []
+    span_xz = max(
+        float(tris_band[:, :, 0].max() - tris_band[:, :, 0].min()),
+        float(tris_band[:, :, 2].max() - tris_band[:, :, 2].min()),
+        float(voxel),
+    )
+    max_voxel = max(0.5, span_xz / max(8.0, math.sqrt(max(1, max_boxes))))
     curr_voxel = voxel
     while True:
         T = subdivide(tris_band, curr_voxel * 0.5)
@@ -297,7 +354,7 @@ def _decompose_single_band(tris, voxel, step, reach, gap, max_boxes):
                 blo, bhi = lo[c].min(0), hi[c].max(0)
                 bhi = np.maximum(bhi, blo + 0.02)
                 boxes.append((blo, bhi))
-        if len(boxes) <= max_boxes or curr_voxel > 0.5:
+        if len(boxes) <= max_boxes or curr_voxel > max_voxel:
             return boxes
         curr_voxel *= 1.4
 
@@ -395,7 +452,7 @@ def check_stair_headroom(tris, stairs_data, min_headroom_m=2.10):
 
 def box_entry(sid, lo, hi, part=None, level=None):
     e = {"id": sid, "type": "box", "center": [round(float(v), 4) for v in (lo + hi) / 2],
-         "size": [round(float(v), 4) for v in hi - lo], "blocks": ["character"]}
+         "size": [round(float(v), 4) for v in hi - lo], "blocks": ["character", "vehicle"]}
     if part:
         e["part"] = part
     if level:
@@ -453,7 +510,68 @@ def correction_targets(prim, root):
     return out
 
 
-def write_wrapper(src, dprim, src_path, norm_path, C):
+def author_character_finish(src, dprim, wrapper, src_path, norm_path,
+                            texture_max_size=CHARACTER_TEXTURE_MAX_SIZE):
+    """Correct fractional-metal character shaders and cap their texture cost."""
+    texture_dir = Path(norm_path).parent / ".painterspace_textures"
+    for prim in Usd.PrimRange(dprim):
+        shader = UsdShade.Shader(prim)
+        if not shader or shader.GetIdAttr().Get() != "UsdPreviewSurface":
+            continue
+        metallic = shader.GetInput("metallic")
+        metallic_value = metallic.Get() if metallic else None
+        # A constant fractional metallic value on a character surface is an
+        # export artifact. Fully metallic parts and metallic maps are preserved.
+        if metallic_value is None or not 0.0 < metallic_value < 1.0:
+            continue
+        if metallic.GetAttr().GetConnections():
+            continue
+        override = wrapper.OverridePrim(prim.GetPath())
+        for name, value in (
+            ("metallic", 0.0),
+            ("roughness", CHARACTER_FINISH_ROUGHNESS),
+            ("specular", CHARACTER_FINISH_SPECULAR),
+        ):
+            attr = override.CreateAttribute("inputs:" + name, Sdf.ValueTypeNames.Float)
+            attr.SetConnections([])
+            attr.Set(value)
+
+        for input_name in ("diffuseColor", "normal"):
+            surface_input = shader.GetInput(input_name)
+            if not surface_input:
+                continue
+            for connection in surface_input.GetAttr().GetConnections():
+                texture_prim = src.GetPrimAtPath(connection.GetPrimPath())
+                texture = UsdShade.Shader(texture_prim)
+                if not texture or texture.GetIdAttr().Get() != "UsdUVTexture":
+                    continue
+                texture_override = wrapper.OverridePrim(texture_prim.GetPath())
+                file_input = texture.GetInput("file")
+                asset = file_input.Get() if file_input else None
+                if not asset or texture_max_size <= 0:
+                    continue
+                source_texture = Path(asset.resolvedPath or
+                                      (Path(src_path).parent / asset.path))
+                if not source_texture.is_file():
+                    continue
+                with Image.open(source_texture) as image:
+                    if max(image.size) <= texture_max_size:
+                        continue
+                    texture_dir.mkdir(parents=True, exist_ok=True)
+                    # A source path hash prevents collisions between textures
+                    # with the same basename in different source directories.
+                    source_key = hashlib.sha256(str(source_texture.resolve()).encode()).hexdigest()[:12]
+                    preview = texture_dir / f"{texture_max_size}_{source_key}_{source_texture.name}"
+                    if not preview.exists() or preview.stat().st_mtime < source_texture.stat().st_mtime:
+                        image.thumbnail((texture_max_size, texture_max_size), Image.Resampling.LANCZOS)
+                        image.save(preview)
+                relative_preview = os.path.relpath(preview, Path(norm_path).parent).replace(os.sep, "/")
+                texture_override.CreateAttribute("inputs:file", Sdf.ValueTypeNames.Asset).Set(
+                    Sdf.AssetPath("./" + relative_preview))
+
+
+def write_wrapper(src, dprim, src_path, norm_path, C, is_character=False,
+                  texture_max_size=CHARACTER_TEXTURE_MAX_SIZE):
     """reference the whole source (paths unchanged) and prepend the correction C on top-level xformables."""
     dname = dprim.GetName()
     w = Usd.Stage.CreateNew(norm_path)
@@ -484,6 +602,8 @@ def write_wrapper(src, dprim, src_path, norm_path, C):
         o.CreateAttribute(NORM_OP, Usd.Stage.CreateInMemory().GetPseudoRoot().GetAttribute("x").GetTypeName()
                           if False else __import__("pxr").Sdf.ValueTypeNames.Matrix4d, False).Set(gm)
         UsdGeom.Xformable(o).GetXformOpOrderAttr().Set([NORM_OP] + order)
+    if is_character:
+        author_character_finish(src, dprim, w, src_path, norm_path, texture_max_size)
     w.GetRootLayer().Save()
     return warnings
 
@@ -729,13 +849,15 @@ def ingest(entry, src_path, out_dir, args):
     Pn = apply(L @ R0, P0) if False else apply(L, P0)      # P0 already includes the root's own ops
     lo, hi = Pn.min(0), Pn.max(0)
     shift = np.array([-(lo[0] + hi[0]) / 2, -lo[1], -(lo[2] + hi[2]) / 2])
-    if args.keep_pivot:
+    if args.keep_pivot or getattr(args, "collision_only", False):
         shift = np.zeros(3)
     C = T4(shift) @ L @ R0
     helpers = [c.GetName() for c in dprim.GetChildren() if is_helper(c, dprim)]
-    wrap = not np.allclose(C, np.eye(4), atol=1e-6) or bool(helpers)
+    wrap = not np.allclose(C, np.eye(4), atol=1e-6) or bool(helpers) or is_char
+    if getattr(args, "collision_only", False) and not entry.get("normalization") and np.allclose(L, np.eye(4), atol=1e-6):
+        wrap = False
     if np.allclose(L, np.eye(4), atol=1e-6) and np.allclose(shift, 0, atol=0.02) and not helpers \
-            and np.allclose(R0, np.eye(4), atol=1e-6):
+            and np.allclose(R0, np.eye(4), atol=1e-6) and not is_char:
         wrap = False
     norm_path = src_path
     if wrap:
@@ -743,7 +865,8 @@ def ingest(entry, src_path, out_dir, args):
         norm_path = os.path.join(out_dir, os.path.splitext(os.path.basename(src_path))[0] + ".norm.usda")
         if os.path.exists(norm_path):
             os.remove(norm_path)
-        notes += write_wrapper(src, dprim, src_path, norm_path, C)
+        notes += write_wrapper(src, dprim, src_path, norm_path, C, is_character=is_char,
+                               texture_max_size=args.character_texture_max_size)
         if helpers:
             notes.append("deactivated Blender helpers: " + ", ".join(helpers))
     ns = Usd.Stage.Open(norm_path)
@@ -868,6 +991,10 @@ def ingest(entry, src_path, out_dir, args):
         notes.append("no geometry between %.2f and %.2f m: nothing to collide with" % (STEP_HEIGHT_M, args.reach))
     out["collision"] = {"frame": "asset", "voxel_m": args.voxel, "reach_height_m": args.reach,
                         "step_height_m": STEP_HEIGHT_M, "gap_m": args.gap, "shapes": shapes}
+    measured = measured_asset_surfaces(all_body_tris, shapes, bmin[1], out.get("tags", ()))
+    if measured:
+        out["surfaces"] = {**out.get("surfaces", {}), **measured}
+        notes.append(f"measured {len(measured)} placeable top surface reference(s)")
 
     # Add stair bottom/top standing spots to anchors
     stair_anchors = {}
@@ -965,10 +1092,29 @@ def build_parser():
     ap.add_argument("--max-part-boxes", type=int, default=12)
     ap.add_argument("--anchor-clearance", type=float, default=0.9)
     ap.add_argument("--char-radius", type=float, default=0.3)
+    ap.add_argument("--character-texture-max-size", type=int, default=CHARACTER_TEXTURE_MAX_SIZE,
+                    help="maximum dimension of generated character texture proxies; 0 keeps source resolution")
     ap.add_argument("--no-collide", default="steering_wheel", help="comma list of parts that get no collider")
     ap.add_argument("--suggest-stairs", action="store_true", help="scan asset geometry for candidate stair clusters and print suggested marker prims")
     ap.add_argument("--write", action="store_true", help="update the manifest in place (a .bak copy is kept)")
+    ap.add_argument("--collision-only", action="store_true",
+                    help="update only collision shapes; requires the source to match the manifest asset frame")
     return ap
+
+
+def collision_only_entry(entry, generated):
+    """Keep authored asset metadata while replacing geometry-derived colliders."""
+    if entry.get("path") != generated.get("path"):
+        raise IngestError("collision-only update requires the generated and manifest asset paths to match")
+    if entry.get("file_hash") and entry["file_hash"] != generated.get("file_hash"):
+        raise IngestError("collision-only update requires the manifest asset hash to match the source")
+    collision = generated.get("collision") or {}
+    if not collision.get("shapes"):
+        raise IngestError("collision-only update produced no collision shapes")
+    updated = dict(entry)
+    updated["collision"] = collision
+    updated["file_hash"] = generated["file_hash"]
+    return updated
 
 
 def main(argv=None):
@@ -1013,6 +1159,13 @@ def main(argv=None):
         for n in out.get("notes", []):
             print("  -", n)
         if lst is not None:
+            if a.collision_only:
+                try:
+                    out = collision_only_entry(entry, out)
+                except IngestError as e:
+                    print(f"ERROR {aid}: {e}", file=sys.stderr)
+                    failed += 1
+                    continue
             lst[[e["id"] for e in lst].index(aid)] = out
         else:
             print(json.dumps(out, indent=2))

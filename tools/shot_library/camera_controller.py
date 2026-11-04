@@ -255,6 +255,15 @@ class CameraController:
 
         warnings: List[str] = []
         check_times = [0.0, camera_keyframes[-1].time_s * 0.5, camera_keyframes[-1].time_s]
+        cameras = {}
+        for t in check_times:
+            cam = min(camera_keyframes, key=lambda k: abs(k.time_s - t))
+            pitch, yaw = map(math.radians, cam.rotation_xyz[:2])
+            sp, cp, sy, cy = math.sin(pitch), math.cos(pitch), math.sin(yaw), math.cos(yaw)
+            cameras[t] = (cam, (-sy * cp, sp, -cy * cp), (cy, 0., -sy),
+                          (sy * sp, cp, cy * sp),
+                          cam.horizontal_aperture * .5 / max(1., cam.focal_length),
+                          cam.vertical_aperture * .5 / max(1., cam.focal_length))
 
         for aid in requested_actors:
             samples = actor_positions.get(aid, [])
@@ -262,44 +271,21 @@ class CameraController:
                 continue
             for t in check_times:
                 actor_pt = self._sample_pos(samples, t)
-                cam_kf = min(camera_keyframes, key=lambda k: abs(k.time_s - t))
+                cam_kf, forward, right, up, tan_half_h, tan_half_v = cameras[t]
 
                 # Evaluate torso center (y + 0.9 m) relative to camera pose
                 dx = float(actor_pt[0]) - float(cam_kf.position[0])
                 dy = (float(actor_pt[1]) + 0.9) - float(cam_kf.position[1])
                 dz = float(actor_pt[2]) - float(cam_kf.position[2])
-                dist = math.sqrt(dx * dx + dy * dy + dz * dz)
-
-                if dist > 40.0:
-                    warnings.append(f"Actor '{aid}' is very far from camera ({dist:.1f} m) at t={t:.1f} s")
-                    continue
-
-                pitch_rad = math.radians(float(cam_kf.rotation_xyz[0]))
-                yaw_rad = math.radians(float(cam_kf.rotation_xyz[1]))
-
-                # Camera basis vectors in world space (USD camera looks along local -Z)
-                fx = -math.sin(yaw_rad) * math.cos(pitch_rad)
-                fy = math.sin(pitch_rad)
-                fz = -math.cos(yaw_rad) * math.cos(pitch_rad)
-
-                rx = math.cos(yaw_rad)
-                ry = 0.0
-                rz = -math.sin(yaw_rad)
-
-                ux = math.sin(yaw_rad) * math.sin(pitch_rad)
-                uy = math.cos(pitch_rad)
-                uz = math.cos(yaw_rad) * math.sin(pitch_rad)
-
-                d_front = dx * fx + dy * fy + dz * fz
+                # Distance alone does not make a wide crowd shot invalid.
+                # Evaluate the same projection at every distance.
+                d_front = dx * forward[0] + dy * forward[1] + dz * forward[2]
                 if d_front <= 0.25:
                     warnings.append(f"Actor '{aid}' is behind the camera (depth={d_front:.2f} m) at t={t:.1f} s")
                     continue
 
-                x_cam = dx * rx + dy * ry + dz * rz
-                y_cam = dx * ux + dy * uy + dz * uz
-
-                tan_half_h = (cam_kf.horizontal_aperture * 0.5) / max(1.0, cam_kf.focal_length)
-                tan_half_v = (cam_kf.vertical_aperture * 0.5) / max(1.0, cam_kf.focal_length)
+                x_cam = dx * right[0] + dy * right[1] + dz * right[2]
+                y_cam = dx * up[0] + dy * up[1] + dz * up[2]
 
                 ndc_x = (x_cam / d_front) / tan_half_h
                 ndc_y = (y_cam / d_front) / tan_half_v

@@ -1,0 +1,47 @@
+{
+  "scope": "Shared destination slots and full animated clearance; historical five-penetration report is unchanged.",
+  "test_suite": {
+    "command": ".venv/bin/python -m pytest tests -q",
+    "passed": 182
+  },
+  "shared_destination_actor_counts": [
+    4,
+    10,
+    20,
+    40
+  ],
+  "real_character_solid_destination_validation": {
+    "ok": true,
+    "time_steps": 217,
+    "actors": [
+      "Human_a",
+      "Human_b"
+    ],
+    "assets": [
+      "Floor",
+      "Obstacle"
+    ],
+    "unprotected_assets": [],
+    "unprotected_actors": [],
+    "violations": [],
+    "level_violations": []
+  },
+  "archived_club_replay": {
+    "success": false,
+    "elapsed_s": 13.263650625012815,
+    "error": {
+      "error_code": "CROWD_ROUTE_LIMIT",
+      "message": "No reserved route found for the prompt movement within the planning limits.",
+      "beat_id": "run_to_55",
+      "actor_id": "human_8",
+      "details": {
+        "planner_status": "horizon_exhausted",
+        "expansions": 3,
+        "max_delay_s": 8.0,
+        "routed_beats": [],
+        "priority_attempts": 5
+      },
+      "suggestions": []
+    }
+  }
+}

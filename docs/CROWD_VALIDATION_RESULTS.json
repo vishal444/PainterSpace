@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "actor_contact_policy": "core_body",
+  "time_steps": 3379,
+  "actors": [
+    "Human_1",
+    "Human_2",
+    "Human_3",
+    "Human_4",
+    "Human_5",
+    "Human_6",
+    "Human_7",
+    "Human_8",
+    "Human_9",
+    "Human_10",
+    "Human_11",
+    "Human_12",
+    "Human_13",
+    "Human_14",
+    "Human_15",
+    "Human_16",
+    "Human_17",
+    "Human_18",
+    "Human_19",
+    "Human_20"
+  ],
+  "assets": [
+    "GrandNightClub",
+    "Ground"
+  ],
+  "unprotected_assets": [],
+  "unprotected_actors": [],
+  "violations": [],
+  "level_violations": []
+}

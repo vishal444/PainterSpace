@@ -21,6 +21,7 @@ import argparse
 import heapq
 import math
 import os
+import re
 import sys
 
 import numpy as np
@@ -124,6 +125,63 @@ def scene_levels(stage, db):
     return levels
 
 
+def discover_step_stairs(obj_prim, t=0.0):
+    """Measure numbered step geometry in the composed stage, in world coordinates."""
+    bbox_cache = UsdGeom.BBoxCache(Usd.TimeCode(float(t)),
+                                  [UsdGeom.Tokens.default_, UsdGeom.Tokens.render])
+    groups = {}
+    for prim in Usd.PrimRange(obj_prim):
+        match = re.fullmatch(r"(.+)_Step_(\d+)", prim.GetName(), re.IGNORECASE)
+        if not match or not prim.IsA(UsdGeom.Boundable):
+            continue
+        bounds = bbox_cache.ComputeWorldBound(prim).ComputeAlignedRange()
+        low = np.array(bounds.GetMin(), float)
+        high = np.array(bounds.GetMax(), float)
+        if not np.isfinite(low).all() or not np.isfinite(high).all():
+            continue
+        groups.setdefault(match.group(1).lower(), []).append((int(match.group(2)), low, high))
+    found = {}
+    for name, steps in groups.items():
+        if len(steps) < 2:
+            continue
+        steps.sort(key=lambda item: (item[2][1], item[0]))
+        if steps[-1][2][1] - steps[0][2][1] < 0.15:
+            continue
+        first, last = steps[0], steps[-1]
+        start_center = (first[1] + first[2]) / 2
+        end_center = (last[1] + last[2]) / 2
+        direction = end_center[[0, 2]] - start_center[[0, 2]]
+        length = float(np.linalg.norm(direction))
+        if length < 1e-6:
+            continue
+        direction /= length
+        depth_axis = 0 if abs(direction[0]) > abs(direction[1]) else 2
+        width_axis = 2 if depth_axis == 0 else 0
+        first_depth = first[2][depth_axis] - first[1][depth_axis]
+        last_depth = last[2][depth_axis] - last[1][depth_axis]
+        bottom = np.array([start_center[0], first[1][1], start_center[2]])
+        top = np.array([end_center[0], last[2][1], end_center[2]])
+        bottom[[0, 2]] -= direction * first_depth / 2
+        top[[0, 2]] += direction * last_depth / 2
+        treads = []
+        previous_top = first[1][1]
+        for _, low, high in steps:
+            top_y = float(high[1])
+            treads.append({"center": [float((low[0] + high[0]) / 2), top_y,
+                                        float((low[2] + high[2]) / 2)],
+                           "rise_m": top_y - previous_top,
+                           "tread_m": float(high[depth_axis] - low[depth_axis])})
+            previous_top = top_y
+        found[f"{name}_steps"] = {
+            "centerline": [bottom.tolist(), top.tolist()],
+            "width_m": float(min(high[width_axis] - low[width_axis] for _, low, high in steps)),
+            "treads": treads,
+            "derived_from_geometry": True,
+            "world_space": True,
+        }
+    return found
+
+
 def scene_stairs(stage, db, t=0.0):
     """Find all stair portals in the scene, transformed to world space."""
     tc = Usd.TimeCode(float(t))
@@ -132,6 +190,15 @@ def scene_stairs(stage, db, t=0.0):
     for obj in scene_objects(stage, db):
         entry_stairs = (obj.entry or {}).get("stairs") or {}
         if not entry_stairs:
+            for s_id, s_data in discover_step_stairs(obj.prim, t).items():
+                cline_world = np.array(s_data["centerline"], float)
+                stairs.append({
+                    "id": f"{obj.name}:{s_id}", "obj_name": obj.name,
+                    "stair_name": s_id, "from_level": "L0", "to_level": "L1",
+                    "width_m": s_data["width_m"], "centerline_world": cline_world,
+                    "bottom_world": cline_world[0], "top_world": cline_world[-1],
+                    "treads": s_data["treads"], "anchors": {},
+                })
             continue
         M = l2w(xc, obj.prim)
         for s_id, s_data in entry_stairs.items():

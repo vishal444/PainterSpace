@@ -93,10 +93,20 @@ def vector_from_heading(deg: float) -> Tuple[float, float]:
     return math.sin(rad), -math.cos(rad)
 
 
+def direction_heading(reference):
+    """Compass headings in world axes; underscores are accepted aliases."""
+    names = ('north', 'northeast', 'east', 'southeast',
+             'south', 'southwest', 'west', 'northwest')
+    name = str(reference).strip().lower().replace('_', '')
+    return names.index(name) * 45. if name in names else None
+
+
 class ReferenceResolver:
-    def __init__(self, manifest: Dict[str, Any], scene_data: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, manifest: Dict[str, Any], scene_data: Optional[Dict[str, Any]] = None, crowd_config=None) -> None:
         self.manifest = manifest
         self.scene_data = scene_data or {}
+        self.crowd_config = crowd_config
+        self._spatial_resolver = None
         self._assets_by_id = {a.get("id"): a for a in manifest.get("assets", [])}
         for a in manifest.get("assets", []):
             aid = str(a.get("id", ""))
@@ -130,17 +140,35 @@ class ReferenceResolver:
             pass
         return BRAKING_LEVELS.get(str(brake_name_or_val).lower(), 4.5)
 
+    def resolve_facing(self, ref, actor_states, current_time_s=0., source_actor_id=None, **kwargs):
+        heading = direction_heading(ref)
+        if heading is None:
+            return self.resolve(ref, actor_states, current_time_s, source_actor_id, **kwargs)
+        origin = np.asarray(actor_states.get(source_actor_id or '', {}).get('position', [0., 0., 0.]))
+        dx, dz = vector_from_heading(heading)
+        return ResolvedTarget(origin + np.array([dx, 0., dz]), heading, 0., 'direction', ref), ''
+
     def resolve(
         self,
-        ref: str,
+        ref: str | list[float] | tuple[float, ...],
         actor_states: Dict[str, Dict[str, Any]],
         current_time_s: float = 0.0,
         source_actor_id: Optional[str] = None,
+        clearance_radius_m: Optional[float] = None,
     ) -> Tuple[Optional[ResolvedTarget], str]:
         """Resolve any semantic reference string at current_time_s.
 
         Returns (ResolvedTarget, error_message).
         """
+        if isinstance(ref, (list, tuple)) and len(ref) == 3:
+            try:
+                point = np.asarray(ref, dtype=float)
+            except (TypeError, ValueError):
+                return None, "Invalid coordinate target"
+            if not np.all(np.isfinite(point)):
+                return None, "Coordinate target must be finite"
+            return ResolvedTarget(position=point, facing_deg=0., clearance_radius=.35,
+                                  target_type='point', target_name=str(ref)), ""
         if not ref or not isinstance(ref, str):
             return None, "Empty reference string"
 
@@ -159,31 +187,19 @@ class ReferenceResolver:
                 target_name=ref,
             ), ""
 
-        # 0b. Check cardinal directions: north, south, east, west, etc.
-        cardinal_map = {
-            "north": (0.0, 0.0, -10.0),
-            "northeast": (45.0, 7.07, -7.07),
-            "north_east": (45.0, 7.07, -7.07),
-            "east": (90.0, 10.0, 0.0),
-            "southeast": (135.0, 7.07, 7.07),
-            "south_east": (135.0, 7.07, 7.07),
-            "south": (180.0, 0.0, 10.0),
-            "southwest": (225.0, -7.07, 7.07),
-            "south_west": (225.0, -7.07, 7.07),
-            "west": (270.0, -10.0, 0.0),
-            "northwest": (315.0, -7.07, -7.07),
-            "north_west": (315.0, -7.07, -7.07),
-        }
-        if ref.lower() in cardinal_map:
-            deg, ox, oz = cardinal_map[ref.lower()]
-            src_pos = np.array(actor_states.get(source_actor_id or "", {}).get("position", [0.0, 0.0, 0.0]), float)
-            return ResolvedTarget(
-                position=src_pos + np.array([ox, 0.0, oz], float),
-                facing_deg=deg,
-                clearance_radius=0.35,
-                target_type="direction",
-                target_name=ref,
-            ), ""
+        # Directions denote measured scene regions, never arbitrary offsets.
+        heading = direction_heading(ref)
+        if heading is not None:
+            if self._spatial_resolver is None:
+                from spatial_references import SpatialReferenceResolver
+                self._spatial_resolver = SpatialReferenceResolver(self.manifest, self.scene_data, self.crowd_config)
+            state = actor_states.get(source_actor_id or '', {})
+            resolved, error = self._spatial_resolver.resolve_direction(ref, state, clearance_radius_m)
+            if resolved is None:
+                return None, error
+            point, radius, region_id = resolved
+            return ResolvedTarget(position=np.asarray(point), facing_deg=heading,
+                                  clearance_radius=radius, target_type='region', target_name=region_id), ''
 
         # 0c. Check relative actor selectors: nearest_to(target[, filter]), left_of(target[, gap]), right_of(target[, gap])
         sel_match = re.match(r"^(nearest_to|left_of|right_of)\((.+)\)$", ref, re.IGNORECASE)
@@ -236,6 +252,21 @@ class ReferenceResolver:
                         gap = self.resolve_gap(inner_args[2])
                 else:
                     gap = self.resolve_gap(inner_args[1])
+
+            source_state = actor_states.get(source_actor_id or '', {})
+            target_state = actor_states.get(target_ref, {})
+            target_state = dict(target_state, asset_id=target_state.get('asset_id') or target_res.target_asset)
+            def is_vehicle(state):
+                asset = self._assets_by_id.get(state.get('asset_id'), {})
+                return state.get('is_vehicle') or bool(set(asset.get('tags', [])) & {'vehicle', 'car'})
+            if is_vehicle(source_state) or is_vehicle(target_state):
+                # Vehicle-relative gaps are free space between body envelopes,
+                # not center-to-center offsets that can place one car in another.
+                if self._spatial_resolver is None:
+                    from spatial_references import SpatialReferenceResolver
+                    self._spatial_resolver = SpatialReferenceResolver(self.manifest, self.scene_data, self.crowd_config)
+                gap += (self._spatial_resolver.body_radius(source_state, clearance_radius_m)
+                        + self._spatial_resolver.body_radius(target_state))
 
             dx, dz = vector_from_heading(target_res.facing_deg)
             tpos = target_res.position.copy()
@@ -291,10 +322,39 @@ class ReferenceResolver:
         # 3. Check for colon-separated references:
         #    e.g. car_1:door_fl_stand (anchor), car_1:roof (surface), car_1:door_fl (part)
         if ":" in ref:
+            if self._spatial_resolver is None:
+                from spatial_references import SpatialReferenceResolver
+                self._spatial_resolver = SpatialReferenceResolver(self.manifest, self.scene_data, self.crowd_config)
+            if ref in self._spatial_resolver.regions:
+                state = actor_states.get(source_actor_id or '', {})
+                resolved, error = self._spatial_resolver.resolve(ref, state, clearance_radius_m)
+                if resolved is None:
+                    return None, error
+                point, radius = resolved
+                region = self._spatial_resolver.regions[ref]
+                origin = state.get('position')
+                normal = region.get('entry_normal', [0., 0.])
+                facing = (heading_from_vector(point[0] - origin[0], point[2] - origin[2]) if origin is not None
+                          else heading_from_vector(-normal[0], -normal[1]))
+                return ResolvedTarget(position=np.asarray(point, dtype=float), facing_deg=facing,
+                                      clearance_radius=radius, target_type='region', target_name=ref), ''
             obj_ref, sub_ref = [s.strip() for s in ref.split(":", 1)]
             obj_res, err = self.resolve(obj_ref, actor_states, current_time_s)
             if not obj_res:
                 return None, f"Base object '{obj_ref}' in '{ref}' not found: {err}"
+
+            spot = next((spot for spot in self.scene_data.get("standing_spots", [])
+                         + self.scene_data.get("surface_spots", [])
+                         + self.scene_data.get("rooftop_spots", [])
+                         if spot.get("owner") == obj_ref and spot.get("name") == sub_ref), None)
+            if spot is not None:
+                return ResolvedTarget(
+                    position=np.array(spot["position"], float),
+                    facing_deg=obj_res.facing_deg,
+                    clearance_radius=0.35,
+                    target_type="standing_spot",
+                    target_name=ref,
+                ), ""
 
             # Look up asset metadata
             asset_id = actor_states.get(obj_ref, {}).get("asset_id") or getattr(obj_res, "target_asset", None) or obj_res.target_name
@@ -372,7 +432,9 @@ class ReferenceResolver:
                 ), ""
 
             # 3d. Check stairs (including :top and :bottom portals)
-            stairs = asset_meta.get("stairs", {})
+            scene_obj = next((o for o in self.scene_data.get("objects", [])
+                              if o.get("name") == obj_ref or o.get("id") == obj_ref), {})
+            stairs = scene_obj.get("stairs") or asset_meta.get("stairs", {})
             stair_key = sub_ref
             stair_portal = "bottom"
             if sub_ref.endswith("_top") or sub_ref.endswith(":top"):
@@ -396,19 +458,31 @@ class ReferenceResolver:
                     pt = np.array(cline[0] if cline else [0, 0, 0], float)
                     next_pt = np.array(cline[-1] if len(cline) > 1 else [0, 1.7, -11.37], float)
                     local_facing = heading_from_vector(next_pt[0] - pt[0], next_pt[2] - pt[2])
-                theta = math.radians(obj_res.facing_deg)
-                rot_x = pt[0] * math.cos(theta) - pt[2] * math.sin(theta)
-                rot_z = pt[0] * math.sin(theta) + pt[2] * math.cos(theta)
-                world_pos = obj_res.position + np.array([rot_x, pt[1], rot_z])
+                if sdata.get("world_space"):
+                    world_pos = pt
+                    facing = local_facing
+                else:
+                    theta = math.radians(obj_res.facing_deg)
+                    rot_x = pt[0] * math.cos(theta) - pt[2] * math.sin(theta)
+                    rot_z = pt[0] * math.sin(theta) + pt[2] * math.cos(theta)
+                    world_pos = obj_res.position + np.array([rot_x, pt[1], rot_z])
+                    facing = (obj_res.facing_deg + local_facing) % 360.0
                 return ResolvedTarget(
                     position=world_pos,
-                    facing_deg=(obj_res.facing_deg + local_facing) % 360.0,
+                    facing_deg=facing,
                     clearance_radius=0.45,
                     target_type="stairs",
                     target_name=ref,
                 ), ""
 
-            valid_subs = list(anchors.keys()) + list(surfaces.keys()) + list(parts.keys()) + list(stairs.keys())
+            valid_subs = (list(anchors.keys()) + list(surfaces.keys()) + list(parts.keys())
+                          + list(stairs.keys())
+                          + [spot["name"] for spot in self.scene_data.get("standing_spots", [])
+                             if spot.get("owner") == obj_ref]
+                          + [spot["name"] for spot in self.scene_data.get("surface_spots", [])
+                             if spot.get("owner") == obj_ref]
+                          + [spot["name"] for spot in self.scene_data.get("rooftop_spots", [])
+                             if spot.get("owner") == obj_ref])
             return None, f"Unknown sub-reference '{sub_ref}' on '{obj_ref}'. Valid alternatives: {', '.join(valid_subs)}"
 
         # 3e. Check standalone stair IDs across manifest assets (e.g. "stairs_main", "stairs_main_top", "stairs_main_bottom")
@@ -420,7 +494,20 @@ class ReferenceResolver:
         elif stair_lookup.endswith("_bottom"):
             stair_lookup = stair_lookup[:-7]
             stair_portal = "bottom"
-        for a in self.manifest.get("assets", []):
+        for obj in self.scene_data.get("objects", []):
+            for sid, sdata in obj.get("stairs", {}).items():
+                if sid.lower() == stair_lookup or (stair_lookup in ("stairs", "staircase") and obj.get("stairs")):
+                    cline = sdata.get("centerline", [])
+                    if len(cline) >= 2:
+                        pt = np.array(cline[-1] if stair_portal == "top" else cline[0], float)
+                        other = np.array(cline[0] if stair_portal == "top" else cline[-1], float)
+                        return ResolvedTarget(
+                            position=pt,
+                            facing_deg=heading_from_vector(other[0] - pt[0], other[2] - pt[2]),
+                            clearance_radius=0.45, target_type="stairs",
+                            target_name=f"{obj.get('name')}:{sid}",
+                            target_asset=obj.get("asset") or obj.get("asset_id")), ""
+        for a in ([] if "objects" in self.scene_data else self.manifest.get("assets", [])):
             stairs = a.get("stairs", {})
             for sid, sdata in stairs.items():
                 if sid.lower() == stair_lookup or (stair_lookup in ("stairs", "staircase") and stairs):
@@ -446,6 +533,51 @@ class ReferenceResolver:
         if "." in ref:
             parts = ref.split(".", 1)
             zone_id, marker_name = parts[0], parts[1]
+            authored_zone = next((zone for zone in self.scene_data.get("zones", [])
+                                  if zone.get("id") == zone_id), None)
+            if authored_zone is not None:
+                bmin = np.array(authored_zone["min"], float)
+                bmax = np.array(authored_zone["max"], float)
+                center = (bmin + bmax) / 2.0
+                directions = {"north": (0.0, -1.0), "south": (0.0, 1.0),
+                              "east": (1.0, 0.0), "west": (-1.0, 0.0)}
+                if marker_name in directions:
+                    footprint = np.asarray(authored_zone.get("footprint_xz") or [
+                        [bmin[0], bmin[2]], [bmax[0], bmin[2]],
+                        [bmax[0], bmax[2]], [bmin[0], bmax[2]]], float)
+                    origin = footprint.mean(axis=0)
+                    direction = np.asarray(directions[marker_name], float)
+                    side_lengths = [float(np.linalg.norm(footprint[(i + 1) % len(footprint)] - footprint[i]))
+                                    for i in range(len(footprint))]
+                    boundary = []
+                    for i, point in enumerate(footprint):
+                        edge = footprint[(i + 1) % len(footprint)] - point
+                        cross = lambda a, b: float(a[0] * b[1] - a[1] * b[0])
+                        denominator = cross(direction, edge)
+                        if abs(denominator) < 1e-9:
+                            continue
+                        delta = point - origin
+                        distance = cross(delta, edge) / denominator
+                        along_edge = cross(delta, direction) / denominator
+                        if distance >= 0 and -1e-9 <= along_edge <= 1 + 1e-9:
+                            boundary.append(distance)
+                    if not boundary:
+                        return None, f"Scene zone '{zone_id}' has no usable '{marker_name}' point."
+                    inset = min(side_lengths) / 2.0
+                    horizontal = origin + direction * max(0.0, min(boundary) - inset)
+                    center[0], center[2] = horizontal
+                elif marker_name != "center":
+                    return None, f"Scene zone '{zone_id}' has no authored '{marker_name}' marker."
+                return ResolvedTarget(
+                    position=center,
+                    facing_deg=float(authored_zone.get("heading_deg", 0.0)),
+                    clearance_radius=0.50,
+                    target_type="marker", target_name=ref,
+                ), ""
+            if (self.scene_data.get("zones")
+                    or self.scene_data.get("objects")
+                    or self.scene_data.get("unprotected_scene_objects")):
+                return None, f"Zone marker '{ref}' is not authored in this scene; author a matching zone."
             zone_markers = self.manifest.get("zone_markers", {})
             if zone_id in zone_markers and marker_name in zone_markers[zone_id]:
                 mdata = zone_markers[zone_id][marker_name]
@@ -542,4 +674,6 @@ class ReferenceResolver:
         # If not resolved, produce helpful suggestions
         valid_actors = [f"{aid} ({s.get('label')})" for aid, s in actor_states.items()]
         valid_zones = [z.get("id") for z in self.scene_data.get("zones", [])]
-        return None, f"Unknown reference '{ref}'. Valid actors: {valid_actors}; Valid zones: {valid_zones}"
+        valid_objects = [obj.get("name") or obj.get("id") for obj in self.scene_data.get("objects", [])]
+        return None, (f"Unknown reference '{ref}'. Valid actors: {valid_actors}; "
+                      f"Valid zones: {valid_zones}; Valid scene objects: {valid_objects}")

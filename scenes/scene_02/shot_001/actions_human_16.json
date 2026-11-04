@@ -1,0 +1,51 @@
+{
+  "fps": 24,
+  "actions": [
+    {
+      "clip": "acknowledging",
+      "start_s": 0.0,
+      "end_s": 45.45752560106851,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 0,
+      "end_frame": 1091
+    },
+    {
+      "clip": "walk",
+      "start_s": 45.45752560106851,
+      "end_s": 48.45752560106851,
+      "speed": 1.2328444374869123,
+      "blend_s": 0.25,
+      "start_frame": 1091,
+      "end_frame": 1163
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 48.45752560106851,
+      "end_s": 96.45752560106851,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 1163,
+      "end_frame": 2315
+    },
+    {
+      "clip": "groving_to_music_energetically",
+      "start_s": 96.45752560106851,
+      "end_s": 99.45752560106851,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 2315,
+      "end_frame": 2387
+    },
+    {
+      "clip": "acknowledging",
+      "start_s": 99.45752560106851,
+      "end_s": 102.95833333333333,
+      "speed": 1.0,
+      "blend_s": 0.2,
+      "start_frame": 2387,
+      "end_frame": 2471
+    }
+  ],
+  "exact_windows": false
+}

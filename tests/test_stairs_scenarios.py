@@ -12,8 +12,10 @@ import sys
 import shutil
 import tempfile
 import json
+import math
 import numpy as np
-from pxr import Gf, Usd, UsdGeom
+from pxr import Gf, Sdf, Usd, UsdGeom
+from pathlib import Path
 
 sys.path.insert(0, os.path.abspath("tools"))
 sys.path.insert(0, os.path.abspath("tools/collision"))
@@ -157,8 +159,8 @@ class TestStairsScenarios(unittest.TestCase):
             actor_id="human_1",
             function="climb_stairs",
             start_time=0.0,
-            end_time=5.0,
-            duration=5.0,
+            end_time=5.0 / 0.65,
+            duration=5.0 / 0.65,
             params={"stairs": "buildings.test_stair_building:stairs_main", "direction": "up", "pace": "walk"},
             events={},
         )
@@ -168,7 +170,7 @@ class TestStairsScenarios(unittest.TestCase):
             [good_beat],
             {},
             {},
-            total_duration_s=5.0,
+            total_duration_s=5.0 / 0.65,
         )
         self.assertIsNone(s_err_none)
         self.assertIsNotNone(perf_good)
@@ -177,6 +179,169 @@ class TestStairsScenarios(unittest.TestCase):
         self.assertEqual(action["clip"], "walking_up_the_stairs")
         # Step frequency f = 0.65 / 0.333 = 1.95 Hz. Clip freq = 1.714 Hz. Ratio ~ 1.14
         self.assertAlmostEqual(action["speed"], 1.14, delta=0.15)
+
+    def test_opposite_side_climbers_use_separate_treads_and_timed_approaches(self):
+        from plan_model import Beat, ShotPlan
+        from timeline_resolver import TimelineResolver
+
+        starts = {
+            "left": {"position": [-1.7, 0.0, 1.333], "facing_deg": 180.0},
+            "right": {"position": [1.72, 0.0, 1.333], "facing_deg": 180.0},
+        }
+        plan = ShotPlan(beats=[
+            Beat(f"climb_{actor}", "climb_stairs", actor,
+                 {"stairs": "buildings.test_stair_building:stairs_main", "direction": "up", "pace": "run"})
+            for actor in starts
+        ])
+        synth = MotionSynthesizer(self.manifest, fps=24)
+        compiler = object.__new__(ShotCompiler)
+        self.assertIsNone(compiler._prepare_stair_climbs(plan, starts, synth))
+        timeline, error = TimelineResolver(fps=24).resolve(plan, starts)
+        self.assertIsNone(error)
+        self.assertGreater(timeline.total_duration_s, 3.5)
+        performances = {}
+        for actor, state in starts.items():
+            perf, error = synth.synthesize_actor(actor, state, timeline.actor_schedules[actor],
+                                                 {}, {}, timeline.total_duration_s)
+            self.assertIsNone(error)
+            performances[actor] = perf
+            moving_actions = [action for action in perf.actions if action["clip"] in
+                              ("run", "running_up_stairs")]
+            self.assertEqual([action["clip"] for action in moving_actions[:2]],
+                             ["run", "running_up_stairs"])
+            stair_action = moving_actions[1]
+            stair_duration = stair_action["end_s"] - stair_action["start_s"]
+            expected_speed = (5.0 / stair_duration / 0.333) / 3.43
+            self.assertAlmostEqual(stair_action["speed"], expected_speed, delta=0.02)
+            top, _ = perf.sample(stair_action["end_s"])
+            self.assertAlmostEqual(top[1], 3.2, places=3)
+        for i in range(25):
+            t = timeline.total_duration_s * i / 24
+            left, _ = performances["left"].sample(t)
+            right, _ = performances["right"].sample(t)
+            self.assertGreaterEqual(math.hypot(left[0] - right[0], left[2] - right[2]), 0.79)
+
+        stage, _ = self._create_stair_stage("opposite_climbers.usda")
+        right_prim = stage.DefinePrim("/World/OtherHero", "Xform")
+        right_prim.SetCustomDataByKey("asset_id", "character.human")
+        right_prim.GetReferences().AddReference(
+            os.path.abspath("assets/usdc_assets/humans/human.norm.usda"), "/root")
+        for actor, prim_name in (("left", "Hero"), ("right", "OtherHero")):
+            xform = UsdGeom.Xformable(stage.GetPrimAtPath(f"/World/{prim_name}"))
+            translate = xform.AddTranslateOp()
+            for frame in range(math.ceil(timeline.total_duration_s * 24) + 1):
+                position, _ = performances[actor].sample(frame / 24)
+                translate.Set(Gf.Vec3d(*position), frame)
+        stage.SetEndTimeCode(math.ceil(timeline.total_duration_s * 24))
+        stage.GetRootLayer().Save()
+        stair_contact = [{"actor": actor, "asset": "Building", "part": "body",
+                          "max_depth_m": 0.1, "t0": 0.0, "t1": timeline.total_duration_s}
+                         for actor in ("Hero", "OtherHero")]
+        result = validate(stage, self.db, t0=0, t1=stage.GetEndTimeCode(),
+                          allow=stair_contact)
+        self.assertTrue(result["ok"], result.get("violations"))
+
+    def test_stair_geometry_uses_placed_instance_transform(self):
+        from plan_model import Beat, ShotPlan
+
+        matrix = [[2.0, 0.0, 0.0, 0.0],
+                  [0.0, 1.5, 0.0, 0.0],
+                  [0.0, 0.0, 2.0, 0.0],
+                  [8.0, 0.0, -5.0, 1.0]]
+        synth = MotionSynthesizer(self.manifest, scene_data={"objects": [
+            {"name": "ExistingStairs", "asset": "buildings.test_stair_building",
+             "world_transform": matrix}]})
+        stair = synth._resolve_stair("ExistingStairs:stairs_main")
+        for actual, expected in zip(stair["data"]["centerline"][0], [8.0, 0.3, 3.0]):
+            self.assertAlmostEqual(actual, expected)
+        for actual, expected in zip(stair["data"]["centerline"][-1], [8.0, 4.8, -7.0]):
+            self.assertAlmostEqual(actual, expected)
+        self.assertAlmostEqual(stair["data"]["width_m"], 2.8, places=2)
+        self.assertAlmostEqual(stair["data"]["treads"][0]["tread_m"], 0.666, places=3)
+        self.assertIsNone(synth._resolve_stair("OtherStairs:stairs_main"))
+
+        compiler = object.__new__(ShotCompiler)
+        plan = ShotPlan(beats=[Beat("climb", "climb_stairs", "hero", {"stairs": "stairs_main"})])
+        empty_scene = MotionSynthesizer(self.manifest, scene_data={"objects": [
+            {"name": "Club", "asset": "buildings.grand_night_club"}]})
+        error = compiler._prepare_stair_climbs(plan, {"hero": {"position": [0, 0, 0]}}, empty_scene)
+        self.assertEqual(error.error_code, "STAIR_NOT_IN_SCENE")
+        self.assertIsNone(MotionSynthesizer(self.manifest, scene_data={"objects": []})
+                          ._resolve_stair("stairs_main"))
+
+    def test_manual_city_square_replaces_club_in_stair_context(self):
+        scene_path = Path(self.temp_dir) / "scene.usda"
+        edits_path = Path(self.temp_dir) / "user_edits.usda"
+        shot_dir = Path(self.temp_dir)
+        scene = Usd.Stage.CreateNew(str(scene_path))
+        world = scene.DefinePrim("/World", "Xform")
+        scene.SetDefaultPrim(world)
+        club = scene.DefinePrim("/World/GrandNightClub", "Xform")
+        club.SetCustomDataByKey("asset_id", "buildings.grand_night_club")
+        scene.GetRootLayer().Save()
+        edits_path.write_text(
+            '#usda 1.0\nover "World" {\n'
+            '    over "GrandNightClub" (active = false) {}\n'
+            '    def Xform "CitySquare" (\n'
+            '        customData = { string asset_id = "buildings.city_square" }\n'
+            f'        prepend references = @{os.path.abspath("assets/usdc_assets/buildings/city_square.usdc")}@\n'
+            '    ) {}\n}\n', encoding="utf-8")
+        compiler = ShotCompiler()
+        context = compiler._read_scene_context(scene_path, shot_dir=shot_dir)
+        names = {obj["name"] for obj in context["objects"]}
+        self.assertIn("CitySquare", names)
+        self.assertNotIn("GrandNightClub", names)
+        stairs = next(obj["stairs"] for obj in context["objects"] if obj["name"] == "CitySquare")
+        self.assertEqual(set(stairs), {"ascending_steps", "descending_steps"})
+        self.assertAlmostEqual(stairs["ascending_steps"]["width_m"], 6.0, places=2)
+        self.assertAlmostEqual(stairs["descending_steps"]["centerline"][-1][1], 1.7, places=2)
+
+        from llm_planner import LLMShotPlanner
+        prompt = LLMShotPlanner(FunctionCatalog(manifest=compiler.manifest,
+                                                scene_data=context)).build_system_prompt()
+        self.assertIn("CitySquare:ascending_steps", prompt)
+        self.assertIn("CitySquare:descending_steps", prompt)
+        self.assertNotIn("GrandNightClub", prompt)
+
+        from semantic_references import ReferenceResolver
+        resolver = ReferenceResolver(compiler.manifest, context)
+        bottom, error = resolver.resolve("CitySquare:descending_steps_bottom", {})
+        self.assertEqual(error, "")
+        self.assertAlmostEqual(bottom.position[2], 3.04, places=2)
+        synth = MotionSynthesizer(compiler.manifest, scene_data=context)
+        self.assertIsNotNone(synth._resolve_stair("CitySquare:ascending_steps"))
+
+        composed = Usd.Stage.Open(Sdf.Layer.FindOrOpen(str(scene_path)),
+                                  Sdf.Layer.FindOrOpen(str(edits_path)))
+        from plan_path import scene_stairs
+        discovered = scene_stairs(composed, self.db)
+        self.assertEqual({stair["stair_name"] for stair in discovered},
+                         {"ascending_steps", "descending_steps"})
+
+        import process_agent_queue as queue
+        pending = shot_dir / "pending_request.json"
+        pending.write_text(json.dumps({"scene_stage": str(scene_path),
+                                       "target_stage": str(shot_dir / "shot.usda"),
+                                       "prompt": "Two people climb the stairs from opposite sides.",
+                                       "world_state": {"objects": [{"id": "CitySquare", "asset": "buildings.city_square",
+                                                                    "position": [0, 0, 0]},
+                                                                   {"id": "Hero", "asset": "character.human",
+                                                                    "position": [1, 0, 2]}]}}),
+                           encoding="utf-8")
+        original_pending = queue.PENDING_FILE
+        try:
+            queue.PENDING_FILE = pending
+            self.assertEqual(queue.prepare_pending_task(), 0)
+        finally:
+            queue.PENDING_FILE = original_pending
+        request = json.loads(pending.read_text(encoding="utf-8"))
+        current = {obj["name"]: obj for obj in request["scene_context"]["objects"]}
+        self.assertIn("CitySquare", current)
+        self.assertNotIn("GrandNightClub", current)
+        self.assertEqual(set(current["CitySquare"]["stairs"]),
+                         {"ascending_steps", "descending_steps"})
+        self.assertIn("CitySquare:ascending_steps", request["planner_rules"])
+        self.assertEqual(request["current_shot_state"]["objects"][1]["position"], [1, 0, 2])
 
     def test_scenario_o_low_ceiling_headroom_fail(self):
         """Scenario O: Low ceiling obstruction above stair landing hits character head (FAIL)."""

@@ -1,0 +1,130 @@
+{
+  "ok": false,
+  "time_steps": 3603,
+  "actors": [
+    "Human_1",
+    "Human_2",
+    "Human_3",
+    "Human_4",
+    "Human_5",
+    "Human_6",
+    "Human_7",
+    "Human_8",
+    "Human_9",
+    "Human_10",
+    "Human_11",
+    "Human_12",
+    "Human_13",
+    "Human_14",
+    "Human_15",
+    "Human_16",
+    "Human_17",
+    "Human_18",
+    "Human_19",
+    "Human_20"
+  ],
+  "assets": [
+    "GrandNightClub",
+    "Ground"
+  ],
+  "unprotected_assets": [],
+  "unprotected_actors": [],
+  "violations": [
+    {
+      "actor": "Human_15",
+      "asset": "character.human",
+      "instance": "Human_16",
+      "part": "body",
+      "first_s": 7.271,
+      "last_s": 7.354,
+      "frames": 5,
+      "worst_depth_m": 0.128,
+      "worst_s": 7.312,
+      "body_part": "RightUpLeg>RightLeg",
+      "shape": "body_capsule",
+      "push_out_m": [
+        -0.13,
+        0.0,
+        -0.048
+      ],
+      "advice": "Human_15 passes through Human_16 (character.human, part 'body') from 7.271 s to 7.354 s, up to 0.128 m deep (RightUpLeg>RightLeg). Move Human_15 by [-0.13, 0.0, -0.048] m at 7.312 s, or re-plan the route (plan_path.py) / use an anchor."
+    },
+    {
+      "actor": "Human_3",
+      "asset": "character.human",
+      "instance": "Human_4",
+      "part": "body",
+      "first_s": 7.0,
+      "last_s": 7.312,
+      "frames": 12,
+      "worst_depth_m": 0.115,
+      "worst_s": 7.188,
+      "body_part": "LeftLeg>LeftFoot",
+      "shape": "body_capsule",
+      "push_out_m": [
+        0.114,
+        0.0,
+        -0.05
+      ],
+      "advice": "Human_3 passes through Human_4 (character.human, part 'body') from 7.0 s to 7.312 s, up to 0.115 m deep (LeftLeg>LeftFoot). Move Human_3 by [0.114, 0.0, -0.05] m at 7.188 s, or re-plan the route (plan_path.py) / use an anchor."
+    },
+    {
+      "actor": "Human_6",
+      "asset": "character.human",
+      "instance": "Human_7",
+      "part": "body",
+      "first_s": 6.188,
+      "last_s": 6.208,
+      "frames": 2,
+      "worst_depth_m": 0.087,
+      "worst_s": 6.208,
+      "body_part": "LeftFoot>LeftToeBase",
+      "shape": "body_capsule",
+      "push_out_m": [
+        -0.096,
+        0.0,
+        0.01
+      ],
+      "advice": "Human_6 passes through Human_7 (character.human, part 'body') from 6.188 s to 6.208 s, up to 0.087 m deep (LeftFoot>LeftToeBase). Move Human_6 by [-0.096, 0.0, 0.01] m at 6.208 s, or re-plan the route (plan_path.py) / use an anchor."
+    },
+    {
+      "actor": "Human_4",
+      "asset": "character.human",
+      "instance": "Human_5",
+      "part": "body",
+      "first_s": 7.604,
+      "last_s": 7.729,
+      "frames": 3,
+      "worst_depth_m": 0.064,
+      "worst_s": 7.604,
+      "body_part": "RightToeBase>RightToe_End",
+      "shape": "body_capsule",
+      "push_out_m": [
+        0.07,
+        0.0,
+        -0.022
+      ],
+      "advice": "Human_4 passes through Human_5 (character.human, part 'body') from 7.604 s to 7.729 s, up to 0.064 m deep (RightToeBase>RightToe_End). Move Human_4 by [0.07, 0.0, -0.022] m at 7.604 s, or re-plan the route (plan_path.py) / use an anchor."
+    },
+    {
+      "actor": "Human_18",
+      "asset": "buildings.grand_night_club",
+      "instance": "GrandNightClub",
+      "part": "body",
+      "first_s": 45.625,
+      "last_s": 45.896,
+      "frames": 14,
+      "worst_depth_m": 0.059,
+      "worst_s": 45.708,
+      "body_part": "LeftHand",
+      "shape": "body_73",
+      "push_out_m": [
+        0.0,
+        0.0,
+        -0.069
+      ],
+      "advice": "Human_18 passes through GrandNightClub (buildings.grand_night_club, part 'body') from 45.625 s to 45.896 s, up to 0.059 m deep (LeftHand). Move Human_18 by [0.0, 0.0, -0.069] m at 45.708 s, or re-plan the route (plan_path.py) / use an anchor."
+    }
+  ],
+  "level_violations": []
+}

@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    doc = "PainterSpace manual user edits layer"
+)
+
+over "World"
+{
+    over "ResidentialAvenue" (
+        active = false
+    )
+    {
+        token visibility = "invisible"
+    }
+
+    def Xform "ResidentialAvenue_2" (
+        active = false
+        customData = {
+            string asset_id = "environment.residential_avenue"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/environments/residential_avenue.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "ResidentialNeighborhood" (
+        active = false
+        customData = {
+            string asset_id = "environment.residential_neighborhood"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/environments/residential_neighborhood.usdc@
+    )
+    {
+        token visibility = "invisible"
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "ResidentialNeighborhood_2" (
+        customData = {
+            string asset_id = "environment.residential_neighborhood"
+            string forward_axis = "-Z"
+            string world_state_role = "object"
+        }
+        prepend references = @../../../assets/usdc_assets/environments/residential_neighborhood.usdc@
+    )
+    {
+        float3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+
